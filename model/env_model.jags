@@ -1,0 +1,8 @@
+model {
+  for (i in 1:N){
+    lnconc[i] ~ dnorm(mu, tau)
+  }
+  mu ~ dnorm(0, 0.001)
+  tau <- 1/(sigma*sigma)
+  sigma ~ dunif(0.00001, 10000)
+}

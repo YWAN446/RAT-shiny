@@ -1,0 +1,8 @@
+model {
+  for (i in 1:N){
+    select[i] ~ dinterval(freq[i],cut)
+    freq[i] ~ dnegbin(p,r)
+  }
+  p ~ dunif(0,1)
+  r ~ dunif(0,1000)
+}
