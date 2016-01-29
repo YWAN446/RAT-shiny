@@ -1,8 +1,21 @@
 library(shiny)
 library(rjags)
+library(httr)
 #setwd("~/stat/RAT-shiny/model")
 source("./model/PS_Plot.r")
 options(shiny.maxRequestSize = 9*1024^2)
+
+url <- 'http://54.210.2.87/api/v1/data'
+req <- GET(url, #query=list('Authorization' = '8d0336d37ef28df590574f1cd4531f142e31ca02')
+           # authenticate('sp', '2007beagle', type='basic')
+           accept_json(),
+           add_headers(Authorization = 'Token 8d0336d37ef28df590574f1cd4531f142e31ca02')
+           # write_disk("community.csv", overwrite=TRUE)
+)
+stop_for_status(req)
+content(req)
+
+
 
 shinyServer(function(input, output, session) {
   observe({
