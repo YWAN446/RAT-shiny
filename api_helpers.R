@@ -14,7 +14,18 @@
 # This is specific to the SP user at the moment
 api_token <- '8d0336d37ef28df590574f1cd4531f142e31ca02' 
 
-formhubGET <- function(api_)
+formhubGET <- function(api_) {}
+
+url <- 'http://54.210.2.87/api/v1/data/sp/93'
+req <- GET(url, #query=list('Authorization' = '8d0336d37ef28df590574f1cd4531f142e31ca02')
+           # authenticate('sp', '2007beagle', type='basic')
+           accept_json(),
+           add_headers(Authorization = 'Token 8d0336d37ef28df590574f1cd4531f142e31ca02')
+           # write_disk("community.csv", overwrite=TRUE)
+)
+stop_for_status(req)
+content(req)
+
 
 getAPI_forms <- function(api_url, api_token) {
   # This accesses the /api/v1/data access point and downloads
@@ -26,6 +37,12 @@ getAPI_forms <- function(api_url, api_token) {
   # formName    apiLink
   # community   /api/v1/data/sp/92
   
-  response
+  response <- GET(api_url, accept_json(), add_headers(Authorization = paste0('Token ',api_token)))
+  if (response$status_code != 200) {
+    # 200 indicates successful communication and authentication with the server
+    stop("API Authentication failed.  Check credentials.") 
+  }
+  options <- as.data.frame(unlist(content(req)))
+  
   
 }
