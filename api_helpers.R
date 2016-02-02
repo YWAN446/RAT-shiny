@@ -16,12 +16,11 @@ api_token <- '8d0336d37ef28df590574f1cd4531f142e31ca02'
 
 formhubGET <- function(api_) {}
 
-url <- 'http://54.210.2.87/api/v1/data/sp/93'
-req <- GET(url, #query=list('Authorization' = '8d0336d37ef28df590574f1cd4531f142e31ca02')
-           # authenticate('sp', '2007beagle', type='basic')
+url <- 'http://54.210.2.87/api/v1/data'
+req <- GET(url, 
+           # authenticate('sp', '2007beagle', type='basic') # this is the other auth method
            accept_json(),
            add_headers(Authorization = 'Token 8d0336d37ef28df590574f1cd4531f142e31ca02')
-           # write_disk("community.csv", overwrite=TRUE)
 )
 stop_for_status(req)
 content(req)
@@ -42,7 +41,7 @@ getAPI_forms <- function(api_url, api_token) {
     # 200 indicates successful communication and authentication with the server
     stop("API Authentication failed.  Check credentials.") 
   }
-  options <- as.data.frame(unlist(content(req)))
+  options <- as.data.frame(unlist(content(response)))
   
   
 }
