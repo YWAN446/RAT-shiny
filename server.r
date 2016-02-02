@@ -1,6 +1,5 @@
 library(shiny)
 library(rjags)
-library(httr)
 #setwd("~/stat/RAT-shiny/model")
 source("./model/PS_Plot.r")
 source('api_helpers.R')
@@ -35,13 +34,14 @@ shinyServer(function(input, output, session) {
 #                                                                 "Public Latrine Surfaces"=7, "Particulate"=8, "Bathing"=9)[unique(col_data$sample_type)]))
 #   })
   ec_data <- reactive({
-    col_inFile<-input$col_file
-    lab_inFile<-input$lab_file
-    if(is.null(col_inFile)|is.null(lab_inFile)) #two datasets for environment samples have to be loaded.
-      return(NULL)
-    col_data<-read.csv(input$col_file$datapath)
-    lab_data<-read.csv(input$lab_file$datapath)
+    # Download the data based on the dropdown lists
+    col_data <- getAPI_data(input$col_file, api_token)
+    lab_data <- getAPI_data(input$lab_data, api_token)
+    
+    # merge the data
     ec_data<-merge(col_data,lab_data,by=c("sample_type","sampleid"))
+    
+    # I'm not sure what this is
     ec_data$ec_denom=100
     ec_data$ec_denom[which(ec_data$sample_type==2)]=500
     ec_data$ec_denom[which(ec_data$sample_type==2)]=14
@@ -96,63 +96,50 @@ shinyServer(function(input, output, session) {
   })
   
   be_data <- reactive({
-    hh_inFile <- input$hh_file    
-    if (is.null(hh_inFile))
-      return(NULL)
-    be_data<-read.csv(hh_inFile$datapath)
-    be_data
+    getAPI_data(input$hh_file, api_token)
   })
   
   frq <- reactive({
-    hh_inFile <- input$hh_file    
-    if (is.null(hh_inFile))
-      return(NULL)
-    be_data<-read.csv(hh_inFile$datapath)
     freq<-list()
-    
-    for (i in 1:length(unique(be_data$neighbor))){
+    for (i in 1:length(unique(be_data()$neighbor))){
       # sample type 1|2=drain, 3|4=produce, 5|6=piped water, 7|8=ocean water, 9|10=surface water, 11|12=flood water, 13|14=Public Latrine Surfaces  
-      freq[[14*(sort(unique(be_data$neighbor))[i]-1)+1]]=as.numeric(be_data$hh_q6[which(be_data$hh_q6!="n/a" & be_data$neighbor==i)]);
-      freq[[14*(sort(unique(be_data$neighbor))[i]-1)+2]]=as.numeric(be_data$hh_q7[which(be_data$hh_q7!="n/a" & be_data$neighbor==i)]);
-      freq[[14*(sort(unique(be_data$neighbor))[i]-1)+3]]=as.numeric(be_data$hh_q13[which(be_data$hh_q13!="n/a" & be_data$neighbor==i)]);
-      freq[[14*(sort(unique(be_data$neighbor))[i]-1)+4]]=as.numeric(be_data$hh_q14[which(be_data$hh_q14!="n/a" & be_data$neighbor==i)]);
-      freq[[14*(sort(unique(be_data$neighbor))[i]-1)+5]]=as.numeric(be_data$hh_q10[which(be_data$hh_q10!="n/a" & be_data$neighbor==i)]);
-      freq[[14*(sort(unique(be_data$neighbor))[i]-1)+6]]=as.numeric(be_data$hh_q11[which(be_data$hh_q11!="n/a" & be_data$neighbor==i)]);
-      freq[[14*(sort(unique(be_data$neighbor))[i]-1)+7]]=as.numeric(be_data$hh_q2[which(be_data$hh_q2!="n/a" & be_data$neighbor==i)]);
-      freq[[14*(sort(unique(be_data$neighbor))[i]-1)+8]]=as.numeric(be_data$hh_q3[which(be_data$hh_q3!="n/a" & be_data$neighbor==i)]);
-      freq[[14*(sort(unique(be_data$neighbor))[i]-1)+9]]=as.numeric(be_data$hh_q4[which(be_data$hh_q4!="n/a" & be_data$neighbor==i)]);
-      freq[[14*(sort(unique(be_data$neighbor))[i]-1)+10]]=as.numeric(be_data$hh_q5[which(be_data$hh_q5!="n/a" & be_data$neighbor==i)]);
-      freq[[14*(sort(unique(be_data$neighbor))[i]-1)+11]]=as.numeric(be_data$hh_q8[which(be_data$hh_q8!="n/a" & be_data$neighbor==i)]);
-      freq[[14*(sort(unique(be_data$neighbor))[i]-1)+12]]=as.numeric(be_data$hh_q9[which(be_data$hh_q9!="n/a" & be_data$neighbor==i)]);
-      freq[[14*(sort(unique(be_data$neighbor))[i]-1)+13]]=as.numeric(be_data$hh_q15[which(be_data$hh_q15!="n/a" & be_data$neighbor==i)]);
-      freq[[14*(sort(unique(be_data$neighbor))[i]-1)+14]]=as.numeric(be_data$hh_q16[which(be_data$hh_q16!="n/a" & be_data$neighbor==i)]);
+      freq[[14*(sort(unique(be_data()$neighbor))[i]-1)+1]]=as.numeric(be_data()$hh_q6[which(be_data()$hh_q6!="n/a" & be_data()$neighbor==i)]);
+      freq[[14*(sort(unique(be_data()$neighbor))[i]-1)+2]]=as.numeric(be_data()$hh_q7[which(be_data()$hh_q7!="n/a" & be_data()$neighbor==i)]);
+      freq[[14*(sort(unique(be_data()$neighbor))[i]-1)+3]]=as.numeric(be_data()$hh_q13[which(be_data()$hh_q13!="n/a" & be_data()$neighbor==i)]);
+      freq[[14*(sort(unique(be_data()$neighbor))[i]-1)+4]]=as.numeric(be_data()$hh_q14[which(be_data()$hh_q14!="n/a" & be_data()$neighbor==i)]);
+      freq[[14*(sort(unique(be_data()$neighbor))[i]-1)+5]]=as.numeric(be_data()$hh_q10[which(be_data()$hh_q10!="n/a" & be_data()$neighbor==i)]);
+      freq[[14*(sort(unique(be_data()$neighbor))[i]-1)+6]]=as.numeric(be_data()$hh_q11[which(be_data()$hh_q11!="n/a" & be_data()$neighbor==i)]);
+      freq[[14*(sort(unique(be_data()$neighbor))[i]-1)+7]]=as.numeric(be_data()$hh_q2[which(be_data()$hh_q2!="n/a" & be_data()$neighbor==i)]);
+      freq[[14*(sort(unique(be_data()$neighbor))[i]-1)+8]]=as.numeric(be_data()$hh_q3[which(be_data()$hh_q3!="n/a" & be_data()$neighbor==i)]);
+      freq[[14*(sort(unique(be_data()$neighbor))[i]-1)+9]]=as.numeric(be_data()$hh_q4[which(be_data()$hh_q4!="n/a" & be_data()$neighbor==i)]);
+      freq[[14*(sort(unique(be_data()$neighbor))[i]-1)+10]]=as.numeric(be_data()$hh_q5[which(be_data()$hh_q5!="n/a" & be_data()$neighbor==i)]);
+      freq[[14*(sort(unique(be_data()$neighbor))[i]-1)+11]]=as.numeric(be_data()$hh_q8[which(be_data()$hh_q8!="n/a" & be_data()$neighbor==i)]);
+      freq[[14*(sort(unique(be_data()$neighbor))[i]-1)+12]]=as.numeric(be_data()$hh_q9[which(be_data()$hh_q9!="n/a" & be_data()$neighbor==i)]);
+      freq[[14*(sort(unique(be_data()$neighbor))[i]-1)+13]]=as.numeric(be_data()$hh_q15[which(be_data()$hh_q15!="n/a" & be_data()$neighbor==i)]);
+      freq[[14*(sort(unique(be_data()$neighbor))[i]-1)+14]]=as.numeric(be_data()$hh_q16[which(be_data()$hh_q16!="n/a" & be_data()$neighbor==i)]);
     }
     freq
   })
 
   ps.frq <- reactive({
-    hh_inFile <- input$hh_file    
-    if (is.null(hh_inFile))
-      return(NULL)
-    be_data<-read.csv(hh_inFile$datapath)
     freq<-list()
     
-    for (i in 1:length(unique(be_data$neighbor))){
+    for (i in 1:length(unique(be_data()$neighbor))){
       # sample type 1|2=drain, 3|4=produce, 5|6=piped water, 7|8=ocean water, 9|10=surface water, 11|12=flood water, 13|14=Public Latrine Surfaces  
-      freq[[14*(sort(unique(be_data$neighbor))[i]-1)+1]]=4-as.numeric(be_data$hh_q6[which(be_data$hh_q6!="n/a" & be_data$neighbor==i)]);
-      freq[[14*(sort(unique(be_data$neighbor))[i]-1)+2]]=4-as.numeric(be_data$hh_q7[which(be_data$hh_q7!="n/a" & be_data$neighbor==i)]);
-      freq[[14*(sort(unique(be_data$neighbor))[i]-1)+3]]=4-as.numeric(be_data$hh_q13[which(be_data$hh_q13!="n/a" & be_data$neighbor==i)]);
-      freq[[14*(sort(unique(be_data$neighbor))[i]-1)+4]]=4-as.numeric(be_data$hh_q14[which(be_data$hh_q14!="n/a" & be_data$neighbor==i)]);
-      freq[[14*(sort(unique(be_data$neighbor))[i]-1)+5]]=4-as.numeric(be_data$hh_q10[which(be_data$hh_q10!="n/a" & be_data$neighbor==i)]);
-      freq[[14*(sort(unique(be_data$neighbor))[i]-1)+6]]=4-as.numeric(be_data$hh_q11[which(be_data$hh_q11!="n/a" & be_data$neighbor==i)]);
-      freq[[14*(sort(unique(be_data$neighbor))[i]-1)+7]]=4-as.numeric(be_data$hh_q2[which(be_data$hh_q2!="n/a" & be_data$neighbor==i)]);
-      freq[[14*(sort(unique(be_data$neighbor))[i]-1)+8]]=4-as.numeric(be_data$hh_q3[which(be_data$hh_q3!="n/a" & be_data$neighbor==i)]);
-      freq[[14*(sort(unique(be_data$neighbor))[i]-1)+9]]=4-as.numeric(be_data$hh_q4[which(be_data$hh_q4!="n/a" & be_data$neighbor==i)]);
-      freq[[14*(sort(unique(be_data$neighbor))[i]-1)+10]]=4-as.numeric(be_data$hh_q5[which(be_data$hh_q5!="n/a" & be_data$neighbor==i)]);
-      freq[[14*(sort(unique(be_data$neighbor))[i]-1)+11]]=4-as.numeric(be_data$hh_q8[which(be_data$hh_q8!="n/a" & be_data$neighbor==i)]);
-      freq[[14*(sort(unique(be_data$neighbor))[i]-1)+12]]=4-as.numeric(be_data$hh_q9[which(be_data$hh_q9!="n/a" & be_data$neighbor==i)]);
-      freq[[14*(sort(unique(be_data$neighbor))[i]-1)+13]]=4-as.numeric(be_data$hh_q15[which(be_data$hh_q15!="n/a" & be_data$neighbor==i)]);
-      freq[[14*(sort(unique(be_data$neighbor))[i]-1)+14]]=4-as.numeric(be_data$hh_q16[which(be_data$hh_q16!="n/a" & be_data$neighbor==i)]);
+      freq[[14*(sort(unique(be_data()$neighbor))[i]-1)+1]]=4-as.numeric(be_data()$hh_q6[which(be_data()$hh_q6!="n/a" & be_data()$neighbor==i)]);
+      freq[[14*(sort(unique(be_data()$neighbor))[i]-1)+2]]=4-as.numeric(be_data()$hh_q7[which(be_data()$hh_q7!="n/a" & be_data()$neighbor==i)]);
+      freq[[14*(sort(unique(be_data()$neighbor))[i]-1)+3]]=4-as.numeric(be_data()$hh_q13[which(be_data()$hh_q13!="n/a" & be_data()$neighbor==i)]);
+      freq[[14*(sort(unique(be_data()$neighbor))[i]-1)+4]]=4-as.numeric(be_data()$hh_q14[which(be_data()$hh_q14!="n/a" & be_data()$neighbor==i)]);
+      freq[[14*(sort(unique(be_data()$neighbor))[i]-1)+5]]=4-as.numeric(be_data()$hh_q10[which(be_data()$hh_q10!="n/a" & be_data()$neighbor==i)]);
+      freq[[14*(sort(unique(be_data()$neighbor))[i]-1)+6]]=4-as.numeric(be_data()$hh_q11[which(be_data()$hh_q11!="n/a" & be_data()$neighbor==i)]);
+      freq[[14*(sort(unique(be_data()$neighbor))[i]-1)+7]]=4-as.numeric(be_data()$hh_q2[which(be_data()$hh_q2!="n/a" & be_data()$neighbor==i)]);
+      freq[[14*(sort(unique(be_data()$neighbor))[i]-1)+8]]=4-as.numeric(be_data()$hh_q3[which(be_data()$hh_q3!="n/a" & be_data()$neighbor==i)]);
+      freq[[14*(sort(unique(be_data()$neighbor))[i]-1)+9]]=4-as.numeric(be_data()$hh_q4[which(be_data()$hh_q4!="n/a" & be_data()$neighbor==i)]);
+      freq[[14*(sort(unique(be_data()$neighbor))[i]-1)+10]]=4-as.numeric(be_data()$hh_q5[which(be_data()$hh_q5!="n/a" & be_data()$neighbor==i)]);
+      freq[[14*(sort(unique(be_data()$neighbor))[i]-1)+11]]=4-as.numeric(be_data()$hh_q8[which(be_data()$hh_q8!="n/a" & be_data()$neighbor==i)]);
+      freq[[14*(sort(unique(be_data()$neighbor))[i]-1)+12]]=4-as.numeric(be_data()$hh_q9[which(be_data()$hh_q9!="n/a" & be_data()$neighbor==i)]);
+      freq[[14*(sort(unique(be_data()$neighbor))[i]-1)+13]]=4-as.numeric(be_data()$hh_q15[which(be_data()$hh_q15!="n/a" & be_data()$neighbor==i)]);
+      freq[[14*(sort(unique(be_data()$neighbor))[i]-1)+14]]=4-as.numeric(be_data()$hh_q16[which(be_data()$hh_q16!="n/a" & be_data()$neighbor==i)]);
     }
     freq
   })
