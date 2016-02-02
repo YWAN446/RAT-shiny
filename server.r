@@ -3,6 +3,7 @@ library(rjags)
 library(httr)
 #setwd("~/stat/RAT-shiny/model")
 source("./model/PS_Plot.r")
+source('api_helpers.R')
 options(shiny.maxRequestSize = 9*1024^2)
 
 
@@ -10,15 +11,29 @@ options(shiny.maxRequestSize = 9*1024^2)
 
 shinyServer(function(input, output, session) {
   observe({
-    col_inFile<-input$col_file
-    if(is.null(col_inFile))
-      return(NULL)
-    col_data = read.csv(col_inFile$datapath)
-    updateSelectInput(session, "neighb", choices = c("All"=0,unique(col_data$neighbor)))
-    updateSelectInput(session, "samtype", choices = c("All"=0,c("Drain Water"=1, "Produce"=2, "Piped Water"=3, 
-                                                                "Ocean Water"=4, "Surface Water"=5, "Flood Water"=6,
-                                                                "Public Latrine Surfaces"=7, "Particulate"=8, "Bathing"=9)[unique(col_data$sample_type)]))
+    # URL and API token are currently defined in the API Helpers script.
+    # This returns a list of available forms based on the user token
+    # provided.
+    forms <- getAPI_forms(url, api_token)
+    
+    # update the options
+    updateSelectizeInput(session, 'col_file', choices=filterAPI_forms('collection', forms))
+    updateSelectizeInput(session, 'lab_file', choices=filterAPI_forms('lab', forms))
+    updateSelectizeInput(session, 'hh_file', choices=filterAPI_forms('household', forms))
+    updateSelectizeInput(session, 'sch_file', choices=filterAPI_forms('school', forms))
+    updateSelectizeInput(session, 'com_file', choices=filterAPI_forms('community', forms))
+
   })
+#   observe({
+#     col_inFile<-input$col_file
+#     if(is.null(col_inFile))
+#       return(NULL)
+#     col_data = read.csv(col_inFile$datapath)
+#     updateSelectInput(session, "neighb", choices = c("All"=0,unique(col_data$neighbor)))
+#     updateSelectInput(session, "samtype", choices = c("All"=0,c("Drain Water"=1, "Produce"=2, "Piped Water"=3, 
+#                                                                 "Ocean Water"=4, "Surface Water"=5, "Flood Water"=6,
+#                                                                 "Public Latrine Surfaces"=7, "Particulate"=8, "Bathing"=9)[unique(col_data$sample_type)]))
+#   })
   ec_data <- reactive({
     col_inFile<-input$col_file
     lab_inFile<-input$lab_file
