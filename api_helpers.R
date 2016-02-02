@@ -32,7 +32,7 @@ formhubGET <- function(api_url, api_token) {
   # API request response and content
   # ...
   
-  response <- GET(api_url, accept_json(), add_headers(Authorization = paste0('Token ',api_token)))
+  response <- GET(api_url, add_headers(Authorization = paste0('Token ',api_token)))
   if (response$status_code != 200) {
     # 200 indicates successful communication and authentication with the server
     stop("API Authentication failed.  Check credentials.") 
@@ -56,7 +56,7 @@ getAPI_forms <- function(api_url, api_token) {
   # 'http://formhub.cgsw.org/api/v1/data/sp/92'
   
   response <- formhubGET(api_url, api_token)
-  # the response is a 
+  
   return(content(response))
 }
 
@@ -92,6 +92,8 @@ getAPI_data <- function(form_url, api_token) {
   
   # convert the json response to a dataframe
   results <- fromJSON(content(response, 'text'))
+  results <- as.data.frame(apply(results, 2, function(a) as.character(a)))
+  
   
   return(results)
 }

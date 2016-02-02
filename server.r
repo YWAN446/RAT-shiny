@@ -27,10 +27,12 @@ shinyServer(function(input, output, session) {
   
   # Download the data ----------------------------------------------------------------
   school_data <- reactive({
-    getAPI_data(input$sch_file, api_token)
+    getAPI_data(input$sch_file[[1]], api_token)
   })
   output$school <- renderText({input$sch_file})
-  
+  output$sch_table <- renderTable({
+    getAPI_data(as.character(input$sch_file), api_token)
+  })
   community_data <- reactive({
     getAPI_data(input$com_file, api_token)
   })
@@ -172,9 +174,7 @@ shinyServer(function(input, output, session) {
   output$hh_table <- renderTable({
     be_data()
   })
-  output$sch_table <- renderTable({
-    school_data()
-  })
+
   output$com_table <- renderTable({
     community_data()
   }) 
