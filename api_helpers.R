@@ -41,6 +41,7 @@ formhubGET <- function(api_url, api_token) {
   return(response)
 }
 
+
 getAPI_forms <- function(api_url, api_token) {
   # This accesses the /api/v1/data access point and downloads
   # the available forms that the user has created and the appropriate

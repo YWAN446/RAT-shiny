@@ -9,6 +9,7 @@ options(shiny.maxRequestSize = 9*1024^2)
 
 
 shinyServer(function(input, output, session) {
+  # Update the form options ---------------------------------------------------------
   observe({
     # URL and API token are currently defined in the API Helpers script.
     # This returns a list of available forms based on the user token
@@ -23,25 +24,48 @@ shinyServer(function(input, output, session) {
     updateSelectizeInput(session, 'com_file', choices=filterAPI_forms('community', forms))
 
   })
+  
+  # Download the data ----------------------------------------------------------------
+  school_data <- reactive({
+    getAPI_data(input$sch_file, api_token)
+  })
+  output$school <- renderText({input$sch_file})
+  
+  community_data <- reactive({
+    getAPI_data(input$com_file, api_token)
+  })
+  output$community <- renderText({input$com_file})
+  
+  
+  be_data <- reactive({ # household data, keeping name for consistency
+    getAPI_data(input$hh_file, api_token)
+  })
+  output$hh <- renderText({input$hh_file})
+  
+  collection_data <- reactive({
+    getAPI_data(input$col_file, api_token)
+  })
+  output$collection <- renderText({input$col_file})
+  
+  lab_data <- reactive({
+    getAPI_data(input$lab_file, api_token)
+  })
+  output$lab <- renderText({input$lab_file})
+  
+  
+#   # Update analysis options ----------------------------------------------------------
 #   observe({
-#     col_inFile<-input$col_file
-#     if(is.null(col_inFile))
-#       return(NULL)
-#     col_data = read.csv(col_inFile$datapath)
-#     updateSelectInput(session, "neighb", choices = c("All"=0,unique(col_data$neighbor)))
+#     updateSelectInput(session, "neighb", choices = c("All"=0,unique(collection_data()$neighbor)))
 #     updateSelectInput(session, "samtype", choices = c("All"=0,c("Drain Water"=1, "Produce"=2, "Piped Water"=3, 
 #                                                                 "Ocean Water"=4, "Surface Water"=5, "Flood Water"=6,
-#                                                                 "Public Latrine Surfaces"=7, "Particulate"=8, "Bathing"=9)[unique(col_data$sample_type)]))
+#                                                                 "Public Latrine Surfaces"=7, "Particulate"=8, "Bathing"=9)[unique(collection_data()$sample_type)]))
 #   })
+
+  # Analysis -------------------------------------------------------------------------
   ec_data <- reactive({
-    # Download the data based on the dropdown lists
-    col_data <- getAPI_data(input$col_file, api_token)
-    lab_data <- getAPI_data(input$lab_data, api_token)
-    
     # merge the data
-    ec_data<-merge(col_data,lab_data,by=c("sample_type","sampleid"))
+    ec_data<-merge(collection_data(),lab_data(),by=c("sample_type","sampleid"))
     
-    # I'm not sure what this is
     ec_data$ec_denom=100
     ec_data$ec_denom[which(ec_data$sample_type==2)]=500
     ec_data$ec_denom[which(ec_data$sample_type==2)]=14
@@ -82,8 +106,9 @@ shinyServer(function(input, output, session) {
     ec_data$ec_conc<-ec_con
     ec_data
   })
+  
   conc <- reactive({
-    ec_data<-ec_data()
+    ec_data<-ec_data() # this really isn't necessary.  can call ec_data() directly
     conc<-list()
     for (i in 1:length(unique(as.numeric(ec_data$neighbor)))){
       # sample type 1=drain water, 2=produce, 3=piped water, 4=ocean water, 5=surface water, 6=flood water, 7=Public Latrine Surfaces, 8=particulate, 9=bathing
@@ -94,11 +119,7 @@ shinyServer(function(input, output, session) {
     }
     conc
   })
-  
-  be_data <- reactive({
-    getAPI_data(input$hh_file, api_token)
-  })
-  
+
   frq <- reactive({
     freq<-list()
     for (i in 1:length(unique(be_data()$neighbor))){
@@ -144,37 +165,18 @@ shinyServer(function(input, output, session) {
     freq
   })
   
-    
+
   output$ec_table <- renderTable({
-    col_inFile<-input$col_file
-    lab_inFile<-input$lab_file
-    if(is.null(col_inFile)|is.null(lab_inFile)) #two datasets for environment samples have to be loaded.
-      return(NULL)
-    col_data<-read.csv(input$col_file$datapath)
-    lab_data<-read.csv(input$lab_file$datapath)
-    merge(col_data,lab_data,by=c("sample_type","sampleid"))
-#    ec_inFile <- input$ec_file    
-#    if (is.null(ec_inFile))
-#      return(NULL)
-#    read.csv(ec_inFile$datapath)
+    ec_data()
   })
   output$hh_table <- renderTable({
-    hh_inFile <- input$hh_file    
-    if (is.null(hh_inFile))
-      return(NULL)
-    read.csv(hh_inFile$datapath)
+    be_data()
   })
   output$sch_table <- renderTable({
-    sch_inFile <- input$sch_file    
-    if (is.null(sch_inFile))
-      return(NULL)
-    read.csv(sch_inFile$datapath)
+    school_data()
   })
   output$com_table <- renderTable({
-    com_inFile <- input$com_file    
-    if (is.null(com_inFile))
-      return(NULL)
-    read.csv(com_inFile$datapath)
+    community_data()
   }) 
   
 #This table is for test only#
