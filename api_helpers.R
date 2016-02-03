@@ -1,5 +1,5 @@
 library(httr)
-library(RJSONIO)
+library(jsonlite)
 
 ## API Helpers -------------------------------------------------------------
 # These functions are designed to help the Shiny Server interact with 
@@ -32,7 +32,7 @@ formhubGET <- function(api_url, api_token) {
   # API request response and content
   # ...
   
-  response <- GET(api_url, add_headers(Authorization = paste0('Token ',api_token)))
+  response <- GET(api_url, accept_json(), add_headers(Authorization = paste0('Token ',api_token)))
   if (response$status_code != 200) {
     # 200 indicates successful communication and authentication with the server
     stop("API Authentication failed.  Check credentials.") 
@@ -92,8 +92,10 @@ getAPI_data <- function(form_url, api_token) {
   
   # convert the json response to a dataframe
   results <- fromJSON(content(response, 'text'))
-  results <- as.data.frame(apply(results, 2, function(a) as.character(a)))
   
+  # these columns are coming in as nested lists and seem to be causing
+  # problems at the moment.  we'll drop them unless they're absolutely necessary
+  results <- results[,-c(grep('_tags', names(results)), grep('_attachments', names(results)),grep('_geolocation', names(results)))]
   
   return(results)
 }

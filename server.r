@@ -5,17 +5,21 @@ source("./model/PS_Plot.r")
 source('api_helpers.R')
 options(shiny.maxRequestSize = 9*1024^2)
 
-
-
+url <- 'http://54.210.2.87/api/v1/data' # this is the main access point to use for data
+forms <- getAPI_forms(url, api_token)
 
 shinyServer(function(input, output, session) {
+  
+  # will stop shiny when the window closes
+  session$onSessionEnded(function() {
+    stopApp()
+  })
   # Update the form options ---------------------------------------------------------
   observe({
     # URL and API token are currently defined in the API Helpers script.
     # This returns a list of available forms based on the user token
     # provided.
-    forms <- getAPI_forms(url, api_token)
-    
+
     # update the options
     updateSelectizeInput(session, 'col_file', choices=filterAPI_forms('collection', forms))
     updateSelectizeInput(session, 'lab_file', choices=filterAPI_forms('lab', forms))
@@ -27,11 +31,11 @@ shinyServer(function(input, output, session) {
   
   # Download the data ----------------------------------------------------------------
   school_data <- reactive({
-    getAPI_data(input$sch_file[[1]], api_token)
+    getAPI_data(input$sch_file, api_token)
   })
   output$school <- renderText({input$sch_file})
   output$sch_table <- renderTable({
-    getAPI_data(as.character(input$sch_file), api_token)
+    getAPI_data(input$sch_file, api_token)
   })
   community_data <- reactive({
     getAPI_data(input$com_file, api_token)
@@ -45,23 +49,36 @@ shinyServer(function(input, output, session) {
   output$hh <- renderText({input$hh_file})
   
   collection_data <- reactive({
-    getAPI_data(input$col_file, api_token)
+    collection <- getAPI_data(input$col_file, api_token)
+    # it seems like these are used for analysis and they need to be numeric. 
+    columns <- c('sampleid', 'free_cl', 'containr', 'total_cl', 'source_ty', 'covered', 'dis_lat', 
+                 'latrine_user_num', 'vis_fec', 'source_type', 'hw_stat', 'n_stall', 
+                 'particle_sample_type', 'sample_weight', 'source_dist')
+    collection[,columns] <- apply(collection[,columns], 2, as.numeric)
+    updateSelectInput(session, "neighb", choices = c("All"=0,unique(collection$neighbor)))
+    updateSelectInput(session, "samtype", choices = c("All"=0,c("Drain Water"=1, "Produce"=2, "Piped Water"=3, 
+                                                                "Ocean Water"=4, "Surface Water"=5, "Flood Water"=6,
+                                                                "Public Latrine Surfaces"=7, "Particulate"=8, "Bathing"=9)[unique(collection$sample_type)]))
+   
+    collection 
   })
   output$collection <- renderText({input$col_file})
   
   lab_data <- reactive({
-    getAPI_data(input$lab_file, api_token)
+    lab <- getAPI_data(input$lab_file, api_token)
+    columns <- c('sample_type', 'ec_ecnt2', 'ec_ecnt1', 'ec_blank', '_id', 'ec_dil1', 'ec_dil2', 'sample_weight')
+    lab[,columns] <- apply(lab[,columns], 2, as.numeric)
+    lab
   })
+  
+  
+  
   output$lab <- renderText({input$lab_file})
   
   
-#   # Update analysis options ----------------------------------------------------------
+  # Update analysis options ----------------------------------------------------------
 #   observe({
-#     updateSelectInput(session, "neighb", choices = c("All"=0,unique(collection_data()$neighbor)))
-#     updateSelectInput(session, "samtype", choices = c("All"=0,c("Drain Water"=1, "Produce"=2, "Piped Water"=3, 
-#                                                                 "Ocean Water"=4, "Surface Water"=5, "Flood Water"=6,
-#                                                                 "Public Latrine Surfaces"=7, "Particulate"=8, "Bathing"=9)[unique(collection_data()$sample_type)]))
-#   })
+#     #   })
 
   # Analysis -------------------------------------------------------------------------
   ec_data <- reactive({
