@@ -18,6 +18,9 @@ library(jsonlite)
 # each user has a stored key and the system can tell who is logged in and 
 # changes the key accordingly. 
 api_token <- '8d0336d37ef28df590574f1cd4531f142e31ca02' 
+u <- 'sp'
+p <- '2007beagle'
+baseURL <- '54.210.2.87'
 
 
 # FORMHUB INTERACTIONS -----------------------------------------------------
@@ -25,7 +28,7 @@ formhubGET <- function(api_url, api_token) {
   # This will be used a lot to download data from various access points 
   # from the form hub server. It wraps the end point and api token
   # into a httr curl request.  This won't do any processing. It just
-  # downloads. 
+  # downloads. The response is a json.
   #
   # Ex.
   # > formhubGET('http://formhub.cgsw.org/api/v1/data', token)
@@ -35,12 +38,26 @@ formhubGET <- function(api_url, api_token) {
   response <- GET(api_url, accept_json(), add_headers(Authorization = paste0('Token ',api_token)))
   if (response$status_code != 200) {
     # 200 indicates successful communication and authentication with the server
-    stop("API Authentication failed.  Check credentials.") 
+    stop("Something went wrong.  Try checking the form names and credentials.") 
   }
   
   return(response)
 }
 
+formhubGET_csv <- function(base_url, usr, pwd, form_name) {
+  # This is a work around for the moment because of data type conversion issues
+  # when downloading a JSON from the api access point. 
+  # function returns the equivalent of downloading a csv from the UI.
+  
+  response <- GET(paste0(base_url,'/',usr, '/forms/',form_name, '/data.csv'),
+                  authenticate(usr, pwd)
+                  )
+  if (response$status_code != 200) {
+    # 200 indicates successful communication and authentication with the server
+    stop("Something went wrong.  Try checking the form names and credentials.") 
+  }
+  return(content(response, as='parsed', type='text/csv'))
+}
 
 getAPI_forms <- function(api_url, api_token) {
   # This accesses the /api/v1/data access point and downloads

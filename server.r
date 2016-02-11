@@ -21,40 +21,42 @@ shinyServer(function(input, output, session) {
     # provided.
 
     # update the options
-    updateSelectizeInput(session, 'col_file', choices=filterAPI_forms('collection', forms))
-    updateSelectizeInput(session, 'lab_file', choices=filterAPI_forms('lab', forms))
-    updateSelectizeInput(session, 'hh_file', choices=filterAPI_forms('household', forms))
-    updateSelectizeInput(session, 'sch_file', choices=filterAPI_forms('school', forms))
-    updateSelectizeInput(session, 'com_file', choices=filterAPI_forms('community', forms))
+    updateSelectizeInput(session, 'col_file', choices=names(filterAPI_forms('collection', forms)))
+    updateSelectizeInput(session, 'lab_file', choices=names(filterAPI_forms('lab', forms)))
+    updateSelectizeInput(session, 'hh_file', choices=names(filterAPI_forms('household', forms)))
+    updateSelectizeInput(session, 'sch_file', choices=names(filterAPI_forms('school', forms)))
+    updateSelectizeInput(session, 'com_file', choices=names(filterAPI_forms('community', forms)))
 
   })
   
   # Download the data ----------------------------------------------------------------
   school_data <- reactive({
-    getAPI_data(input$sch_file, api_token)
+    formhubGET_csv(baseURL, u, p, input$sch_file)
   })
   output$school <- renderText({input$sch_file})
   output$sch_table <- renderTable({
-    getAPI_data(input$sch_file, api_token)
+    formhubGET_csv(baseURL, u, p, input$sch_file)
   })
   community_data <- reactive({
-    getAPI_data(input$com_file, api_token)
+    formhubGET_csv(baseURL, u, p, input$com_file)
   })
   output$community <- renderText({input$com_file})
   
   
   be_data <- reactive({ # household data, keeping name for consistency
-    getAPI_data(input$hh_file, api_token)
+    formhubGET_csv(baseURL, u, p, input$hh_file)
+    
   })
   output$hh <- renderText({input$hh_file})
   
   collection_data <- reactive({
-    collection <- getAPI_data(input$col_file, api_token)
-    # it seems like these are used for analysis and they need to be numeric. 
-    columns <- c('sampleid', 'free_cl', 'containr', 'total_cl', 'source_ty', 'covered', 'dis_lat', 
-                 'latrine_user_num', 'vis_fec', 'source_type', 'hw_stat', 'n_stall', 
-                 'particle_sample_type', 'sample_weight', 'source_dist')
-    collection[,columns] <- apply(collection[,columns], 2, as.numeric)
+    collection <- formhubGET_csv(baseURL, u, p, input$col_file)
+  
+#     # it seems like these are used for analysis and they need to be numeric. 
+#     columns <- c('sampleid', 'free_cl', 'containr', 'total_cl', 'source_ty', 'covered', 'dis_lat', 
+#                  'latrine_user_num', 'vis_fec', 'source_type', 'hw_stat', 'n_stall', 
+#                  'particle_sample_type', 'sample_weight', 'source_dist')
+#     collection[,columns] <- apply(collection[,columns], 2, as.numeric)
     updateSelectInput(session, "neighb", choices = c("All"=0,unique(collection$neighbor)))
     updateSelectInput(session, "samtype", choices = c("All"=0,c("Drain Water"=1, "Produce"=2, "Piped Water"=3, 
                                                                 "Ocean Water"=4, "Surface Water"=5, "Flood Water"=6,
@@ -65,10 +67,7 @@ shinyServer(function(input, output, session) {
   output$collection <- renderText({input$col_file})
   
   lab_data <- reactive({
-    lab <- getAPI_data(input$lab_file, api_token)
-    columns <- c('sample_type', 'ec_ecnt2', 'ec_ecnt1', 'ec_blank', '_id', 'ec_dil1', 'ec_dil2', 'sample_weight')
-    lab[,columns] <- apply(lab[,columns], 2, as.numeric)
-    lab
+    formhubGET_csv(baseURL, u, p, input$lab_file)
   })
   
   
