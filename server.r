@@ -48,13 +48,14 @@ shinyServer(function(input, output, session) {
   
   collection_data <- reactive({
     collection <- formhubGET_csv(baseURL, u, p, input$col_file)
+    collection$neighbor <- as.factor(collection$neighbor)
   
 #     # it seems like these are used for analysis and they need to be numeric. 
 #     columns <- c('sampleid', 'free_cl', 'containr', 'total_cl', 'source_ty', 'covered', 'dis_lat', 
 #                  'latrine_user_num', 'vis_fec', 'source_type', 'hw_stat', 'n_stall', 
 #                  'particle_sample_type', 'sample_weight', 'source_dist')
 #     collection[,columns] <- apply(collection[,columns], 2, as.numeric)
-    updateSelectInput(session, "neighb", choices = c("All"=0,unique(collection$neighbor)))
+    updateSelectInput(session, "neighb", choices = c("All"=0,unique(collection$neighbor[order(unique(collection$neighbor))])))
     updateSelectInput(session, "samtype", choices = c("All"=0,c("Drain Water"=1, "Produce"=2, "Piped Water"=3, 
                                                                 "Ocean Water"=4, "Surface Water"=5, "Flood Water"=6,
                                                                 "Public Latrine Surfaces"=7, "Particulate"=8, "Bathing"=9)[unique(collection$sample_type)]))
