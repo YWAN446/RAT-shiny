@@ -33,10 +33,7 @@ shinyServer(function(input, output, session) {
   school_data <- reactive({
     formhubGET_csv(baseURL, u, p, input$sch_file)
   })
-  output$school <- renderText({input$sch_file})
-  output$sch_table <- renderTable({
-    formhubGET_csv(baseURL, u, p, input$sch_file)
-  })
+
   community_data <- reactive({
     formhubGET_csv(baseURL, u, p, input$com_file)
   })
@@ -64,16 +61,16 @@ shinyServer(function(input, output, session) {
    
     collection 
   })
-  output$collection <- renderText({input$col_file})
-  
+
   lab_data <- reactive({
     formhubGET_csv(baseURL, u, p, input$lab_file)
   })
   
   
   
-  output$lab <- renderText({input$lab_file})
-  
+  output$sch_table <- renderTable({
+    formhubGET_csv(baseURL, u, p, input$sch_file)
+  })
   
   # Update analysis options ----------------------------------------------------------
 #   observe({
