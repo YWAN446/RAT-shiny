@@ -76,15 +76,31 @@ shinyServer(function(input, output, session) {
     conc
   })
   
-  be_data <- reactive({
-    hh_inFile <- input$hh_file    
+  be_data1 <- reactive({
+    hh_inFile <- input$hh_file
     if (is.null(hh_inFile))
       return(NULL)
-    be_data<-read.csv(hh_inFile$datapath)
-    be_data
+    be_data1<-read.csv(hh_inFile$datapath)
+    be_data1
   })
   
-  frq <- reactive({
+  be_data2 <- reactive({
+    sch_inFile <- input$sch_file
+    if (is.null(sch_inFile))
+      return(NULL)
+    be_data2<-read.csv(sch_inFile$datapath)
+    be_data2
+  })
+  
+  be_data3 <- reactive({
+    com_inFile <- input$com_file
+    if (is.null(com_inFile))
+      return(NULL)
+    be_data3<-read.csv(com_inFile$datapath)
+    be_data3
+  })
+  
+  frq1 <- reactive({
     hh_inFile <- input$hh_file    
     if (is.null(hh_inFile))
       return(NULL)
@@ -111,7 +127,7 @@ shinyServer(function(input, output, session) {
     freq
   })
 
-  ps.frq <- reactive({
+  ps.frq1 <- reactive({
     hh_inFile <- input$hh_file    
     if (is.null(hh_inFile))
       return(NULL)
@@ -134,6 +150,404 @@ shinyServer(function(input, output, session) {
       freq[[14*(sort(unique(be_data$neighbor))[i]-1)+12]]=4-as.numeric(be_data$hh_q9[which(be_data$hh_q9!="n/a" & be_data$neighbor==i)]);
       freq[[14*(sort(unique(be_data$neighbor))[i]-1)+13]]=4-as.numeric(be_data$hh_q15[which(be_data$hh_q15!="n/a" & be_data$neighbor==i)]);
       freq[[14*(sort(unique(be_data$neighbor))[i]-1)+14]]=4-as.numeric(be_data$hh_q16[which(be_data$hh_q16!="n/a" & be_data$neighbor==i)]);
+    }
+    freq
+  })
+  
+  frq2 <- reactive({
+    sch_inFile <- input$sch_file    
+    if (is.null(sch_inFile))
+      return(NULL)
+    be_data<-read.csv(sch_inFile$datapath)
+    freq<-list()
+    
+    for (i in 1:length(unique(be_data$neighbor))){
+      # sample type 1|2=drain, 3|4=produce, 5|6=piped water, 7|8=ocean water, 9|10=surface water, 11|12=flood water, 13|14=Public Latrine Surfaces  
+      freq[[14*(sort(unique(be_data$neighbor))[i]-1)+1]]=c(rep(1,sum(be_data$sch_q9a[which(be_data$neighbor==i)])),rep(2,sum(be_data$sch_q9c[which(be_data$neighbor==i)])),
+                                                           rep(3,sum(be_data$sch_q9e[which(be_data$neighbor==i)])),rep(4,sum(be_data$sch_q9g[which(be_data$neighbor==i)])),
+                                                           rep(5,sum(be_data$sch_q9i[which(be_data$neighbor==i)])));
+      freq[[14*(sort(unique(be_data$neighbor))[i]-1)+2]]=c(rep(1,sum(be_data$sch_q8a[which(be_data$neighbor==i)])),rep(2,sum(be_data$sch_q8c[which(be_data$neighbor==i)])),
+                                                           rep(3,sum(be_data$sch_q8e[which(be_data$neighbor==i)])),rep(4,sum(be_data$sch_q8g[which(be_data$neighbor==i)])));
+      freq[[14*(sort(unique(be_data$neighbor))[i]-1)+3]]=c(rep(1,sum(be_data$sch_q15a[which(be_data$neighbor==i)])),rep(2,sum(be_data$sch_q15c[which(be_data$neighbor==i)])),
+                                                           rep(3,sum(be_data$sch_q15e[which(be_data$neighbor==i)])),rep(4,sum(be_data$sch_q15g[which(be_data$neighbor==i)])),
+                                                           rep(5,sum(be_data$sch_q15i[which(be_data$neighbor==i)])));
+      freq[[14*(sort(unique(be_data$neighbor))[i]-1)+4]]=c(rep(1,sum(be_data$sch_q14a[which(be_data$neighbor==i)])),rep(2,sum(be_data$sch_q14c[which(be_data$neighbor==i)])),
+                                                           rep(3,sum(be_data$sch_q14e[which(be_data$neighbor==i)])),rep(4,sum(be_data$sch_q14g[which(be_data$neighbor==i)])));
+      freq[[14*(sort(unique(be_data$neighbor))[i]-1)+5]]=c(rep(1,sum(be_data$sch_q13a[which(be_data$neighbor==i)])),rep(2,sum(be_data$sch_q13c[which(be_data$neighbor==i)])),
+                                                           rep(3,sum(be_data$sch_q13e[which(be_data$neighbor==i)])),rep(4,sum(be_data$sch_q13g[which(be_data$neighbor==i)])),
+                                                           rep(5,sum(be_data$sch_q13i[which(be_data$neighbor==i)])));
+      freq[[14*(sort(unique(be_data$neighbor))[i]-1)+6]]=c(rep(1,sum(be_data$sch_q12a[which(be_data$neighbor==i)])),rep(2,sum(be_data$sch_q12c[which(be_data$neighbor==i)])),
+                                                           rep(3,sum(be_data$sch_q12e[which(be_data$neighbor==i)])),rep(4,sum(be_data$sch_q12g[which(be_data$neighbor==i)])));
+      freq[[14*(sort(unique(be_data$neighbor))[i]-1)+7]]=c(rep(1,sum(be_data$sch_q5a[which(be_data$neighbor==i)])),rep(2,sum(be_data$sch_q5c[which(be_data$neighbor==i)])),
+                                                           rep(3,sum(be_data$sch_q5e[which(be_data$neighbor==i)])),rep(4,sum(be_data$sch_q5g[which(be_data$neighbor==i)])),
+                                                           rep(5,sum(be_data$sch_q5i[which(be_data$neighbor==i)])));
+      freq[[14*(sort(unique(be_data$neighbor))[i]-1)+8]]=c(rep(1,sum(be_data$sch_q4a[which(be_data$neighbor==i)])),rep(2,sum(be_data$sch_q4c[which(be_data$neighbor==i)])),
+                                                           rep(3,sum(be_data$sch_q4e[which(be_data$neighbor==i)])),rep(4,sum(be_data$sch_q4g[which(be_data$neighbor==i)])));
+      freq[[14*(sort(unique(be_data$neighbor))[i]-1)+9]]=c(rep(1,sum(be_data$sch_q7a[which(be_data$neighbor==i)])),rep(2,sum(be_data$sch_q7c[which(be_data$neighbor==i)])),
+                                                           rep(3,sum(be_data$sch_q7e[which(be_data$neighbor==i)])),rep(4,sum(be_data$sch_q7g[which(be_data$neighbor==i)])),
+                                                           rep(5,sum(be_data$sch_q7i[which(be_data$neighbor==i)])));
+      freq[[14*(sort(unique(be_data$neighbor))[i]-1)+10]]=c(rep(1,sum(be_data$sch_q6a[which(be_data$neighbor==i)])),rep(2,sum(be_data$sch_q6c[which(be_data$neighbor==i)])),
+                                                            rep(3,sum(be_data$sch_q6e[which(be_data$neighbor==i)])),rep(4,sum(be_data$sch_q6g[which(be_data$neighbor==i)])));
+      freq[[14*(sort(unique(be_data$neighbor))[i]-1)+11]]=c(rep(1,sum(be_data$sch_q11a[which(be_data$neighbor==i)])),rep(2,sum(be_data$sch_q11c[which(be_data$neighbor==i)])),
+                                                            rep(3,sum(be_data$sch_q11e[which(be_data$neighbor==i)])),rep(4,sum(be_data$sch_q11g[which(be_data$neighbor==i)])),
+                                                            rep(5,sum(be_data$sch_q11i[which(be_data$neighbor==i)])));
+      freq[[14*(sort(unique(be_data$neighbor))[i]-1)+12]]=c(rep(1,sum(be_data$sch_q10a[which(be_data$neighbor==i)])),rep(2,sum(be_data$sch_q10c[which(be_data$neighbor==i)])),
+                                                            rep(3,sum(be_data$sch_q10e[which(be_data$neighbor==i)])),rep(4,sum(be_data$sch_q10g[which(be_data$neighbor==i)])));
+      freq[[14*(sort(unique(be_data$neighbor))[i]-1)+13]]=c(rep(1,sum(be_data$sch_q17a[which(be_data$neighbor==i)])),rep(2,sum(be_data$sch_q17c[which(be_data$neighbor==i)])),
+                                                            rep(3,sum(be_data$sch_q17e[which(be_data$neighbor==i)])),rep(4,sum(be_data$sch_q17g[which(be_data$neighbor==i)])),
+                                                            rep(5,sum(be_data$sch_q17i[which(be_data$neighbor==i)])));
+      freq[[14*(sort(unique(be_data$neighbor))[i]-1)+14]]=c(rep(1,sum(be_data$sch_q16a[which(be_data$neighbor==i)])),rep(2,sum(be_data$sch_q16c[which(be_data$neighbor==i)])),
+                                                            rep(3,sum(be_data$sch_q16e[which(be_data$neighbor==i)])),rep(4,sum(be_data$sch_q16g[which(be_data$neighbor==i)])));
+    }
+    freq
+  })
+  
+  ps.frq2 <- reactive({
+    sch_inFile <- input$sch_file    
+    if (is.null(sch_inFile))
+      return(NULL)
+    be_data<-read.csv(sch_inFile$datapath)
+    freq<-list()
+    
+    for (i in 1:length(unique(be_data$neighbor))){
+      # sample type 1|2=drain, 3|4=produce, 5|6=piped water, 7|8=ocean water, 9|10=surface water, 11|12=flood water, 13|14=Public Latrine Surfaces  
+      freq[[14*(sort(unique(be_data$neighbor))[i]-1)+1]]=4-c(rep(1,sum(be_data$sch_q9a[which(be_data$neighbor==i)])),rep(2,sum(be_data$sch_q9c[which(be_data$neighbor==i)])),
+                                                           rep(3,sum(be_data$sch_q9e[which(be_data$neighbor==i)])),rep(4,sum(be_data$sch_q9g[which(be_data$neighbor==i)])),
+                                                           rep(5,sum(be_data$sch_q9i[which(be_data$neighbor==i)])));
+      freq[[14*(sort(unique(be_data$neighbor))[i]-1)+2]]=4-c(rep(1,sum(be_data$sch_q8a[which(be_data$neighbor==i)])),rep(2,sum(be_data$sch_q8c[which(be_data$neighbor==i)])),
+                                                           rep(3,sum(be_data$sch_q8e[which(be_data$neighbor==i)])),rep(4,sum(be_data$sch_q8g[which(be_data$neighbor==i)])));
+      freq[[14*(sort(unique(be_data$neighbor))[i]-1)+3]]=4-c(rep(1,sum(be_data$sch_q15a[which(be_data$neighbor==i)])),rep(2,sum(be_data$sch_q15c[which(be_data$neighbor==i)])),
+                                                           rep(3,sum(be_data$sch_q15e[which(be_data$neighbor==i)])),rep(4,sum(be_data$sch_q15g[which(be_data$neighbor==i)])),
+                                                           rep(5,sum(be_data$sch_q15i[which(be_data$neighbor==i)])));
+      freq[[14*(sort(unique(be_data$neighbor))[i]-1)+4]]=4-c(rep(1,sum(be_data$sch_q14a[which(be_data$neighbor==i)])),rep(2,sum(be_data$sch_q14c[which(be_data$neighbor==i)])),
+                                                           rep(3,sum(be_data$sch_q14e[which(be_data$neighbor==i)])),rep(4,sum(be_data$sch_q14g[which(be_data$neighbor==i)])));
+      freq[[14*(sort(unique(be_data$neighbor))[i]-1)+5]]=4-c(rep(1,sum(be_data$sch_q13a[which(be_data$neighbor==i)])),rep(2,sum(be_data$sch_q13c[which(be_data$neighbor==i)])),
+                                                           rep(3,sum(be_data$sch_q13e[which(be_data$neighbor==i)])),rep(4,sum(be_data$sch_q13g[which(be_data$neighbor==i)])),
+                                                           rep(5,sum(be_data$sch_q13i[which(be_data$neighbor==i)])));
+      freq[[14*(sort(unique(be_data$neighbor))[i]-1)+6]]=4-c(rep(1,sum(be_data$sch_q12a[which(be_data$neighbor==i)])),rep(2,sum(be_data$sch_q12c[which(be_data$neighbor==i)])),
+                                                           rep(3,sum(be_data$sch_q12e[which(be_data$neighbor==i)])),rep(4,sum(be_data$sch_q12g[which(be_data$neighbor==i)])));
+      freq[[14*(sort(unique(be_data$neighbor))[i]-1)+7]]=4-c(rep(1,sum(be_data$sch_q5a[which(be_data$neighbor==i)])),rep(2,sum(be_data$sch_q5c[which(be_data$neighbor==i)])),
+                                                           rep(3,sum(be_data$sch_q5e[which(be_data$neighbor==i)])),rep(4,sum(be_data$sch_q5g[which(be_data$neighbor==i)])),
+                                                           rep(5,sum(be_data$sch_q5i[which(be_data$neighbor==i)])));
+      freq[[14*(sort(unique(be_data$neighbor))[i]-1)+8]]=4-c(rep(1,sum(be_data$sch_q4a[which(be_data$neighbor==i)])),rep(2,sum(be_data$sch_q4c[which(be_data$neighbor==i)])),
+                                                           rep(3,sum(be_data$sch_q4e[which(be_data$neighbor==i)])),rep(4,sum(be_data$sch_q4g[which(be_data$neighbor==i)])));
+      freq[[14*(sort(unique(be_data$neighbor))[i]-1)+9]]=4-c(rep(1,sum(be_data$sch_q7a[which(be_data$neighbor==i)])),rep(2,sum(be_data$sch_q7c[which(be_data$neighbor==i)])),
+                                                           rep(3,sum(be_data$sch_q7e[which(be_data$neighbor==i)])),rep(4,sum(be_data$sch_q7g[which(be_data$neighbor==i)])),
+                                                           rep(5,sum(be_data$sch_q7i[which(be_data$neighbor==i)])));
+      freq[[14*(sort(unique(be_data$neighbor))[i]-1)+10]]=4-c(rep(1,sum(be_data$sch_q6a[which(be_data$neighbor==i)])),rep(2,sum(be_data$sch_q6c[which(be_data$neighbor==i)])),
+                                                            rep(3,sum(be_data$sch_q6e[which(be_data$neighbor==i)])),rep(4,sum(be_data$sch_q6g[which(be_data$neighbor==i)])));
+      freq[[14*(sort(unique(be_data$neighbor))[i]-1)+11]]=4-c(rep(1,sum(be_data$sch_q11a[which(be_data$neighbor==i)])),rep(2,sum(be_data$sch_q11c[which(be_data$neighbor==i)])),
+                                                            rep(3,sum(be_data$sch_q11e[which(be_data$neighbor==i)])),rep(4,sum(be_data$sch_q11g[which(be_data$neighbor==i)])),
+                                                            rep(5,sum(be_data$sch_q11i[which(be_data$neighbor==i)])));
+      freq[[14*(sort(unique(be_data$neighbor))[i]-1)+12]]=4-c(rep(1,sum(be_data$sch_q10a[which(be_data$neighbor==i)])),rep(2,sum(be_data$sch_q10c[which(be_data$neighbor==i)])),
+                                                            rep(3,sum(be_data$sch_q10e[which(be_data$neighbor==i)])),rep(4,sum(be_data$sch_q10g[which(be_data$neighbor==i)])));
+      freq[[14*(sort(unique(be_data$neighbor))[i]-1)+13]]=4-c(rep(1,sum(be_data$sch_q17a[which(be_data$neighbor==i)])),rep(2,sum(be_data$sch_q17c[which(be_data$neighbor==i)])),
+                                                            rep(3,sum(be_data$sch_q17e[which(be_data$neighbor==i)])),rep(4,sum(be_data$sch_q17g[which(be_data$neighbor==i)])),
+                                                            rep(5,sum(be_data$sch_q17i[which(be_data$neighbor==i)])));
+      freq[[14*(sort(unique(be_data$neighbor))[i]-1)+14]]=4-c(rep(1,sum(be_data$sch_q16a[which(be_data$neighbor==i)])),rep(2,sum(be_data$sch_q16c[which(be_data$neighbor==i)])),
+                                                            rep(3,sum(be_data$sch_q16e[which(be_data$neighbor==i)])),rep(4,sum(be_data$sch_q16g[which(be_data$neighbor==i)])));
+    }
+    freq
+  })
+  
+  frq3 <- reactive({
+    com_inFile <- input$com_file    
+    if (is.null(com_inFile))
+      return(NULL)
+    be_data<-read.csv(com_inFile$datapath)
+    freq<-list()
+    
+    for (i in 1:length(unique(be_data$neighbor))){
+      # sample type 1|2=drain, 3|4=produce, 5|6=piped water, 7|8=ocean water, 9|10=surface water, 11|12=flood water, 13|14=Public Latrine Surfaces  
+      freq[[14*(sort(unique(be_data$neighbor))[i]-1)+1]]=c(rep(1,sum(be_data$com_q6a[which(be_data$neighbor==i)])),rep(2,sum(be_data$com_q6c[which(be_data$neighbor==i)])),
+                                                           rep(3,sum(be_data$com_q6e[which(be_data$neighbor==i)])),rep(4,sum(be_data$com_q6g[which(be_data$neighbor==i)])));
+      freq[[14*(sort(unique(be_data$neighbor))[i]-1)+2]]=c(rep(1,sum(be_data$com_q21a[which(be_data$neighbor==i)])),rep(2,sum(be_data$com_q21c[which(be_data$neighbor==i)])),
+                                                           rep(3,sum(be_data$com_q21e[which(be_data$neighbor==i)])),rep(4,sum(be_data$com_q21g[which(be_data$neighbor==i)])),
+                                                           rep(5,sum(be_data$com_q21i[which(be_data$neighbor==i)])));
+      freq[[14*(sort(unique(be_data$neighbor))[i]-1)+3]]=c(rep(1,sum(be_data$com_q9a[which(be_data$neighbor==i)])),rep(2,sum(be_data$com_q9c[which(be_data$neighbor==i)])),
+                                                           rep(3,sum(be_data$com_q9e[which(be_data$neighbor==i)])),rep(4,sum(be_data$com_q9g[which(be_data$neighbor==i)])));
+      freq[[14*(sort(unique(be_data$neighbor))[i]-1)+4]]=c(rep(1,sum(be_data$com_q24a[which(be_data$neighbor==i)])),rep(2,sum(be_data$com_q24c[which(be_data$neighbor==i)])),
+                                                           rep(3,sum(be_data$com_q24e[which(be_data$neighbor==i)])),rep(4,sum(be_data$com_q24g[which(be_data$neighbor==i)])),
+                                                           rep(5,sum(be_data$com_q24i[which(be_data$neighbor==i)])));
+      freq[[14*(sort(unique(be_data$neighbor))[i]-1)+5]]=c(rep(1,sum(be_data$com_q8a[which(be_data$neighbor==i)])),rep(2,sum(be_data$com_q8c[which(be_data$neighbor==i)])),
+                                                           rep(3,sum(be_data$com_q8e[which(be_data$neighbor==i)])),rep(4,sum(be_data$com_q8g[which(be_data$neighbor==i)])));
+      freq[[14*(sort(unique(be_data$neighbor))[i]-1)+6]]=c(rep(1,sum(be_data$com_q23a[which(be_data$neighbor==i)])),rep(2,sum(be_data$com_q23c[which(be_data$neighbor==i)])),
+                                                           rep(3,sum(be_data$com_q23e[which(be_data$neighbor==i)])),rep(4,sum(be_data$com_q23g[which(be_data$neighbor==i)])),
+                                                           rep(5,sum(be_data$com_q23i[which(be_data$neighbor==i)])));
+      freq[[14*(sort(unique(be_data$neighbor))[i]-1)+7]]=c(rep(1,sum(be_data$com_q4a[which(be_data$neighbor==i)])),rep(2,sum(be_data$com_q4c[which(be_data$neighbor==i)])),
+                                                           rep(3,sum(be_data$com_q4e[which(be_data$neighbor==i)])),rep(4,sum(be_data$com_q4g[which(be_data$neighbor==i)])));
+      freq[[14*(sort(unique(be_data$neighbor))[i]-1)+8]]=c(rep(1,sum(be_data$com_q19a[which(be_data$neighbor==i)])),rep(2,sum(be_data$com_q19c[which(be_data$neighbor==i)])),
+                                                           rep(3,sum(be_data$com_q19e[which(be_data$neighbor==i)])),rep(4,sum(be_data$com_q19g[which(be_data$neighbor==i)])),
+                                                           rep(5,sum(be_data$com_q19i[which(be_data$neighbor==i)])));
+      freq[[14*(sort(unique(be_data$neighbor))[i]-1)+9]]=c(rep(1,sum(be_data$com_q5a[which(be_data$neighbor==i)])),rep(2,sum(be_data$com_q5c[which(be_data$neighbor==i)])),
+                                                           rep(3,sum(be_data$com_q5e[which(be_data$neighbor==i)])),rep(4,sum(be_data$com_q5g[which(be_data$neighbor==i)])));
+      freq[[14*(sort(unique(be_data$neighbor))[i]-1)+10]]=c(rep(1,sum(be_data$com_q20a[which(be_data$neighbor==i)])),rep(2,sum(be_data$com_q20c[which(be_data$neighbor==i)])),
+                                                            rep(3,sum(be_data$com_q20e[which(be_data$neighbor==i)])),rep(4,sum(be_data$com_q20g[which(be_data$neighbor==i)])),
+                                                            rep(5,sum(be_data$com_q20i[which(be_data$neighbor==i)])));
+      freq[[14*(sort(unique(be_data$neighbor))[i]-1)+11]]=c(rep(1,sum(be_data$com_q7a[which(be_data$neighbor==i)])),rep(2,sum(be_data$com_q7c[which(be_data$neighbor==i)])),
+                                                            rep(3,sum(be_data$com_q7e[which(be_data$neighbor==i)])),rep(4,sum(be_data$com_q7g[which(be_data$neighbor==i)])));
+      freq[[14*(sort(unique(be_data$neighbor))[i]-1)+12]]=c(rep(1,sum(be_data$com_q22a[which(be_data$neighbor==i)])),rep(2,sum(be_data$com_q22c[which(be_data$neighbor==i)])),
+                                                            rep(3,sum(be_data$com_q22e[which(be_data$neighbor==i)])),rep(4,sum(be_data$com_q22g[which(be_data$neighbor==i)])),
+                                                            rep(5,sum(be_data$com_q22i[which(be_data$neighbor==i)])));
+      freq[[14*(sort(unique(be_data$neighbor))[i]-1)+13]]=c(rep(1,sum(be_data$com_q10a[which(be_data$neighbor==i)])),rep(2,sum(be_data$com_q10c[which(be_data$neighbor==i)])),
+                                                            rep(3,sum(be_data$com_q10e[which(be_data$neighbor==i)])),rep(4,sum(be_data$com_q10g[which(be_data$neighbor==i)])));
+      freq[[14*(sort(unique(be_data$neighbor))[i]-1)+14]]=c(rep(1,sum(be_data$com_q25a[which(be_data$neighbor==i)])),rep(2,sum(be_data$com_q25c[which(be_data$neighbor==i)])),
+                                                            rep(3,sum(be_data$com_q25e[which(be_data$neighbor==i)])),rep(4,sum(be_data$com_q25g[which(be_data$neighbor==i)])),
+                                                            rep(5,sum(be_data$com_q25i[which(be_data$neighbor==i)])));
+    }
+    freq
+  })
+  
+  ps.frq3 <- reactive({
+    com_inFile <- input$com_file    
+    if (is.null(com_inFile))
+      return(NULL)
+    be_data<-read.csv(com_inFile$datapath)
+    freq<-list()
+    
+    for (i in 1:length(unique(be_data$neighbor))){
+      # sample type 1|2=drain, 3|4=produce, 5|6=piped water, 7|8=ocean water, 9|10=surface water, 11|12=flood water, 13|14=Public Latrine Surfaces  
+      freq[[14*(sort(unique(be_data$neighbor))[i]-1)+1]]=4-c(rep(1,sum(be_data$com_q6a[which(be_data$neighbor==i)])),rep(2,sum(be_data$com_q6c[which(be_data$neighbor==i)])),
+                                                           rep(3,sum(be_data$com_q6e[which(be_data$neighbor==i)])),rep(4,sum(be_data$com_q6g[which(be_data$neighbor==i)])));
+      freq[[14*(sort(unique(be_data$neighbor))[i]-1)+2]]=4-c(rep(1,sum(be_data$com_q21a[which(be_data$neighbor==i)])),rep(2,sum(be_data$com_q21c[which(be_data$neighbor==i)])),
+                                                           rep(3,sum(be_data$com_q21e[which(be_data$neighbor==i)])),rep(4,sum(be_data$com_q21g[which(be_data$neighbor==i)])),
+                                                           rep(5,sum(be_data$com_q21i[which(be_data$neighbor==i)])));
+      freq[[14*(sort(unique(be_data$neighbor))[i]-1)+3]]=4-c(rep(1,sum(be_data$com_q9a[which(be_data$neighbor==i)])),rep(2,sum(be_data$com_q9c[which(be_data$neighbor==i)])),
+                                                           rep(3,sum(be_data$com_q9e[which(be_data$neighbor==i)])),rep(4,sum(be_data$com_q9g[which(be_data$neighbor==i)])));
+      freq[[14*(sort(unique(be_data$neighbor))[i]-1)+4]]=4-c(rep(1,sum(be_data$com_q24a[which(be_data$neighbor==i)])),rep(2,sum(be_data$com_q24c[which(be_data$neighbor==i)])),
+                                                           rep(3,sum(be_data$com_q24e[which(be_data$neighbor==i)])),rep(4,sum(be_data$com_q24g[which(be_data$neighbor==i)])),
+                                                           rep(5,sum(be_data$com_q24i[which(be_data$neighbor==i)])));
+      freq[[14*(sort(unique(be_data$neighbor))[i]-1)+5]]=4-c(rep(1,sum(be_data$com_q8a[which(be_data$neighbor==i)])),rep(2,sum(be_data$com_q8c[which(be_data$neighbor==i)])),
+                                                           rep(3,sum(be_data$com_q8e[which(be_data$neighbor==i)])),rep(4,sum(be_data$com_q8g[which(be_data$neighbor==i)])));
+      freq[[14*(sort(unique(be_data$neighbor))[i]-1)+6]]=4-c(rep(1,sum(be_data$com_q23a[which(be_data$neighbor==i)])),rep(2,sum(be_data$com_q23c[which(be_data$neighbor==i)])),
+                                                           rep(3,sum(be_data$com_q23e[which(be_data$neighbor==i)])),rep(4,sum(be_data$com_q23g[which(be_data$neighbor==i)])),
+                                                           rep(5,sum(be_data$com_q23i[which(be_data$neighbor==i)])));
+      freq[[14*(sort(unique(be_data$neighbor))[i]-1)+7]]=4-c(rep(1,sum(be_data$com_q4a[which(be_data$neighbor==i)])),rep(2,sum(be_data$com_q4c[which(be_data$neighbor==i)])),
+                                                           rep(3,sum(be_data$com_q4e[which(be_data$neighbor==i)])),rep(4,sum(be_data$com_q4g[which(be_data$neighbor==i)])));
+      freq[[14*(sort(unique(be_data$neighbor))[i]-1)+8]]=4-c(rep(1,sum(be_data$com_q19a[which(be_data$neighbor==i)])),rep(2,sum(be_data$com_q19c[which(be_data$neighbor==i)])),
+                                                           rep(3,sum(be_data$com_q19e[which(be_data$neighbor==i)])),rep(4,sum(be_data$com_q19g[which(be_data$neighbor==i)])),
+                                                           rep(5,sum(be_data$com_q19i[which(be_data$neighbor==i)])));
+      freq[[14*(sort(unique(be_data$neighbor))[i]-1)+9]]=4-c(rep(1,sum(be_data$com_q5a[which(be_data$neighbor==i)])),rep(2,sum(be_data$com_q5c[which(be_data$neighbor==i)])),
+                                                           rep(3,sum(be_data$com_q5e[which(be_data$neighbor==i)])),rep(4,sum(be_data$com_q5g[which(be_data$neighbor==i)])));
+      freq[[14*(sort(unique(be_data$neighbor))[i]-1)+10]]=4-c(rep(1,sum(be_data$com_q20a[which(be_data$neighbor==i)])),rep(2,sum(be_data$com_q20c[which(be_data$neighbor==i)])),
+                                                            rep(3,sum(be_data$com_q20e[which(be_data$neighbor==i)])),rep(4,sum(be_data$com_q20g[which(be_data$neighbor==i)])),
+                                                            rep(5,sum(be_data$com_q20i[which(be_data$neighbor==i)])));
+      freq[[14*(sort(unique(be_data$neighbor))[i]-1)+11]]=4-c(rep(1,sum(be_data$com_q7a[which(be_data$neighbor==i)])),rep(2,sum(be_data$com_q7c[which(be_data$neighbor==i)])),
+                                                            rep(3,sum(be_data$com_q7e[which(be_data$neighbor==i)])),rep(4,sum(be_data$com_q7g[which(be_data$neighbor==i)])));
+      freq[[14*(sort(unique(be_data$neighbor))[i]-1)+12]]=4-c(rep(1,sum(be_data$com_q22a[which(be_data$neighbor==i)])),rep(2,sum(be_data$com_q22c[which(be_data$neighbor==i)])),
+                                                            rep(3,sum(be_data$com_q22e[which(be_data$neighbor==i)])),rep(4,sum(be_data$com_q22g[which(be_data$neighbor==i)])),
+                                                            rep(5,sum(be_data$com_q22i[which(be_data$neighbor==i)])));
+      freq[[14*(sort(unique(be_data$neighbor))[i]-1)+13]]=4-c(rep(1,sum(be_data$com_q10a[which(be_data$neighbor==i)])),rep(2,sum(be_data$com_q10c[which(be_data$neighbor==i)])),
+                                                            rep(3,sum(be_data$com_q10e[which(be_data$neighbor==i)])),rep(4,sum(be_data$com_q10g[which(be_data$neighbor==i)])));
+      freq[[14*(sort(unique(be_data$neighbor))[i]-1)+14]]=4-c(rep(1,sum(be_data$com_q25a[which(be_data$neighbor==i)])),rep(2,sum(be_data$com_q25c[which(be_data$neighbor==i)])),
+                                                            rep(3,sum(be_data$com_q25e[which(be_data$neighbor==i)])),rep(4,sum(be_data$com_q25g[which(be_data$neighbor==i)])),
+                                                            rep(5,sum(be_data$com_q25i[which(be_data$neighbor==i)])));
+    }
+    freq
+  })
+  
+  frq0 <- reactive({
+    hh_inFile <- input$hh_file
+    sch_inFile <- input$sch_file
+    com_inFile <- input$com_file
+    if (is.null(hh_inFile) & is.null(sch_inFile) & is.null(com_inFile))
+      return(NULL)
+    be_data1<-read.csv(hh_inFile$datapath)
+    be_data2<-read.csv(sch_inFile$datapath)
+    be_data3<-read.csv(com_inFile$datapath)
+    freq<-list()
+    
+    num.neighb<-sort(unique(c(as.numeric(be_data1$neighbor),as.numeric(be_data2$neighbor),as.numeric(be_data3$neighbor))))
+    
+    for (i in 1:length(num.neighb)){
+      # sample type 1|2=drain, 3|4=produce, 5|6=piped water, 7|8=ocean water, 9|10=surface water, 11|12=flood water, 13|14=Public Latrine Surfaces  
+      freq[[14*(num.neighb[i]-1)+1]]=c(as.numeric(be_data1$hh_q6[which(be_data1$hh_q6!="n/a" & be_data1$neighbor==i)]),
+                                       c(rep(1,sum(be_data2$sch_q9a[which(be_data2$neighbor==i)])),rep(2,sum(be_data2$sch_q9c[which(be_data2$neighbor==i)])),
+                                         rep(3,sum(be_data2$sch_q9e[which(be_data2$neighbor==i)])),rep(4,sum(be_data2$sch_q9g[which(be_data2$neighbor==i)])),
+                                         rep(5,sum(be_data2$sch_q9i[which(be_data2$neighbor==i)]))),
+                                       c(rep(1,sum(be_data3$com_q6a[which(be_data3$neighbor==i)])),rep(2,sum(be_data3$com_q6c[which(be_data3$neighbor==i)])),
+                                         rep(3,sum(be_data3$com_q6e[which(be_data3$neighbor==i)])),rep(4,sum(be_data3$com_q6g[which(be_data3$neighbor==i)]))));
+      freq[[14*(num.neighb[i]-1)+2]]=c(as.numeric(be_data1$hh_q7[which(be_data1$hh_q7!="n/a" & be_data1$neighbor==i)]),
+                                       c(rep(1,sum(be_data2$sch_q8a[which(be_data2$neighbor==i)])),rep(2,sum(be_data2$sch_q8c[which(be_data2$neighbor==i)])),
+                                         rep(3,sum(be_data2$sch_q8e[which(be_data2$neighbor==i)])),rep(4,sum(be_data2$sch_q8g[which(be_data2$neighbor==i)]))),
+                                       c(rep(1,sum(be_data3$com_q21a[which(be_data3$neighbor==i)])),rep(2,sum(be_data3$com_q21c[which(be_data3$neighbor==i)])),
+                                         rep(3,sum(be_data3$com_q21e[which(be_data3$neighbor==i)])),rep(4,sum(be_data3$com_q21g[which(be_data3$neighbor==i)])),
+                                         rep(5,sum(be_data3$com_q21i[which(be_data3$neighbor==i)]))));                                       
+      freq[[14*(num.neighb[i]-1)+3]]=c(as.numeric(be_data1$hh_q13[which(be_data1$hh_q13!="n/a" & be_data1$neighbor==i)]),
+                                       c(rep(1,sum(be_data2$sch_q15a[which(be_data2$neighbor==i)])),rep(2,sum(be_data2$sch_q15c[which(be_data2$neighbor==i)])),
+                                         rep(3,sum(be_data2$sch_q15e[which(be_data2$neighbor==i)])),rep(4,sum(be_data2$sch_q15g[which(be_data2$neighbor==i)])),
+                                         rep(5,sum(be_data2$sch_q15i[which(be_data2$neighbor==i)]))),
+                                       c(rep(1,sum(be_data3$com_q9a[which(be_data3$neighbor==i)])),rep(2,sum(be_data3$com_q9c[which(be_data3$neighbor==i)])),
+                                         rep(3,sum(be_data3$com_q9e[which(be_data3$neighbor==i)])),rep(4,sum(be_data3$com_q9g[which(be_data3$neighbor==i)]))));
+      freq[[14*(num.neighb[i]-1)+4]]=c(as.numeric(be_data1$hh_q14[which(be_data1$hh_q14!="n/a" & be_data1$neighbor==i)]),
+                                       c(rep(1,sum(be_data2$sch_q14a[which(be_data2$neighbor==i)])),rep(2,sum(be_data2$sch_q14c[which(be_data2$neighbor==i)])),
+                                         rep(3,sum(be_data2$sch_q14e[which(be_data2$neighbor==i)])),rep(4,sum(be_data2$sch_q14g[which(be_data2$neighbor==i)]))),
+                                       c(rep(1,sum(be_data3$com_q24a[which(be_data3$neighbor==i)])),rep(2,sum(be_data3$com_q24c[which(be_data3$neighbor==i)])),
+                                         rep(3,sum(be_data3$com_q24e[which(be_data3$neighbor==i)])),rep(4,sum(be_data3$com_q24g[which(be_data3$neighbor==i)])),
+                                         rep(5,sum(be_data3$com_q24i[which(be_data3$neighbor==i)]))));
+      freq[[14*(num.neighb[i]-1)+5]]=c(as.numeric(be_data1$hh_q10[which(be_data1$hh_q10!="n/a" & be_data1$neighbor==i)]),
+                                       c(rep(1,sum(be_data2$sch_q13a[which(be_data2$neighbor==i)])),rep(2,sum(be_data2$sch_q13c[which(be_data2$neighbor==i)])),
+                                         rep(3,sum(be_data2$sch_q13e[which(be_data2$neighbor==i)])),rep(4,sum(be_data2$sch_q13g[which(be_data2$neighbor==i)])),
+                                         rep(5,sum(be_data2$sch_q13i[which(be_data2$neighbor==i)]))),
+                                       c(rep(1,sum(be_data3$com_q8a[which(be_data3$neighbor==i)])),rep(2,sum(be_data3$com_q8c[which(be_data3$neighbor==i)])),
+                                         rep(3,sum(be_data3$com_q8e[which(be_data3$neighbor==i)])),rep(4,sum(be_data3$com_q8g[which(be_data3$neighbor==i)]))));
+      freq[[14*(num.neighb[i]-1)+6]]=c(as.numeric(be_data1$hh_q11[which(be_data1$hh_q11!="n/a" & be_data1$neighbor==i)]),
+                                       c(rep(1,sum(be_data2$sch_q12a[which(be_data2$neighbor==i)])),rep(2,sum(be_data2$sch_q12c[which(be_data2$neighbor==i)])),
+                                         rep(3,sum(be_data2$sch_q12e[which(be_data2$neighbor==i)])),rep(4,sum(be_data2$sch_q12g[which(be_data2$neighbor==i)]))),
+                                       c(rep(1,sum(be_data3$com_q23a[which(be_data3$neighbor==i)])),rep(2,sum(be_data3$com_q23c[which(be_data3$neighbor==i)])),
+                                         rep(3,sum(be_data3$com_q23e[which(be_data3$neighbor==i)])),rep(4,sum(be_data3$com_q23g[which(be_data3$neighbor==i)])),
+                                         rep(5,sum(be_data3$com_q23i[which(be_data3$neighbor==i)]))));
+      freq[[14*(num.neighb[i]-1)+7]]=c(as.numeric(be_data1$hh_q2[which(be_data1$hh_q2!="n/a" & be_data1$neighbor==i)]),
+                                       c(rep(1,sum(be_data2$sch_q5a[which(be_data2$neighbor==i)])),rep(2,sum(be_data2$sch_q5c[which(be_data2$neighbor==i)])),
+                                         rep(3,sum(be_data2$sch_q5e[which(be_data2$neighbor==i)])),rep(4,sum(be_data2$sch_q5g[which(be_data2$neighbor==i)])),
+                                         rep(5,sum(be_data2$sch_q5i[which(be_data2$neighbor==i)]))),
+                                       c(rep(1,sum(be_data3$com_q4a[which(be_data3$neighbor==i)])),rep(2,sum(be_data3$com_q4c[which(be_data3$neighbor==i)])),
+                                         rep(3,sum(be_data3$com_q4e[which(be_data3$neighbor==i)])),rep(4,sum(be_data3$com_q4g[which(be_data3$neighbor==i)]))));
+      freq[[14*(num.neighb[i]-1)+8]]=c(as.numeric(be_data1$hh_q3[which(be_data1$hh_q3!="n/a" & be_data1$neighbor==i)]),
+                                       c(rep(1,sum(be_data2$sch_q4a[which(be_data2$neighbor==i)])),rep(2,sum(be_data2$sch_q4c[which(be_data2$neighbor==i)])),
+                                         rep(3,sum(be_data2$sch_q4e[which(be_data2$neighbor==i)])),rep(4,sum(be_data2$sch_q4g[which(be_data2$neighbor==i)]))),
+                                       c(rep(1,sum(be_data3$com_q19a[which(be_data3$neighbor==i)])),rep(2,sum(be_data3$com_q19c[which(be_data3$neighbor==i)])),
+                                         rep(3,sum(be_data3$com_q19e[which(be_data3$neighbor==i)])),rep(4,sum(be_data3$com_q19g[which(be_data3$neighbor==i)])),
+                                         rep(5,sum(be_data3$com_q19i[which(be_data3$neighbor==i)]))));
+      freq[[14*(num.neighb[i]-1)+9]]=c(as.numeric(be_data1$hh_q4[which(be_data1$hh_q4!="n/a" & be_data1$neighbor==i)]),
+                                       c(rep(1,sum(be_data2$sch_q7a[which(be_data2$neighbor==i)])),rep(2,sum(be_data2$sch_q7c[which(be_data2$neighbor==i)])),
+                                         rep(3,sum(be_data2$sch_q7e[which(be_data2$neighbor==i)])),rep(4,sum(be_data2$sch_q7g[which(be_data2$neighbor==i)])),
+                                         rep(5,sum(be_data2$sch_q7i[which(be_data2$neighbor==i)]))),
+                                       c(rep(1,sum(be_data3$com_q5a[which(be_data3$neighbor==i)])),rep(2,sum(be_data3$com_q5c[which(be_data3$neighbor==i)])),
+                                         rep(3,sum(be_data3$com_q5e[which(be_data3$neighbor==i)])),rep(4,sum(be_data3$com_q5g[which(be_data3$neighbor==i)]))));
+      freq[[14*(num.neighb[i]-1)+10]]=c(as.numeric(be_data1$hh_q5[which(be_data1$hh_q5!="n/a" & be_data1$neighbor==i)]),
+                                        c(rep(1,sum(be_data2$sch_q6a[which(be_data2$neighbor==i)])),rep(2,sum(be_data2$sch_q6c[which(be_data2$neighbor==i)])),
+                                          rep(3,sum(be_data2$sch_q6e[which(be_data2$neighbor==i)])),rep(4,sum(be_data2$sch_q6g[which(be_data2$neighbor==i)]))),
+                                        c(rep(1,sum(be_data3$com_q20a[which(be_data3$neighbor==i)])),rep(2,sum(be_data3$com_q20c[which(be_data3$neighbor==i)])),
+                                          rep(3,sum(be_data3$com_q20e[which(be_data3$neighbor==i)])),rep(4,sum(be_data3$com_q20g[which(be_data3$neighbor==i)])),
+                                          rep(5,sum(be_data3$com_q20i[which(be_data3$neighbor==i)]))));
+      freq[[14*(num.neighb[i]-1)+11]]=c(as.numeric(be_data1$hh_q8[which(be_data1$hh_q8!="n/a" & be_data1$neighbor==i)]),
+                                        c(rep(1,sum(be_data2$sch_q11a[which(be_data2$neighbor==i)])),rep(2,sum(be_data2$sch_q11c[which(be_data2$neighbor==i)])),
+                                          rep(3,sum(be_data2$sch_q11e[which(be_data2$neighbor==i)])),rep(4,sum(be_data2$sch_q11g[which(be_data2$neighbor==i)])),
+                                          rep(5,sum(be_data2$sch_q11i[which(be_data2$neighbor==i)]))),
+                                        c(rep(1,sum(be_data3$com_q7a[which(be_data3$neighbor==i)])),rep(2,sum(be_data3$com_q7c[which(be_data3$neighbor==i)])),
+                                          rep(3,sum(be_data3$com_q7e[which(be_data3$neighbor==i)])),rep(4,sum(be_data3$com_q7g[which(be_data3$neighbor==i)]))));
+      freq[[14*(num.neighb[i]-1)+12]]=c(as.numeric(be_data1$hh_q9[which(be_data1$hh_q9!="n/a" & be_data1$neighbor==i)]),
+                                        c(rep(1,sum(be_data2$sch_q10a[which(be_data2$neighbor==i)])),rep(2,sum(be_data2$sch_q10c[which(be_data2$neighbor==i)])),
+                                          rep(3,sum(be_data2$sch_q10e[which(be_data2$neighbor==i)])),rep(4,sum(be_data2$sch_q10g[which(be_data2$neighbor==i)]))),
+                                        c(rep(1,sum(be_data3$com_q22a[which(be_data3$neighbor==i)])),rep(2,sum(be_data3$com_q22c[which(be_data3$neighbor==i)])),
+                                          rep(3,sum(be_data3$com_q22e[which(be_data3$neighbor==i)])),rep(4,sum(be_data3$com_q22g[which(be_data3$neighbor==i)])),
+                                          rep(5,sum(be_data3$com_q22i[which(be_data3$neighbor==i)]))));
+      freq[[14*(num.neighb[i]-1)+13]]=c(as.numeric(be_data1$hh_q15[which(be_data1$hh_q15!="n/a" & be_data1$neighbor==i)]),
+                                        c(rep(1,sum(be_data2$sch_q17a[which(be_data2$neighbor==i)])),rep(2,sum(be_data2$sch_q17c[which(be_data2$neighbor==i)])),
+                                          rep(3,sum(be_data2$sch_q17e[which(be_data2$neighbor==i)])),rep(4,sum(be_data2$sch_q17g[which(be_data2$neighbor==i)])),
+                                          rep(5,sum(be_data2$sch_q17i[which(be_data2$neighbor==i)]))),
+                                        c(rep(1,sum(be_data3$com_q10a[which(be_data3$neighbor==i)])),rep(2,sum(be_data3$com_q10c[which(be_data3$neighbor==i)])),
+                                          rep(3,sum(be_data3$com_q10e[which(be_data3$neighbor==i)])),rep(4,sum(be_data3$com_q10g[which(be_data3$neighbor==i)]))));
+      freq[[14*(num.neighb[i]-1)+14]]=c(as.numeric(be_data1$hh_q16[which(be_data1$hh_q16!="n/a" & be_data1$neighbor==i)]),
+                                        c(rep(1,sum(be_data2$sch_q16a[which(be_data2$neighbor==i)])),rep(2,sum(be_data2$sch_q16c[which(be_data2$neighbor==i)])),
+                                          rep(3,sum(be_data2$sch_q16e[which(be_data2$neighbor==i)])),rep(4,sum(be_data2$sch_q16g[which(be_data2$neighbor==i)]))),
+                                        c(rep(1,sum(be_data3$com_q25a[which(be_data3$neighbor==i)])),rep(2,sum(be_data3$com_q25c[which(be_data3$neighbor==i)])),
+                                          rep(3,sum(be_data3$com_q25e[which(be_data3$neighbor==i)])),rep(4,sum(be_data3$com_q25g[which(be_data3$neighbor==i)])),
+                                          rep(5,sum(be_data3$com_q25i[which(be_data3$neighbor==i)]))));
+    }
+    freq
+  })
+  
+  ps.frq0 <- reactive({
+    hh_inFile <- input$hh_file
+    sch_inFile <- input$sch_file
+    com_inFile <- input$com_file
+    if (is.null(hh_inFile) & is.null(sch_inFile) & is.null(com_inFile))
+      return(NULL)
+    be_data1<-read.csv(hh_inFile$datapath)
+    be_data2<-read.csv(sch_inFile$datapath)
+    be_data3<-read.csv(com_inFile$datapath)
+    freq<-list()
+    
+    num.neighb<-sort(unique(c(as.numeric(be_data1$neighbor),as.numeric(be_data2$neighbor),as.numeric(be_data3$neighbor))))
+    
+    for (i in 1:length(num.neighb)){
+      # sample type 1|2=drain, 3|4=produce, 5|6=piped water, 7|8=ocean water, 9|10=surface water, 11|12=flood water, 13|14=Public Latrine Surfaces  
+      freq[[14*(num.neighb[i]-1)+1]]=4-c(as.numeric(be_data1$hh_q6[which(be_data1$hh_q6!="n/a" & be_data1$neighbor==i)]),
+                                       c(rep(1,sum(be_data2$sch_q9a[which(be_data2$neighbor==i)])),rep(2,sum(be_data2$sch_q9c[which(be_data2$neighbor==i)])),
+                                         rep(3,sum(be_data2$sch_q9e[which(be_data2$neighbor==i)])),rep(4,sum(be_data2$sch_q9g[which(be_data2$neighbor==i)])),
+                                         rep(5,sum(be_data2$sch_q9i[which(be_data2$neighbor==i)]))),
+                                       c(rep(1,sum(be_data3$com_q6a[which(be_data3$neighbor==i)])),rep(2,sum(be_data3$com_q6c[which(be_data3$neighbor==i)])),
+                                         rep(3,sum(be_data3$com_q6e[which(be_data3$neighbor==i)])),rep(4,sum(be_data3$com_q6g[which(be_data3$neighbor==i)]))));
+      freq[[14*(num.neighb[i]-1)+2]]=4-c(as.numeric(be_data1$hh_q7[which(be_data1$hh_q7!="n/a" & be_data1$neighbor==i)]),
+                                       c(rep(1,sum(be_data2$sch_q8a[which(be_data2$neighbor==i)])),rep(2,sum(be_data2$sch_q8c[which(be_data2$neighbor==i)])),
+                                         rep(3,sum(be_data2$sch_q8e[which(be_data2$neighbor==i)])),rep(4,sum(be_data2$sch_q8g[which(be_data2$neighbor==i)]))),
+                                       c(rep(1,sum(be_data3$com_q21a[which(be_data3$neighbor==i)])),rep(2,sum(be_data3$com_q21c[which(be_data3$neighbor==i)])),
+                                         rep(3,sum(be_data3$com_q21e[which(be_data3$neighbor==i)])),rep(4,sum(be_data3$com_q21g[which(be_data3$neighbor==i)])),
+                                         rep(5,sum(be_data3$com_q21i[which(be_data3$neighbor==i)]))));                                       
+      freq[[14*(num.neighb[i]-1)+3]]=4-c(as.numeric(be_data1$hh_q13[which(be_data1$hh_q13!="n/a" & be_data1$neighbor==i)]),
+                                       c(rep(1,sum(be_data2$sch_q15a[which(be_data2$neighbor==i)])),rep(2,sum(be_data2$sch_q15c[which(be_data2$neighbor==i)])),
+                                         rep(3,sum(be_data2$sch_q15e[which(be_data2$neighbor==i)])),rep(4,sum(be_data2$sch_q15g[which(be_data2$neighbor==i)])),
+                                         rep(5,sum(be_data2$sch_q15i[which(be_data2$neighbor==i)]))),
+                                       c(rep(1,sum(be_data3$com_q9a[which(be_data3$neighbor==i)])),rep(2,sum(be_data3$com_q9c[which(be_data3$neighbor==i)])),
+                                         rep(3,sum(be_data3$com_q9e[which(be_data3$neighbor==i)])),rep(4,sum(be_data3$com_q9g[which(be_data3$neighbor==i)]))));
+      freq[[14*(num.neighb[i]-1)+4]]=4-c(as.numeric(be_data1$hh_q14[which(be_data1$hh_q14!="n/a" & be_data1$neighbor==i)]),
+                                       c(rep(1,sum(be_data2$sch_q14a[which(be_data2$neighbor==i)])),rep(2,sum(be_data2$sch_q14c[which(be_data2$neighbor==i)])),
+                                         rep(3,sum(be_data2$sch_q14e[which(be_data2$neighbor==i)])),rep(4,sum(be_data2$sch_q14g[which(be_data2$neighbor==i)]))),
+                                       c(rep(1,sum(be_data3$com_q24a[which(be_data3$neighbor==i)])),rep(2,sum(be_data3$com_q24c[which(be_data3$neighbor==i)])),
+                                         rep(3,sum(be_data3$com_q24e[which(be_data3$neighbor==i)])),rep(4,sum(be_data3$com_q24g[which(be_data3$neighbor==i)])),
+                                         rep(5,sum(be_data3$com_q24i[which(be_data3$neighbor==i)]))));
+      freq[[14*(num.neighb[i]-1)+5]]=4-c(as.numeric(be_data1$hh_q10[which(be_data1$hh_q10!="n/a" & be_data1$neighbor==i)]),
+                                       c(rep(1,sum(be_data2$sch_q13a[which(be_data2$neighbor==i)])),rep(2,sum(be_data2$sch_q13c[which(be_data2$neighbor==i)])),
+                                         rep(3,sum(be_data2$sch_q13e[which(be_data2$neighbor==i)])),rep(4,sum(be_data2$sch_q13g[which(be_data2$neighbor==i)])),
+                                         rep(5,sum(be_data2$sch_q13i[which(be_data2$neighbor==i)]))),
+                                       c(rep(1,sum(be_data3$com_q8a[which(be_data3$neighbor==i)])),rep(2,sum(be_data3$com_q8c[which(be_data3$neighbor==i)])),
+                                         rep(3,sum(be_data3$com_q8e[which(be_data3$neighbor==i)])),rep(4,sum(be_data3$com_q8g[which(be_data3$neighbor==i)]))));
+      freq[[14*(num.neighb[i]-1)+6]]=4-c(as.numeric(be_data1$hh_q11[which(be_data1$hh_q11!="n/a" & be_data1$neighbor==i)]),
+                                       c(rep(1,sum(be_data2$sch_q12a[which(be_data2$neighbor==i)])),rep(2,sum(be_data2$sch_q12c[which(be_data2$neighbor==i)])),
+                                         rep(3,sum(be_data2$sch_q12e[which(be_data2$neighbor==i)])),rep(4,sum(be_data2$sch_q12g[which(be_data2$neighbor==i)]))),
+                                       c(rep(1,sum(be_data3$com_q23a[which(be_data3$neighbor==i)])),rep(2,sum(be_data3$com_q23c[which(be_data3$neighbor==i)])),
+                                         rep(3,sum(be_data3$com_q23e[which(be_data3$neighbor==i)])),rep(4,sum(be_data3$com_q23g[which(be_data3$neighbor==i)])),
+                                         rep(5,sum(be_data3$com_q23i[which(be_data3$neighbor==i)]))));
+      freq[[14*(num.neighb[i]-1)+7]]=4-c(as.numeric(be_data1$hh_q2[which(be_data1$hh_q2!="n/a" & be_data1$neighbor==i)]),
+                                       c(rep(1,sum(be_data2$sch_q5a[which(be_data2$neighbor==i)])),rep(2,sum(be_data2$sch_q5c[which(be_data2$neighbor==i)])),
+                                         rep(3,sum(be_data2$sch_q5e[which(be_data2$neighbor==i)])),rep(4,sum(be_data2$sch_q5g[which(be_data2$neighbor==i)])),
+                                         rep(5,sum(be_data2$sch_q5i[which(be_data2$neighbor==i)]))),
+                                       c(rep(1,sum(be_data3$com_q4a[which(be_data3$neighbor==i)])),rep(2,sum(be_data3$com_q4c[which(be_data3$neighbor==i)])),
+                                         rep(3,sum(be_data3$com_q4e[which(be_data3$neighbor==i)])),rep(4,sum(be_data3$com_q4g[which(be_data3$neighbor==i)]))));
+      freq[[14*(num.neighb[i]-1)+8]]=4-c(as.numeric(be_data1$hh_q3[which(be_data1$hh_q3!="n/a" & be_data1$neighbor==i)]),
+                                       c(rep(1,sum(be_data2$sch_q4a[which(be_data2$neighbor==i)])),rep(2,sum(be_data2$sch_q4c[which(be_data2$neighbor==i)])),
+                                         rep(3,sum(be_data2$sch_q4e[which(be_data2$neighbor==i)])),rep(4,sum(be_data2$sch_q4g[which(be_data2$neighbor==i)]))),
+                                       c(rep(1,sum(be_data3$com_q19a[which(be_data3$neighbor==i)])),rep(2,sum(be_data3$com_q19c[which(be_data3$neighbor==i)])),
+                                         rep(3,sum(be_data3$com_q19e[which(be_data3$neighbor==i)])),rep(4,sum(be_data3$com_q19g[which(be_data3$neighbor==i)])),
+                                         rep(5,sum(be_data3$com_q19i[which(be_data3$neighbor==i)]))));
+      freq[[14*(num.neighb[i]-1)+9]]=4-c(as.numeric(be_data1$hh_q4[which(be_data1$hh_q4!="n/a" & be_data1$neighbor==i)]),
+                                       c(rep(1,sum(be_data2$sch_q7a[which(be_data2$neighbor==i)])),rep(2,sum(be_data2$sch_q7c[which(be_data2$neighbor==i)])),
+                                         rep(3,sum(be_data2$sch_q7e[which(be_data2$neighbor==i)])),rep(4,sum(be_data2$sch_q7g[which(be_data2$neighbor==i)])),
+                                         rep(5,sum(be_data2$sch_q7i[which(be_data2$neighbor==i)]))),
+                                       c(rep(1,sum(be_data3$com_q5a[which(be_data3$neighbor==i)])),rep(2,sum(be_data3$com_q5c[which(be_data3$neighbor==i)])),
+                                         rep(3,sum(be_data3$com_q5e[which(be_data3$neighbor==i)])),rep(4,sum(be_data3$com_q5g[which(be_data3$neighbor==i)]))));
+      freq[[14*(num.neighb[i]-1)+10]]=4-c(as.numeric(be_data1$hh_q5[which(be_data1$hh_q5!="n/a" & be_data1$neighbor==i)]),
+                                        c(rep(1,sum(be_data2$sch_q6a[which(be_data2$neighbor==i)])),rep(2,sum(be_data2$sch_q6c[which(be_data2$neighbor==i)])),
+                                          rep(3,sum(be_data2$sch_q6e[which(be_data2$neighbor==i)])),rep(4,sum(be_data2$sch_q6g[which(be_data2$neighbor==i)]))),
+                                        c(rep(1,sum(be_data3$com_q20a[which(be_data3$neighbor==i)])),rep(2,sum(be_data3$com_q20c[which(be_data3$neighbor==i)])),
+                                          rep(3,sum(be_data3$com_q20e[which(be_data3$neighbor==i)])),rep(4,sum(be_data3$com_q20g[which(be_data3$neighbor==i)])),
+                                          rep(5,sum(be_data3$com_q20i[which(be_data3$neighbor==i)]))));
+      freq[[14*(num.neighb[i]-1)+11]]=4-c(as.numeric(be_data1$hh_q8[which(be_data1$hh_q8!="n/a" & be_data1$neighbor==i)]),
+                                        c(rep(1,sum(be_data2$sch_q11a[which(be_data2$neighbor==i)])),rep(2,sum(be_data2$sch_q11c[which(be_data2$neighbor==i)])),
+                                          rep(3,sum(be_data2$sch_q11e[which(be_data2$neighbor==i)])),rep(4,sum(be_data2$sch_q11g[which(be_data2$neighbor==i)])),
+                                          rep(5,sum(be_data2$sch_q11i[which(be_data2$neighbor==i)]))),
+                                        c(rep(1,sum(be_data3$com_q7a[which(be_data3$neighbor==i)])),rep(2,sum(be_data3$com_q7c[which(be_data3$neighbor==i)])),
+                                          rep(3,sum(be_data3$com_q7e[which(be_data3$neighbor==i)])),rep(4,sum(be_data3$com_q7g[which(be_data3$neighbor==i)]))));
+      freq[[14*(num.neighb[i]-1)+12]]=4-c(as.numeric(be_data1$hh_q9[which(be_data1$hh_q9!="n/a" & be_data1$neighbor==i)]),
+                                        c(rep(1,sum(be_data2$sch_q10a[which(be_data2$neighbor==i)])),rep(2,sum(be_data2$sch_q10c[which(be_data2$neighbor==i)])),
+                                          rep(3,sum(be_data2$sch_q10e[which(be_data2$neighbor==i)])),rep(4,sum(be_data2$sch_q10g[which(be_data2$neighbor==i)]))),
+                                        c(rep(1,sum(be_data3$com_q22a[which(be_data3$neighbor==i)])),rep(2,sum(be_data3$com_q22c[which(be_data3$neighbor==i)])),
+                                          rep(3,sum(be_data3$com_q22e[which(be_data3$neighbor==i)])),rep(4,sum(be_data3$com_q22g[which(be_data3$neighbor==i)])),
+                                          rep(5,sum(be_data3$com_q22i[which(be_data3$neighbor==i)]))));
+      freq[[14*(num.neighb[i]-1)+13]]=4-c(as.numeric(be_data1$hh_q15[which(be_data1$hh_q15!="n/a" & be_data1$neighbor==i)]),
+                                        c(rep(1,sum(be_data2$sch_q17a[which(be_data2$neighbor==i)])),rep(2,sum(be_data2$sch_q17c[which(be_data2$neighbor==i)])),
+                                          rep(3,sum(be_data2$sch_q17e[which(be_data2$neighbor==i)])),rep(4,sum(be_data2$sch_q17g[which(be_data2$neighbor==i)])),
+                                          rep(5,sum(be_data2$sch_q17i[which(be_data2$neighbor==i)]))),
+                                        c(rep(1,sum(be_data3$com_q10a[which(be_data3$neighbor==i)])),rep(2,sum(be_data3$com_q10c[which(be_data3$neighbor==i)])),
+                                          rep(3,sum(be_data3$com_q10e[which(be_data3$neighbor==i)])),rep(4,sum(be_data3$com_q10g[which(be_data3$neighbor==i)]))));
+      freq[[14*(num.neighb[i]-1)+14]]=4-c(as.numeric(be_data1$hh_q16[which(be_data1$hh_q16!="n/a" & be_data1$neighbor==i)]),
+                                        c(rep(1,sum(be_data2$sch_q16a[which(be_data2$neighbor==i)])),rep(2,sum(be_data2$sch_q16c[which(be_data2$neighbor==i)])),
+                                          rep(3,sum(be_data2$sch_q16e[which(be_data2$neighbor==i)])),rep(4,sum(be_data2$sch_q16g[which(be_data2$neighbor==i)]))),
+                                        c(rep(1,sum(be_data3$com_q25a[which(be_data3$neighbor==i)])),rep(2,sum(be_data3$com_q25c[which(be_data3$neighbor==i)])),
+                                          rep(3,sum(be_data3$com_q25e[which(be_data3$neighbor==i)])),rep(4,sum(be_data3$com_q25g[which(be_data3$neighbor==i)])),
+                                          rep(5,sum(be_data3$com_q25i[which(be_data3$neighbor==i)]))));
     }
     freq
   })
@@ -178,9 +592,12 @@ output$table1 <- renderPrint({
   n.neighb=ifelse(input$neighb==0, length(unique(as.numeric(be_data$neighbor))),1)
   n.path=ifelse(input$samtype==0, 7, 1)
   n.age=ifelse(input$ad_ch==0, 2, 1)
-  if (n.neighb==1 & input$neighb!=0) {k.neighb=as.numeric(input$neighb)} else {k.neighb=sort(unique(as.numeric(be_data$neighbor)))}
-  if (n.path==1 & input$samtype!=0) {k.path=as.numeric(input$samtype)} else {k.path=c(2,3,4,5,6,8,9)}
-  if (n.age==1 & input$ad_ch!=0) {k.age=as.numeric(input$ad_ch)} else {k.age=c(1,2)}
+  if (n.neighb==1 & input$neighb!=0) {k.neighb=as.numeric(input$neighb)}
+  else {k.neighb=sort(unique(as.numeric(be_data$neighbor)))}
+  if (n.path==1 & input$samtype!=0) {k.path=as.numeric(input$samtype)}
+  else {k.path=c(2,3,4,5,6,8,9)}
+  if (n.age==1 & input$ad_ch!=0) {k.age=as.numeric(input$ad_ch)}
+  else {k.age=c(1,2)}
   nrow=n.path
   ncol=n.age*n.neighb
   list(n.neighb, 
@@ -193,14 +610,37 @@ output$table1 <- renderPrint({
 })
 
 output$pie_chart1 <- renderPlot({
-  be_data<-be_data()
-  freq<-frq()
-  n.neighb=ifelse(input$neighb==0, length(unique(as.numeric(be_data$neighbor))),1)
+  if (input$surtype==0){
+    be_data1<-be_data1()
+    be_data2<-be_data2()
+    be_data3<-be_data3()
+    freq<-frq0()
+    num.neighb<-sort(unique(c(as.numeric(be_data1$neighbor),as.numeric(be_data2$neighbor),as.numeric(be_data3$neighbor))))
+  }
+  if (input$surtype==1){
+    be_data1<-be_data1()
+    freq<-frq1()
+    num.neighb<-sort(unique(as.numeric(be_data1$neighbor)))
+  }
+  if (input$surtype==2){
+    be_data2<-be_data2()
+    freq<-frq2()
+    num.neighb<-sort(unique(as.numeric(be_data2$neighbor)))
+  }
+  if (input$surtype==3){
+    be_data3<-be_data3()
+    freq<-frq3()
+    num.neighb<-sort(unique(as.numeric(be_data3$neighbor)))
+  }
+  n.neighb=ifelse(input$neighb==0, length(num.neighb),1)
   n.path=1
   n.age=ifelse(input$ad_ch==0, 2, 1)
-  if (n.neighb==1 & input$neighb!=0) {k.neighb=as.numeric(input$neighb)} else {k.neighb=sort(unique(as.numeric(be_data$neighbor)))}
-  if (input$samtype!=0) {k.path=as.numeric(input$samtype)} else {k.path=1}
-  if (n.age==1 & input$ad_ch!=0) {k.age=as.numeric(input$ad_ch)} else {k.age=c(1,2)}
+  if (n.neighb==1 & input$neighb!=0) {k.neighb=as.numeric(input$neighb)}
+  else {k.neighb=sort(num.neighb)}
+  if (input$samtype!=0){k.path=as.numeric(input$samtype)} 
+  else{k.path=1}
+  if (n.age==1 & input$ad_ch!=0) {k.age=as.numeric(input$ad_ch)}
+  else {k.age=c(1,2)}
   nrow=n.path
   ncol=n.age*n.neighb
   par(mfrow=c(nrow,ncol))
@@ -231,14 +671,36 @@ output$pie_chart1 <- renderPlot({
 
 output$pie_chart2 <- renderPlot({
   if (input$samtype!=0) return(NULL)
-  be_data<-be_data()
-  freq<-frq()
-  n.neighb=ifelse(input$neighb==0, length(unique(as.numeric(be_data$neighbor))),1)
+  if (input$surtype==0){
+    be_data1<-be_data1()
+    be_data2<-be_data2()
+    be_data3<-be_data3()
+    freq<-frq0()
+    num.neighb<-sort(unique(c(as.numeric(be_data1$neighbor),as.numeric(be_data2$neighbor),as.numeric(be_data3$neighbor))))
+  }
+  if (input$surtype==1){
+    be_data1<-be_data1()
+    freq<-frq1()
+    num.neighb<-sort(unique(as.numeric(be_data1$neighbor)))
+  }
+  if (input$surtype==2){
+    be_data2<-be_data2()
+    freq<-frq2()
+    num.neighb<-sort(unique(as.numeric(be_data2$neighbor)))
+  }
+  if (input$surtype==3){
+    be_data3<-be_data3()
+    freq<-frq3()
+    num.neighb<-sort(unique(as.numeric(be_data3$neighbor)))
+  }
+  n.neighb=ifelse(input$neighb==0, length(num.neighb),1)
   n.path=1
   n.age=ifelse(input$ad_ch==0, 2, 1)
-  if (n.neighb==1 & input$neighb!=0) {k.neighb=as.numeric(input$neighb)} else {k.neighb=sort(unique(as.numeric(be_data$neighbor)))}
+  if (n.neighb==1 & input$neighb!=0) {k.neighb=as.numeric(input$neighb)}
+  else {k.neighb=sort(num.neighb)}
   k.path=2
-  if (n.age==1 & input$ad_ch!=0) {k.age=as.numeric(input$ad_ch)} else {k.age=c(1,2)}
+  if (n.age==1 & input$ad_ch!=0) {k.age=as.numeric(input$ad_ch)}
+  else {k.age=c(1,2)}
   nrow=n.path
   ncol=n.age*n.neighb
   par(mfrow=c(nrow,ncol))
@@ -269,14 +731,36 @@ output$pie_chart2 <- renderPlot({
 
 output$pie_chart3 <- renderPlot({
   if (input$samtype!=0) return(NULL)
-  be_data<-be_data()
-  freq<-frq()
-  n.neighb=ifelse(input$neighb==0, length(unique(as.numeric(be_data$neighbor))),1)
+  if (input$surtype==0){
+    be_data1<-be_data1()
+    be_data2<-be_data2()
+    be_data3<-be_data3()
+    freq<-frq0()
+    num.neighb<-sort(unique(c(as.numeric(be_data1$neighbor),as.numeric(be_data2$neighbor),as.numeric(be_data3$neighbor))))
+  }
+  if (input$surtype==1){
+    be_data1<-be_data1()
+    freq<-frq1()
+    num.neighb<-sort(unique(as.numeric(be_data1$neighbor)))
+  }
+  if (input$surtype==2){
+    be_data2<-be_data2()
+    freq<-frq2()
+    num.neighb<-sort(unique(as.numeric(be_data2$neighbor)))
+  }
+  if (input$surtype==3){
+    be_data3<-be_data3()
+    freq<-frq3()
+    num.neighb<-sort(unique(as.numeric(be_data3$neighbor)))
+  }
+  n.neighb=ifelse(input$neighb==0, length(num.neighb),1)
   n.path=1
   n.age=ifelse(input$ad_ch==0, 2, 1)
-  if (n.neighb==1 & input$neighb!=0) {k.neighb=as.numeric(input$neighb)} else {k.neighb=sort(unique(as.numeric(be_data$neighbor)))}
+  if (n.neighb==1 & input$neighb!=0) {k.neighb=as.numeric(input$neighb)}
+  else {k.neighb=sort(num.neighb)}
   k.path=3
-  if (n.age==1 & input$ad_ch!=0) {k.age=as.numeric(input$ad_ch)} else {k.age=c(1,2)}
+  if (n.age==1 & input$ad_ch!=0) {k.age=as.numeric(input$ad_ch)}
+  else {k.age=c(1,2)}
   nrow=n.path
   ncol=n.age*n.neighb
   par(mfrow=c(nrow,ncol))
@@ -307,14 +791,36 @@ output$pie_chart3 <- renderPlot({
 
 output$pie_chart4 <- renderPlot({
   if (input$samtype!=0) return(NULL)
-  be_data<-be_data()
-  freq<-frq()
-  n.neighb=ifelse(input$neighb==0, length(unique(as.numeric(be_data$neighbor))),1)
+  if (input$surtype==0){
+    be_data1<-be_data1()
+    be_data2<-be_data2()
+    be_data3<-be_data3()
+    freq<-frq0()
+    num.neighb<-sort(unique(c(as.numeric(be_data1$neighbor),as.numeric(be_data2$neighbor),as.numeric(be_data3$neighbor))))
+  }
+  if (input$surtype==1){
+    be_data1<-be_data1()
+    freq<-frq1()
+    num.neighb<-sort(unique(as.numeric(be_data1$neighbor)))
+  }
+  if (input$surtype==2){
+    be_data2<-be_data2()
+    freq<-frq2()
+    num.neighb<-sort(unique(as.numeric(be_data2$neighbor)))
+  }
+  if (input$surtype==3){
+    be_data3<-be_data3()
+    freq<-frq3()
+    num.neighb<-sort(unique(as.numeric(be_data3$neighbor)))
+  }
+  n.neighb=ifelse(input$neighb==0, length(num.neighb),1)
   n.path=1
   n.age=ifelse(input$ad_ch==0, 2, 1)
-  if (n.neighb==1 & input$neighb!=0) {k.neighb=as.numeric(input$neighb)} else {k.neighb=sort(unique(as.numeric(be_data$neighbor)))}
+  if (n.neighb==1 & input$neighb!=0) {k.neighb=as.numeric(input$neighb)}
+  else {k.neighb=sort(num.neighb)}
   k.path=4
-  if (n.age==1 & input$ad_ch!=0) {k.age=as.numeric(input$ad_ch)} else {k.age=c(1,2)}
+  if (n.age==1 & input$ad_ch!=0) {k.age=as.numeric(input$ad_ch)}
+  else {k.age=c(1,2)}
   nrow=n.path
   ncol=n.age*n.neighb
   par(mfrow=c(nrow,ncol))
@@ -345,14 +851,36 @@ output$pie_chart4 <- renderPlot({
 
 output$pie_chart5 <- renderPlot({
   if (input$samtype!=0) return(NULL)
-  be_data<-be_data()
-  freq<-frq()
-  n.neighb=ifelse(input$neighb==0, length(unique(as.numeric(be_data$neighbor))),1)
+  if (input$surtype==0){
+    be_data1<-be_data1()
+    be_data2<-be_data2()
+    be_data3<-be_data3()
+    freq<-frq0()
+    num.neighb<-sort(unique(c(as.numeric(be_data1$neighbor),as.numeric(be_data2$neighbor),as.numeric(be_data3$neighbor))))
+  }
+  if (input$surtype==1){
+    be_data1<-be_data1()
+    freq<-frq1()
+    num.neighb<-sort(unique(as.numeric(be_data1$neighbor)))
+  }
+  if (input$surtype==2){
+    be_data2<-be_data2()
+    freq<-frq2()
+    num.neighb<-sort(unique(as.numeric(be_data2$neighbor)))
+  }
+  if (input$surtype==3){
+    be_data3<-be_data3()
+    freq<-frq3()
+    num.neighb<-sort(unique(as.numeric(be_data3$neighbor)))
+  }
+  n.neighb=ifelse(input$neighb==0, length(num.neighb),1)
   n.path=1
   n.age=ifelse(input$ad_ch==0, 2, 1)
-  if (n.neighb==1 & input$neighb!=0) {k.neighb=as.numeric(input$neighb)} else {k.neighb=sort(unique(as.numeric(be_data$neighbor)))}
+  if (n.neighb==1 & input$neighb!=0) {k.neighb=as.numeric(input$neighb)}
+  else {k.neighb=sort(num.neighb)}
   k.path=5
-  if (n.age==1 & input$ad_ch!=0) {k.age=as.numeric(input$ad_ch)} else {k.age=c(1,2)}
+  if (n.age==1 & input$ad_ch!=0) {k.age=as.numeric(input$ad_ch)}
+  else {k.age=c(1,2)}
   nrow=n.path
   ncol=n.age*n.neighb
   par(mfrow=c(nrow,ncol))
@@ -383,14 +911,36 @@ output$pie_chart5 <- renderPlot({
 
 output$pie_chart6 <- renderPlot({
   if (input$samtype!=0) return(NULL)
-  be_data<-be_data()
-  freq<-frq()
-  n.neighb=ifelse(input$neighb==0, length(unique(as.numeric(be_data$neighbor))),1)
+  if (input$surtype==0){
+    be_data1<-be_data1()
+    be_data2<-be_data2()
+    be_data3<-be_data3()
+    freq<-frq0()
+    num.neighb<-sort(unique(c(as.numeric(be_data1$neighbor),as.numeric(be_data2$neighbor),as.numeric(be_data3$neighbor))))
+  }
+  if (input$surtype==1){
+    be_data1<-be_data1()
+    freq<-frq1()
+    num.neighb<-sort(unique(as.numeric(be_data1$neighbor)))
+  }
+  if (input$surtype==2){
+    be_data2<-be_data2()
+    freq<-frq2()
+    num.neighb<-sort(unique(as.numeric(be_data2$neighbor)))
+  }
+  if (input$surtype==3){
+    be_data3<-be_data3()
+    freq<-frq3()
+    num.neighb<-sort(unique(as.numeric(be_data3$neighbor)))
+  }
+  n.neighb=ifelse(input$neighb==0, length(num.neighb),1)
   n.path=1
   n.age=ifelse(input$ad_ch==0, 2, 1)
-  if (n.neighb==1 & input$neighb!=0) {k.neighb=as.numeric(input$neighb)} else {k.neighb=sort(unique(as.numeric(be_data$neighbor)))}
+  if (n.neighb==1 & input$neighb!=0) {k.neighb=as.numeric(input$neighb)}
+  else {k.neighb=sort(num.neighb)}
   k.path=6
-  if (n.age==1 & input$ad_ch!=0) {k.age=as.numeric(input$ad_ch)} else {k.age=c(1,2)}
+  if (n.age==1 & input$ad_ch!=0) {k.age=as.numeric(input$ad_ch)}
+  else {k.age=c(1,2)}
   nrow=n.path
   ncol=n.age*n.neighb
   par(mfrow=c(nrow,ncol))
@@ -421,14 +971,36 @@ output$pie_chart6 <- renderPlot({
 
 output$pie_chart7 <- renderPlot({
   if (input$samtype!=0) return(NULL)
-  be_data<-be_data()
-  freq<-frq()
-  n.neighb=ifelse(input$neighb==0, length(unique(as.numeric(be_data$neighbor))),1)
+  if (input$surtype==0){
+    be_data1<-be_data1()
+    be_data2<-be_data2()
+    be_data3<-be_data3()
+    freq<-frq0()
+    num.neighb<-sort(unique(c(as.numeric(be_data1$neighbor),as.numeric(be_data2$neighbor),as.numeric(be_data3$neighbor))))
+  }
+  if (input$surtype==1){
+    be_data1<-be_data1()
+    freq<-frq1()
+    num.neighb<-sort(unique(as.numeric(be_data1$neighbor)))
+  }
+  if (input$surtype==2){
+    be_data2<-be_data2()
+    freq<-frq2()
+    num.neighb<-sort(unique(as.numeric(be_data2$neighbor)))
+  }
+  if (input$surtype==3){
+    be_data3<-be_data3()
+    freq<-frq3()
+    num.neighb<-sort(unique(as.numeric(be_data3$neighbor)))
+  }
+  n.neighb=ifelse(input$neighb==0, length(num.neighb),1)
   n.path=1
   n.age=ifelse(input$ad_ch==0, 2, 1)
-  if (n.neighb==1 & input$neighb!=0) {k.neighb=as.numeric(input$neighb)} else {k.neighb=sort(unique(as.numeric(be_data$neighbor)))}
+  if (n.neighb==1 & input$neighb!=0) {k.neighb=as.numeric(input$neighb)}
+  else {k.neighb=sort(num.neighb)}
   k.path=7
-  if (n.age==1 & input$ad_ch!=0) {k.age=as.numeric(input$ad_ch)} else {k.age=c(1,2)}
+  if (n.age==1 & input$ad_ch!=0) {k.age=as.numeric(input$ad_ch)}
+  else {k.age=c(1,2)}
   nrow=n.path
   ncol=n.age*n.neighb
   par(mfrow=c(nrow,ncol))
@@ -463,8 +1035,10 @@ output$hist1 <- renderPlot({
   conc<-conc()
   n.neighb=ifelse(input$neighb==0, length(unique(as.numeric(ec_data$neighbor))),1)
   n.path=1
-  if (n.neighb==1 & input$neighb!=0) {k.neighb=as.numeric(input$neighb)} else {k.neighb=sort(unique(as.numeric(ec_data$neighbor)))}
-  if (input$samtype!=0) {k.path=as.numeric(input$samtype)} else {k.path=1}
+  if (n.neighb==1 & input$neighb!=0) {k.neighb=as.numeric(input$neighb)}
+  else {k.neighb=sort(unique(as.numeric(ec_data$neighbor)))}
+  if (input$samtype!=0){k.path=as.numeric(input$samtype)} 
+  else{k.path=1}
   nrow=n.path
   ncol=n.neighb
   par(mfrow=c(nrow,ncol))
@@ -484,7 +1058,8 @@ output$hist2 <- renderPlot({
   conc<-conc()
   n.neighb=ifelse(input$neighb==0, length(unique(as.numeric(ec_data$neighbor))),1)
   n.path=1
-  if (n.neighb==1 & input$neighb!=0) {k.neighb=as.numeric(input$neighb)} else {k.neighb=sort(unique(as.numeric(ec_data$neighbor)))}
+  if (n.neighb==1 & input$neighb!=0) {k.neighb=as.numeric(input$neighb)}
+  else {k.neighb=sort(unique(as.numeric(ec_data$neighbor)))}
   k.path=2
   nrow=n.path
   ncol=n.neighb
@@ -505,7 +1080,8 @@ output$hist3 <- renderPlot({
   conc<-conc()
   n.neighb=ifelse(input$neighb==0, length(unique(as.numeric(ec_data$neighbor))),1)
   n.path=1
-  if (n.neighb==1 & input$neighb!=0) {k.neighb=as.numeric(input$neighb)} else {k.neighb=sort(unique(as.numeric(ec_data$neighbor)))}
+  if (n.neighb==1 & input$neighb!=0) {k.neighb=as.numeric(input$neighb)}
+  else {k.neighb=sort(unique(as.numeric(ec_data$neighbor)))}
   k.path=3
   nrow=n.path
   ncol=n.neighb
@@ -526,7 +1102,8 @@ output$hist4 <- renderPlot({
   conc<-conc()
   n.neighb=ifelse(input$neighb==0, length(unique(as.numeric(ec_data$neighbor))),1)
   n.path=1
-  if (n.neighb==1 & input$neighb!=0) {k.neighb=as.numeric(input$neighb)} else {k.neighb=sort(unique(as.numeric(ec_data$neighbor)))}
+  if (n.neighb==1 & input$neighb!=0) {k.neighb=as.numeric(input$neighb)}
+  else {k.neighb=sort(unique(as.numeric(ec_data$neighbor)))}
   k.path=4
   nrow=n.path
   ncol=n.neighb
@@ -547,7 +1124,8 @@ output$hist5 <- renderPlot({
   conc<-conc()
   n.neighb=ifelse(input$neighb==0, length(unique(as.numeric(ec_data$neighbor))),1)
   n.path=1
-  if (n.neighb==1 & input$neighb!=0) {k.neighb=as.numeric(input$neighb)} else {k.neighb=sort(unique(as.numeric(ec_data$neighbor)))}
+  if (n.neighb==1 & input$neighb!=0) {k.neighb=as.numeric(input$neighb)}
+  else {k.neighb=sort(unique(as.numeric(ec_data$neighbor)))}
   k.path=5
   nrow=n.path
   ncol=n.neighb
@@ -568,7 +1146,8 @@ output$hist6 <- renderPlot({
   conc<-conc()
   n.neighb=ifelse(input$neighb==0, length(unique(as.numeric(ec_data$neighbor))),1)
   n.path=1
-  if (n.neighb==1 & input$neighb!=0) {k.neighb=as.numeric(input$neighb)} else {k.neighb=sort(unique(as.numeric(ec_data$neighbor)))}
+  if (n.neighb==1 & input$neighb!=0) {k.neighb=as.numeric(input$neighb)}
+  else {k.neighb=sort(unique(as.numeric(ec_data$neighbor)))}
   k.path=6
   nrow=n.path
   ncol=n.neighb
@@ -589,7 +1168,8 @@ output$hist7 <- renderPlot({
   conc<-conc()
   n.neighb=ifelse(input$neighb==0, length(unique(as.numeric(ec_data$neighbor))),1)
   n.path=1
-  if (n.neighb==1 & input$neighb!=0) {k.neighb=as.numeric(input$neighb)} else {k.neighb=sort(unique(as.numeric(ec_data$neighbor)))}
+  if (n.neighb==1 & input$neighb!=0) {k.neighb=as.numeric(input$neighb)}
+  else {k.neighb=sort(unique(as.numeric(ec_data$neighbor)))}
   k.path=7
   nrow=n.path
   ncol=n.neighb
@@ -610,7 +1190,8 @@ output$hist8 <- renderPlot({
   conc<-conc()
   n.neighb=ifelse(input$neighb==0, length(unique(as.numeric(ec_data$neighbor))),1)
   n.path=1
-  if (n.neighb==1 & input$neighb!=0) {k.neighb=as.numeric(input$neighb)} else {k.neighb=sort(unique(as.numeric(ec_data$neighbor)))}
+  if (n.neighb==1 & input$neighb!=0) {k.neighb=as.numeric(input$neighb)}
+  else {k.neighb=sort(unique(as.numeric(ec_data$neighbor)))}
   k.path=8
   nrow=n.path
   ncol=n.neighb
@@ -631,7 +1212,8 @@ output$hist9 <- renderPlot({
   conc<-conc()
   n.neighb=ifelse(input$neighb==0, length(unique(as.numeric(ec_data$neighbor))),1)
   n.path=1
-  if (n.neighb==1 & input$neighb!=0) {k.neighb=as.numeric(input$neighb)} else {k.neighb=sort(unique(as.numeric(ec_data$neighbor)))}
+  if (n.neighb==1 & input$neighb!=0) {k.neighb=as.numeric(input$neighb)}
+  else {k.neighb=sort(unique(as.numeric(ec_data$neighbor)))}
   k.path=9
   nrow=n.path
   ncol=n.neighb
@@ -647,19 +1229,45 @@ output$hist9 <- renderPlot({
 })
 
 output$ps_plot1 <- renderPlot({
+  #if (input$samtype!=0 & input$samtype!=1) return(NULL)
+  if (input$surtype==0){
+    be_data1<-be_data1()
+    be_data2<-be_data2()
+    be_data3<-be_data3()
+    freq<-ps.frq0()
+    num.neighb<-sort(unique(c(as.numeric(be_data1$neighbor),as.numeric(be_data2$neighbor),as.numeric(be_data3$neighbor))))
+  }
+  if (input$surtype==1){
+    be_data1<-be_data1()
+    freq<-ps.frq1()
+    num.neighb<-sort(unique(as.numeric(be_data1$neighbor)))
+  }
+  if (input$surtype==2){
+    be_data2<-be_data2()
+    freq<-ps.frq2()
+    num.neighb<-sort(unique(as.numeric(be_data2$neighbor)))
+  }
+  if (input$surtype==3){
+    be_data3<-be_data3()
+    freq<-ps.frq3()
+    num.neighb<-sort(unique(as.numeric(be_data3$neighbor)))
+  }
   ec_data<-ec_data()
   conc<-conc()
-  be_data<-be_data()
-  freq<-ps.frq()
+  #be_data<-be_data()
+  #freq<-ps.frq()
   label_path<-c("Drain Water", "Produce", "Piped Water", "Ocean Water", "Surface Water", "Flood Water", "Public Latrine Surfaces", "Particulate", "Bathing")
   label_age<-c("Adults","Children")
   
-  n.neighb=ifelse(input$neighb==0, length(unique(as.numeric(be_data$neighbor))),1)
+  n.neighb=ifelse(input$neighb==0, length(num.neighb),1)
   n.path=1
   n.age=ifelse(input$ad_ch==0, 2, 1)
-  if (n.neighb==1 & input$neighb!=0) {k.neighb=as.numeric(input$neighb)} else {k.neighb=sort(unique(as.numeric(be_data$neighbor)))}
-  if (input$samtype!=0) {k.path=as.numeric(input$samtype)} else {k.path=1}
-  if (n.age==1 & input$ad_ch!=0) {k.age=as.numeric(input$ad_ch)} else {k.age=c(1,2)}
+  if (n.neighb==1 & input$neighb!=0) {k.neighb=as.numeric(input$neighb)}
+  else {k.neighb=num.neighb}
+  if (input$samtype!=0){k.path=as.numeric(input$samtype)} 
+  else{k.path=1}
+  if (n.age==1 & input$ad_ch!=0) {k.age=as.numeric(input$ad_ch)}
+  else {k.age=c(1,2)}
   
   source("./model/PS_Plot.r")
   ".RNG.state" <- c(19900, 14957, 25769)
@@ -747,19 +1355,43 @@ output$ps_plot1 <- renderPlot({
 
 output$ps_plot2 <- renderPlot({
   if (input$samtype!=0) return(NULL)
+  if (input$surtype==0){
+    be_data1<-be_data1()
+    be_data2<-be_data2()
+    be_data3<-be_data3()
+    freq<-ps.frq0()
+    num.neighb<-sort(unique(c(as.numeric(be_data1$neighbor),as.numeric(be_data2$neighbor),as.numeric(be_data3$neighbor))))
+  }
+  if (input$surtype==1){
+    be_data1<-be_data1()
+    freq<-ps.frq1()
+    num.neighb<-sort(unique(as.numeric(be_data1$neighbor)))
+  }
+  if (input$surtype==2){
+    be_data2<-be_data2()
+    freq<-ps.frq2()
+    num.neighb<-sort(unique(as.numeric(be_data2$neighbor)))
+  }
+  if (input$surtype==3){
+    be_data3<-be_data3()
+    freq<-ps.frq3()
+    num.neighb<-sort(unique(as.numeric(be_data3$neighbor)))
+  }
   ec_data<-ec_data()
   conc<-conc()
-  be_data<-be_data()
-  freq<-ps.frq()
+  #be_data<-be_data()
+  #freq<-ps.frq()
   label_path<-c("Drain Water", "Produce", "Piped Water", "Ocean Water", "Surface Water", "Flood Water", "Public Latrine Surfaces", "Particulate", "Bathing")
   label_age<-c("Adults","Children")
   
-  n.neighb=ifelse(input$neighb==0, length(unique(as.numeric(be_data$neighbor))),1)
+  n.neighb=ifelse(input$neighb==0, length(num.neighb),1)
   n.path=1
   n.age=ifelse(input$ad_ch==0, 2, 1)
-  if (n.neighb==1 & input$neighb!=0) {k.neighb=as.numeric(input$neighb)} else {k.neighb=sort(unique(as.numeric(be_data$neighbor)))}
+  if (n.neighb==1 & input$neighb!=0) {k.neighb=as.numeric(input$neighb)}
+  else {k.neighb=num.neighb}
   k.path=2
-  if (n.age==1 & input$ad_ch!=0) {k.age=as.numeric(input$ad_ch)} else {k.age=c(1,2)}
+  if (n.age==1 & input$ad_ch!=0) {k.age=as.numeric(input$ad_ch)}
+  else {k.age=c(1,2)}
   
   source("./model/PS_Plot.r")
   ".RNG.state" <- c(19900, 14957, 25769)
@@ -847,19 +1479,43 @@ output$ps_plot2 <- renderPlot({
 
 output$ps_plot3 <- renderPlot({
   if (input$samtype!=0) return(NULL)
+  if (input$surtype==0){
+    be_data1<-be_data1()
+    be_data2<-be_data2()
+    be_data3<-be_data3()
+    freq<-ps.frq0()
+    num.neighb<-sort(unique(c(as.numeric(be_data1$neighbor),as.numeric(be_data2$neighbor),as.numeric(be_data3$neighbor))))
+  }
+  if (input$surtype==1){
+    be_data1<-be_data1()
+    freq<-ps.frq1()
+    num.neighb<-sort(unique(as.numeric(be_data1$neighbor)))
+  }
+  if (input$surtype==2){
+    be_data2<-be_data2()
+    freq<-ps.frq2()
+    num.neighb<-sort(unique(as.numeric(be_data2$neighbor)))
+  }
+  if (input$surtype==3){
+    be_data3<-be_data3()
+    freq<-ps.frq3()
+    num.neighb<-sort(unique(as.numeric(be_data3$neighbor)))
+  }
   ec_data<-ec_data()
   conc<-conc()
-  be_data<-be_data()
-  freq<-ps.frq()
+  #be_data<-be_data()
+  #freq<-ps.frq()
   label_path<-c("Drain Water", "Produce", "Piped Water", "Ocean Water", "Surface Water", "Flood Water", "Public Latrine Surfaces", "Particulate", "Bathing")
   label_age<-c("Adults","Children")
   
-  n.neighb=ifelse(input$neighb==0, length(unique(as.numeric(be_data$neighbor))),1)
+  n.neighb=ifelse(input$neighb==0, length(num.neighb),1)
   n.path=1
   n.age=ifelse(input$ad_ch==0, 2, 1)
-  if (n.neighb==1 & input$neighb!=0) {k.neighb=as.numeric(input$neighb)} else {k.neighb=sort(unique(as.numeric(be_data$neighbor)))}
+  if (n.neighb==1 & input$neighb!=0) {k.neighb=as.numeric(input$neighb)}
+  else {k.neighb=num.neighb}
   k.path=3
-  if (n.age==1 & input$ad_ch!=0) {k.age=as.numeric(input$ad_ch)} else {k.age=c(1,2)}
+  if (n.age==1 & input$ad_ch!=0) {k.age=as.numeric(input$ad_ch)}
+  else {k.age=c(1,2)}
   
   source("./model/PS_Plot.r")
   ".RNG.state" <- c(19900, 14957, 25769)
@@ -947,19 +1603,43 @@ output$ps_plot3 <- renderPlot({
 
 output$ps_plot4 <- renderPlot({
   if (input$samtype!=0) return(NULL)
+  if (input$surtype==0){
+    be_data1<-be_data1()
+    be_data2<-be_data2()
+    be_data3<-be_data3()
+    freq<-ps.frq0()
+    num.neighb<-sort(unique(c(as.numeric(be_data1$neighbor),as.numeric(be_data2$neighbor),as.numeric(be_data3$neighbor))))
+  }
+  if (input$surtype==1){
+    be_data1<-be_data1()
+    freq<-ps.frq1()
+    num.neighb<-sort(unique(as.numeric(be_data1$neighbor)))
+  }
+  if (input$surtype==2){
+    be_data2<-be_data2()
+    freq<-ps.frq2()
+    num.neighb<-sort(unique(as.numeric(be_data2$neighbor)))
+  }
+  if (input$surtype==3){
+    be_data3<-be_data3()
+    freq<-ps.frq3()
+    num.neighb<-sort(unique(as.numeric(be_data3$neighbor)))
+  }
   ec_data<-ec_data()
   conc<-conc()
-  be_data<-be_data()
-  freq<-ps.frq()
+  #be_data<-be_data()
+  #freq<-ps.frq()
   label_path<-c("Drain Water", "Produce", "Piped Water", "Ocean Water", "Surface Water", "Flood Water", "Public Latrine Surfaces", "Particulate", "Bathing")
   label_age<-c("Adults","Children")
   
-  n.neighb=ifelse(input$neighb==0, length(unique(as.numeric(be_data$neighbor))),1)
+  n.neighb=ifelse(input$neighb==0, length(num.neighb),1)
   n.path=1
   n.age=ifelse(input$ad_ch==0, 2, 1)
-  if (n.neighb==1 & input$neighb!=0) {k.neighb=as.numeric(input$neighb)} else {k.neighb=sort(unique(as.numeric(be_data$neighbor)))}
+  if (n.neighb==1 & input$neighb!=0) {k.neighb=as.numeric(input$neighb)}
+  else {k.neighb=num.neighb}
   k.path=4
-  if (n.age==1 & input$ad_ch!=0) {k.age=as.numeric(input$ad_ch)} else {k.age=c(1,2)}
+  if (n.age==1 & input$ad_ch!=0) {k.age=as.numeric(input$ad_ch)}
+  else {k.age=c(1,2)}
   
   source("./model/PS_Plot.r")
   ".RNG.state" <- c(19900, 14957, 25769)
@@ -1047,19 +1727,43 @@ output$ps_plot4 <- renderPlot({
 
 output$ps_plot5 <- renderPlot({
   if (input$samtype!=0) return(NULL)
+  if (input$surtype==0){
+    be_data1<-be_data1()
+    be_data2<-be_data2()
+    be_data3<-be_data3()
+    freq<-ps.frq0()
+    num.neighb<-sort(unique(c(as.numeric(be_data1$neighbor),as.numeric(be_data2$neighbor),as.numeric(be_data3$neighbor))))
+  }
+  if (input$surtype==1){
+    be_data1<-be_data1()
+    freq<-ps.frq1()
+    num.neighb<-sort(unique(as.numeric(be_data1$neighbor)))
+  }
+  if (input$surtype==2){
+    be_data2<-be_data2()
+    freq<-ps.frq2()
+    num.neighb<-sort(unique(as.numeric(be_data2$neighbor)))
+  }
+  if (input$surtype==3){
+    be_data3<-be_data3()
+    freq<-ps.frq3()
+    num.neighb<-sort(unique(as.numeric(be_data3$neighbor)))
+  }
   ec_data<-ec_data()
   conc<-conc()
-  be_data<-be_data()
-  freq<-ps.frq()
+  #be_data<-be_data()
+  #freq<-ps.frq()
   label_path<-c("Drain Water", "Produce", "Piped Water", "Ocean Water", "Surface Water", "Flood Water", "Public Latrine Surfaces", "Particulate", "Bathing")
   label_age<-c("Adults","Children")
   
-  n.neighb=ifelse(input$neighb==0, length(unique(as.numeric(be_data$neighbor))),1)
+  n.neighb=ifelse(input$neighb==0, length(num.neighb),1)
   n.path=1
   n.age=ifelse(input$ad_ch==0, 2, 1)
-  if (n.neighb==1 & input$neighb!=0) {k.neighb=as.numeric(input$neighb)} else {k.neighb=sort(unique(as.numeric(be_data$neighbor)))}
+  if (n.neighb==1 & input$neighb!=0) {k.neighb=as.numeric(input$neighb)}
+  else {k.neighb=num.neighb}
   k.path=5
-  if (n.age==1 & input$ad_ch!=0) {k.age=as.numeric(input$ad_ch)} else {k.age=c(1,2)}
+  if (n.age==1 & input$ad_ch!=0) {k.age=as.numeric(input$ad_ch)}
+  else {k.age=c(1,2)}
   
   source("./model/PS_Plot.r")
   ".RNG.state" <- c(19900, 14957, 25769)
@@ -1147,19 +1851,43 @@ output$ps_plot5 <- renderPlot({
 
 output$ps_plot6 <- renderPlot({
   if (input$samtype!=0) return(NULL)
+  if (input$surtype==0){
+    be_data1<-be_data1()
+    be_data2<-be_data2()
+    be_data3<-be_data3()
+    freq<-ps.frq0()
+    num.neighb<-sort(unique(c(as.numeric(be_data1$neighbor),as.numeric(be_data2$neighbor),as.numeric(be_data3$neighbor))))
+  }
+  if (input$surtype==1){
+    be_data1<-be_data1()
+    freq<-ps.frq1()
+    num.neighb<-sort(unique(as.numeric(be_data1$neighbor)))
+  }
+  if (input$surtype==2){
+    be_data2<-be_data2()
+    freq<-ps.frq2()
+    num.neighb<-sort(unique(as.numeric(be_data2$neighbor)))
+  }
+  if (input$surtype==3){
+    be_data3<-be_data3()
+    freq<-ps.frq3()
+    num.neighb<-sort(unique(as.numeric(be_data3$neighbor)))
+  }
   ec_data<-ec_data()
   conc<-conc()
-  be_data<-be_data()
-  freq<-ps.frq()
+  #be_data<-be_data()
+  #freq<-ps.frq()
   label_path<-c("Drain Water", "Produce", "Piped Water", "Ocean Water", "Surface Water", "Flood Water", "Public Latrine Surfaces", "Particulate", "Bathing")
   label_age<-c("Adults","Children")
   
-  n.neighb=ifelse(input$neighb==0, length(unique(as.numeric(be_data$neighbor))),1)
+  n.neighb=ifelse(input$neighb==0, length(num.neighb),1)
   n.path=1
   n.age=ifelse(input$ad_ch==0, 2, 1)
-  if (n.neighb==1 & input$neighb!=0) {k.neighb=as.numeric(input$neighb)} else {k.neighb=sort(unique(as.numeric(be_data$neighbor)))}
+  if (n.neighb==1 & input$neighb!=0) {k.neighb=as.numeric(input$neighb)}
+  else {k.neighb=num.neighb}
   k.path=6
-  if (n.age==1 & input$ad_ch!=0) {k.age=as.numeric(input$ad_ch)} else {k.age=c(1,2)}
+  if (n.age==1 & input$ad_ch!=0) {k.age=as.numeric(input$ad_ch)}
+  else {k.age=c(1,2)}
   
   source("./model/PS_Plot.r")
   ".RNG.state" <- c(19900, 14957, 25769)
@@ -1247,19 +1975,43 @@ output$ps_plot6 <- renderPlot({
 
 output$ps_plot7 <- renderPlot({
   if (input$samtype!=0) return(NULL)
+  if (input$surtype==0){
+    be_data1<-be_data1()
+    be_data2<-be_data2()
+    be_data3<-be_data3()
+    freq<-ps.frq0()
+    num.neighb<-sort(unique(c(as.numeric(be_data1$neighbor),as.numeric(be_data2$neighbor),as.numeric(be_data3$neighbor))))
+  }
+  if (input$surtype==1){
+    be_data1<-be_data1()
+    freq<-ps.frq1()
+    num.neighb<-sort(unique(as.numeric(be_data1$neighbor)))
+  }
+  if (input$surtype==2){
+    be_data2<-be_data2()
+    freq<-ps.frq2()
+    num.neighb<-sort(unique(as.numeric(be_data2$neighbor)))
+  }
+  if (input$surtype==3){
+    be_data3<-be_data3()
+    freq<-ps.frq3()
+    num.neighb<-sort(unique(as.numeric(be_data3$neighbor)))
+  }
   ec_data<-ec_data()
   conc<-conc()
-  be_data<-be_data()
-  freq<-ps.frq()
+  #be_data<-be_data()
+  #freq<-ps.frq()
   label_path<-c("Drain Water", "Produce", "Piped Water", "Ocean Water", "Surface Water", "Flood Water", "Public Latrine Surfaces", "Particulate", "Bathing")
   label_age<-c("Adults","Children")
   
-  n.neighb=ifelse(input$neighb==0, length(unique(as.numeric(be_data$neighbor))),1)
+  n.neighb=ifelse(input$neighb==0, length(num.neighb),1)
   n.path=1
   n.age=ifelse(input$ad_ch==0, 2, 1)
-  if (n.neighb==1 & input$neighb!=0) {k.neighb=as.numeric(input$neighb)} else {k.neighb=sort(unique(as.numeric(be_data$neighbor)))}
+  if (n.neighb==1 & input$neighb!=0) {k.neighb=as.numeric(input$neighb)}
+  else {k.neighb=num.neighb}
   k.path=7
-  if (n.age==1 & input$ad_ch!=0) {k.age=as.numeric(input$ad_ch)} else {k.age=c(1,2)}
+  if (n.age==1 & input$ad_ch!=0) {k.age=as.numeric(input$ad_ch)}
+  else {k.age=c(1,2)}
   
   source("./model/PS_Plot.r")
   ".RNG.state" <- c(19900, 14957, 25769)
@@ -1341,43 +2093,6 @@ output$ps_plot7 <- renderPlot({
       dose[k.path,j,k]<-log10(mean(non0(risk[k.path,j,k,]),na.rm=TRUE))
       
       PS_Plot(paste("Neighborhood: ",k.neighb[j],"\n",label_path[k.path],label_age[k.age[k]]),n[k.path,j,k],dose[k.path,j,k])
-    }
-  }
-})
-
-piechart1<-reactive({
-  be_data<-be_data()
-  freq<-frq()
-  n.neighb=ifelse(input$neighb==0, length(unique(as.numeric(be_data$neighbor))),1)
-  n.path=1
-  n.age=ifelse(input$ad_ch==0, 2, 1)
-  if (n.neighb==1 & input$neighb!=0) {k.neighb=as.numeric(input$neighb)} else {k.neighb=sort(unique(as.numeric(be_data$neighbor)))}
-  if (input$samtype!=0) {k.path=as.numeric(input$samtype)} else {k.path=1}
-  if (n.age==1 & input$ad_ch!=0) {k.age=as.numeric(input$ad_ch)} else {k.age=c(1,2)}
-  nrow=n.path
-  ncol=n.age*n.neighb
-  par(mfrow=c(nrow,ncol))
-  par(mar=c(0.5,6.5,4.5,6.5))
-  label1<-c(">10 times/month","6-10 times/month","1-5 times/month","never","don't know")
-  label_path<-c("Drain Water", "Produce", "Piped Water", "Ocean Water", "Surface Water", "Flood Water", "Public Latrine Surfaces", "Particulate", "Bathing")
-  label_age<-c("Adults","Children")
-  if (input$samtype!=8 & input$samtype!=9){
-    for (i in 1:n.path){
-      for (j in 1:n.neighb){
-        for (k in 1:n.age){
-          slices <- c(table(as.numeric(freq[[14*(k.neighb[j]-1)+2*(k.path-1)+k.age[k]]]))) 
-          label1<-c(">10 times/month","6-10 times/month","1-5 times/month","never","don't know")
-          pct <- c(0,0,0,0,0)
-          pct[sort(unique(as.numeric(freq[[14*(k.neighb[j]-1)+2*(k.path-1)+k.age[k]]])))] <- round(slices/sum(slices)*100)
-          label1 <- paste(label1, "\n", pct, sep="") # add percents to labels 
-          label1 <- paste(label1,"%",sep="") # add % to labels 
-          print(pie(slices,
-              labels = label1[sort(unique(as.numeric(freq[[14*(k.neighb[j]-1)+2*(k.path-1)+k.age[k]]])))], 
-              col=rainbow(5)[sort(unique(as.numeric(freq[[14*(k.neighb[j]-1)+2*(k.path-1)+k.age[k]]])))],
-              main=paste("Neighborhood ",k.neighb[j],", ",label_path[k.path],", ",label_age[k.age[k]]),
-              cex=1.3,cex.main=1.5,init.angle = 90))
-        }
-      }
     }
   }
 })
