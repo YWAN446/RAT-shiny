@@ -74,6 +74,7 @@ shinyServer(function(input, output, session) {
     
   })
   
+
   lab_data <- reactive({
     formhubGET_csv(baseURL, u, p, input$lab_file)
   })
@@ -134,20 +135,6 @@ shinyServer(function(input, output, session) {
   
   
   ## Tables for raw printing ------------------------------------------------------------------------------------------------------------
-  
-  output$ec_table <- renderTable({
-    ec_data()
-  })
-  output$hh_table <- renderTable({
-    household_data()
-  })
-  output$sch_table <- renderTable({
-    school_data()
-  })
-  
-  output$com_table <- renderTable({
-    community_data()
-  }) 
   output$raw_table <- renderDataTable({
     switch(input$raw_view,
            'Household' = household_data(),

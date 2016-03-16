@@ -46,6 +46,10 @@ create_ecData <- function(collection_data, lab_data) {
   ec_con[condition8]=ec_data$count1[condition8]/ec_data$dil1[condition8]*ec_data$ec_denom[condition8]
   ec_con[condition9]=0.5/(ec_data$dil1[condition9]+ec_data$dil2[condition9])*ec_data$ec_denom[condition9]
   ec_data$ec_conc<-ec_con
+  
+  ec_data$neighbor <- as.factor(ec_data$neighbor)
+  
+  return(ec_data)
 }
 
 create_concData <- function(ec_data) {
@@ -59,6 +63,7 @@ create_concData <- function(ec_data) {
                                                                                           & ec_data$sample_type==j)]
     }
   }
+  return(conc)
 }
 
 # FREQUENCIES ----------------------------------------------------------------
@@ -532,4 +537,86 @@ calculate_combinedFreq <- function(household_data, school_data, community_data, 
   
   return(freq)
   
+}
+
+# PLOTTING ====================================================================
+## PIE CHARTS 
+make_pieChart <- function(freq, num.neighb, surtype) {
+  if (surtype==0){
+    be_data1<-household_data()
+    be_data2<-school_data()
+    be_data3<-community_data()
+    freq<-frq0()
+    num.neighb<-sort(unique(c(as.numeric(be_data1$neighbor),as.numeric(be_data2$neighbor),as.numeric(be_data3$neighbor))))
+  }
+  if (input$surtype==1){
+    be_data1<-household_data()
+    freq<-frq1()
+    num.neighb<-sort(unique(as.numeric(be_data1$neighbor)))
+  }
+  if (input$surtype==2){
+    be_data2<-school_data()
+    freq<-frq2()
+    num.neighb<-sort(unique(as.numeric(be_data2$neighbor)))
+  }
+  if (input$surtype==3){
+    be_data3<-community_data()
+    freq<-frq3()
+    num.neighb<-sort(unique(as.numeric(be_data3$neighbor)))
+  }
+  n.neighb=ifelse(input$neighb==0, length(num.neighb),1)
+  n.path=1
+  n.age=ifelse(input$ad_ch==0, 2, 1)
+  if (n.neighb==1 & input$neighb!=0) {k.neighb=as.numeric(input$neighb)}
+  else {k.neighb=sort(num.neighb)}
+  if (input$samtype!=0){k.path=as.numeric(input$samtype)} 
+  else{k.path=1}
+  if (n.age==1 & input$ad_ch!=0) {k.age=as.numeric(input$ad_ch)}
+  else {k.age=c(1,2)}
+  nrow=n.path
+  ncol=n.age*n.neighb
+  par(mfrow=c(nrow,ncol))
+  par(mar=c(0.5,6.5,4.5,6.5))
+  label1<-c(">10 times/month","6-10 times/month","1-5 times/month","never","don't know")
+  label_path<-c("Drain Water", "Produce", "Piped Water", "Ocean Water", "Surface Water", "Flood Water", "Public Latrine Surfaces", "Particulate", "Bathing")
+  label_age<-c("Adults","Children")
+  if (input$samtype!=8 & input$samtype!=9){
+    for (i in 1:n.path){
+      for (j in 1:n.neighb){
+        for (k in 1:n.age){
+          slices <- c(table(as.numeric(freq[[14*(k.neighb[j]-1)+2*(k.path-1)+k.age[k]]]))) 
+          label1<-c(">10 times/month","6-10 times/month","1-5 times/month","never","don't know")
+          pct <- c(0,0,0,0,0)
+          pct[sort(unique(as.numeric(freq[[14*(k.neighb[j]-1)+2*(k.path-1)+k.age[k]]])))] <- round(slices/sum(slices)*100)
+          label1 <- paste(label1, "\n", pct, sep="") # add percents to labels 
+          label1 <- paste(label1,"%",sep="") # add % to labels 
+          pie(slices,
+              labels = label1[sort(unique(as.numeric(freq[[14*(k.neighb[j]-1)+2*(k.path-1)+k.age[k]]])))], 
+              col=rainbow(5)[sort(unique(as.numeric(freq[[14*(k.neighb[j]-1)+2*(k.path-1)+k.age[k]]])))],
+              main=paste("Neighborhood ",k.neighb[j],", ",label_path[k.path],", ",label_age[k.age[k]]),
+              cex=1.3,cex.main=1.5,init.angle = 90)
+        }
+      }
+    }
+  }
+}
+
+make_histogram <- function(samtype, ec_data, conc) {
+  if (samtype!=0) return(NULL)
+  n.neighb=ifelse(input$neighb==0, length(unique(as.numeric(ec_data$neighbor))),1)
+  n.path=1
+  if (n.neighb==1 & input$neighb!=0) {k.neighb=as.numeric(input$neighb)}
+  else {k.neighb=sort(unique(as.numeric(ec_data$neighbor)))}
+  k.path=6
+  nrow=n.path
+  ncol=n.neighb
+  par(mfrow=c(nrow,ncol))
+  par(mar=c(4,2,4,1))
+  par(pin=c(6,5))
+  label3<-c("Drain Water", "Produce", "Piped Water", "Ocean Water", "Surface Water", "Flood Water", "Public Latrine Surfaces", "Particulate", "Bathing")
+  for (j in 1:n.neighb){
+    hist(log10(as.numeric(conc[[9*(k.neighb[j]-1)+k.path]])),breaks=seq(0,10,by=1),col="skyblue",ylim=c(0,1),freq=FALSE,yaxt="n",ylab="percent",
+         main=paste("Neighborhood ",k.neighb[j],", Sample Type:",label3[k.path],"( N =",length(which(!is.na(conc[[9*(k.neighb[j]-1)+k.path]]))),")"),cex.main=1.3,xlab=expression(paste("log10 ", italic("E. coli"), "concentration (CFU/100mL)")))
+    axis(2,at=seq(0,1,0.2),labels=paste(c(0,20,40,60,80,100),"%",sep=""))
+  }
 }

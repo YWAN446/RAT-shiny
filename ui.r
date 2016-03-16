@@ -37,11 +37,6 @@ shinyUI(fluidPage(theme = "bootstrap.css",
     ),
     mainPanel(
       tabsetPanel(type = "tabs", 
-                  tabPanel("Raw Data", 
-                           selectInput('raw_view', 'Select table to view:', 
-                                                   c('Household', 'Community', 'School', 'E. Coli'), selected='Household'),
-                           dataTableOutput('raw_table')),
-
                   tabPanel("Pie Chart", plotOutput("pie_chart1",height = 300, width = 1400),plotOutput("pie_chart2",height = 300, width = 1400),
                            plotOutput("pie_chart3",height = 300, width = 1400),plotOutput("pie_chart4",height = 300, width = 1400),
                            plotOutput("pie_chart5",height = 300, width = 1400),plotOutput("pie_chart6",height = 300, width = 1400),
@@ -51,7 +46,12 @@ shinyUI(fluidPage(theme = "bootstrap.css",
                            plotOutput("hist7",height = 500, width = 1100),plotOutput("hist8",height = 500, width = 1100),plotOutput("hist9",height = 500, width = 1100)),
                   tabPanel("People Plot", plotOutput("ps_plot1",height = 500, width = 1100),plotOutput("ps_plot2",height = 500, width = 1100),plotOutput("ps_plot3",height = 500, width = 1100),
                            plotOutput("ps_plot4",height = 500, width = 1100),plotOutput("ps_plot5",height = 500, width = 1100),plotOutput("ps_plot6",height = 500, width = 1100),
-                           plotOutput("ps_plot7",height = 500, width = 1100))
+                           plotOutput("ps_plot7",height = 500, width = 1100)),
+                  tabPanel("Raw Data", 
+                           selectInput('raw_view', 'Select table to view:', 
+                                       c('Household', 'Community', 'School', 'E. Coli'), selected='Household'),
+                           dataTableOutput('raw_table'))
+                  
                   )
     )
   )
