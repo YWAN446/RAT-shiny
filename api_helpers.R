@@ -8,6 +8,8 @@ library(jsonlite)
 # security
 # FormHub API documentation can be accessed at:
 # https://formhub.org/api/v1/
+# and at:
+# https://github.com/SEL-Columbia/formhub/wiki/Formhub-Access-Points-(API)
 
 
 # TOKEN --------------------------------------------------------------------
