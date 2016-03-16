@@ -21,6 +21,7 @@ shinyServer(function(input, output, session) {
   session$onSessionEnded(function() {
     stopApp()
   })
+  
   # Update the form options ---------------------------------------------------------
   observe({
     # URL and API token are currently defined in the API Helpers script.
@@ -183,37 +184,15 @@ shinyServer(function(input, output, session) {
   # })
   
   output$pie_chart1 <- renderPlot({
-    if (input$surtype==0){
-      be_data1<-household_data()
-      be_data2<-school_data()
-      be_data3<-community_data()
-      freq<-frq0()
-      num.neighb<-sort(unique(c(as.numeric(be_data1$neighbor),as.numeric(be_data2$neighbor),as.numeric(be_data3$neighbor))))
-    }
-    if (input$surtype==1){
-      be_data1<-household_data()
-      freq<-frq1()
-      num.neighb<-sort(unique(as.numeric(be_data1$neighbor)))
-    }
-    if (input$surtype==2){
-      be_data2<-school_data()
-      freq<-frq2()
-      num.neighb<-sort(unique(as.numeric(be_data2$neighbor)))
-    }
-    if (input$surtype==3){
-      be_data3<-community_data()
-      freq<-frq3()
-      num.neighb<-sort(unique(as.numeric(be_data3$neighbor)))
-    }
-    n.neighb=ifelse(input$neighb==0, length(num.neighb),1)
+    # THIS IS THE OLD FORMAT
+    be_data<-household_data()
+    freq<-frq1()
+    n.neighb=ifelse(input$neighb==0, length(unique(as.numeric(be_data$neighbor))),1)
     n.path=1
     n.age=ifelse(input$ad_ch==0, 2, 1)
-    if (n.neighb==1 & input$neighb!=0) {k.neighb=as.numeric(input$neighb)}
-    else {k.neighb=sort(num.neighb)}
-    if (input$samtype!=0){k.path=as.numeric(input$samtype)} 
-    else{k.path=1}
-    if (n.age==1 & input$ad_ch!=0) {k.age=as.numeric(input$ad_ch)}
-    else {k.age=c(1,2)}
+    if (n.neighb==1 & input$neighb!=0) {k.neighb=as.numeric(input$neighb)} else {k.neighb=sort(unique(as.numeric(be_data$neighbor)))}
+    if (input$samtype!=0) {k.path=as.numeric(input$samtype)} else {k.path=1}
+    if (n.age==1 & input$ad_ch!=0) {k.age=as.numeric(input$ad_ch)} else {k.age=c(1,2)}
     nrow=n.path
     ncol=n.age*n.neighb
     par(mfrow=c(nrow,ncol))
