@@ -88,16 +88,7 @@ shinyServer(function(input, output, session) {
   })
   
   conc <- reactive({
-    ec_data<-ec_data()
-    conc<-list()
-    for (i in 1:length(unique(as.numeric(ec_data$neighbor)))){
-      # sample type 1=drain water, 2=produce, 3=piped water, 4=ocean water, 5=surface water, 6=flood water, 7=Public Latrine Surfaces, 8=particulate, 9=bathing
-      for (j in 1:9){
-        conc[[9*(sort(unique(as.numeric(ec_data$neighbor)))[i]-1)+j]]=ec_data$ec_conc[which(ec_data$neighbor==sort(unique(ec_data$neighbor))[i] 
-                                                                                            & ec_data$sample_type==j)]
-      }
-    }
-    conc
+    create_concData(ec_data())
   })
   output$conc <- renderText(class(conc()))
   
@@ -157,6 +148,14 @@ shinyServer(function(input, output, session) {
   output$com_table <- renderTable({
     community_data()
   }) 
+  output$raw_table <- renderDataTable({
+    switch(input$raw_view,
+           'Household' = household_data(),
+           'Community' = community_data(),
+           'School' = school_data(),
+           'E. Coli' = ec_data()
+           )
+  })
   
   output$conc <- renderPrint({
     unlist(conc())
