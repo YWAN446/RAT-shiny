@@ -3,26 +3,89 @@ library(rjags)
 #setwd("~/stat/RAT-shiny/model")
 source("./model/PS_Plot.r")
 options(shiny.maxRequestSize = 9*1024^2)
+source('api_helpers.R')
+
+baseURL <- 'http://54.210.2.87/'
+apiUrl <- 'http://54.210.2.87/api/v1/data' # this is the main access point to use for data
+apiToken <- '8d0336d37ef28df590574f1cd4531f142e31ca02'
+u <- 'sp'
+p <- '2007beagle'
+
+# download the list of forms before Shiny starts
+forms <- getAPI_forms(baseURL, apiUrl, u, p, apiToken)
+
 
 shinyServer(function(input, output, session) {
-  observe({
-    col_inFile<-input$col_file
-    if(is.null(col_inFile))
-      return(NULL)
-    col_data = read.csv(col_inFile$datapath)
-    updateSelectInput(session, "neighb", choices = c("All"=0,unique(col_data$neighbor)))
-    updateSelectInput(session, "samtype", choices = c("All"=0,c("Drain Water"=1, "Produce"=2, "Piped Water"=3, 
-                                                                "Ocean Water"=4, "Surface Water"=5, "Flood Water"=6,
-                                                                "Public Latrine Surfaces"=7, "Particulate"=8, "Bathing"=9)[unique(col_data$sample_type)]))
+  
+  # will stop shiny when the window closes
+  session$onSessionEnded(function() {
+    stopApp()
   })
+  # Update the form options ---------------------------------------------------------
+  observe({
+    # URL and API token are currently defined in the API Helpers script.
+    # This returns a list of available forms based on the user token
+    # provided.
+    
+    # update the options
+    updateSelectizeInput(session, 'col_file', choices=filterAPI_forms('collection', forms)$menu_items)
+    updateSelectizeInput(session, 'lab_file', choices=filterAPI_forms('lab', forms)$menu_items)
+    updateSelectizeInput(session, 'hh_file', choices=filterAPI_forms('household', forms)$menu_items)
+    updateSelectizeInput(session, 'sch_file', choices=filterAPI_forms('school', forms)$menu_items)
+    updateSelectizeInput(session, 'com_file', choices=filterAPI_forms('community', forms)$menu_items)
+    
+  })
+  # Download the data ----------------------------------------------------------------
+  school_data <- reactive({
+    formhubGET_csv(baseURL, u, p, input$sch_file)
+  })
+  
+  community_data <- reactive({
+    formhubGET_csv(baseURL, u, p, input$com_file)
+  })
+  output$community <- renderText({input$com_file})
+  
+  
+  household_data <- reactive({ # household data, keeping name for consistency
+    formhubGET_csv(baseURL, u, p, input$hh_file)
+    
+  })
+
+  collection_data <- reactive({
+    collection <- formhubGET_csv(baseURL, u, p, input$col_file)
+    if (length(grep('does not have any data uploaded yet!', collection)) != 1) { # check for an error message
+      collection$neighbor <- as.factor(collection$neighbor)
+    
+    #     # it seems like these are used for analysis and they need to be numeric. 
+    #     columns <- c('sampleid', 'free_cl', 'containr', 'total_cl', 'source_ty', 'covered', 'dis_lat', 
+    #                  'latrine_user_num', 'vis_fec', 'source_type', 'hw_stat', 'n_stall', 
+    #                  'particle_sample_type', 'sample_weight', 'source_dist')
+    #     collection[,columns] <- apply(collection[,columns], 2, as.numeric)
+      updateSelectInput(session, "neighb", choices = c("All"=0,unique(collection$neighbor)))
+      updateSelectInput(session, "samtype", choices = c("All"=0,c("Drain Water"=1, "Produce"=2, "Piped Water"=3, 
+                                                                  "Ocean Water"=4, "Surface Water"=5, "Flood Water"=6,
+                                                                  "Public Latrine Surfaces"=7, "Particulate"=8, "Bathing"=9)[unique(collection$sample_type)]))
+    
+      collection
+    }
+    else {
+      print(collection)
+    }
+
+  })
+  
+  lab_data <- reactive({
+    formhubGET_csv(baseURL, u, p, input$lab_file)
+  })
+  
+
+  lab_data <- reactive({
+    formhubGET_csv(baseURL, u, p, input$lab_file)
+  })
+  
   ec_data <- reactive({
-    col_inFile<-input$col_file
-    lab_inFile<-input$lab_file
-    if(is.null(col_inFile)|is.null(lab_inFile)) #two datasets for environment samples have to be loaded.
-      return(NULL)
-    col_data<-read.csv(input$col_file$datapath)
-    lab_data<-read.csv(input$lab_file$datapath)
-    ec_data<-merge(col_data,lab_data,by=c("sample_type","sampleid"))
+
+    ec_data<-merge(collection_data(),lab_data(),by=c("sample_type","sampleid"))
     ec_data$ec_denom=100
     ec_data$ec_denom[which(ec_data$sample_type==2)]=500
     ec_data$ec_denom[which(ec_data$sample_type==2)]=14
@@ -63,6 +126,7 @@ shinyServer(function(input, output, session) {
     ec_data$ec_conc<-ec_con
     ec_data
   })
+  
   conc <- reactive({
     ec_data<-ec_data()
     conc<-list()
@@ -76,53 +140,40 @@ shinyServer(function(input, output, session) {
     conc
   })
   
+  # household data
   be_data1 <- reactive({
-    hh_inFile <- input$hh_file
-    if (is.null(hh_inFile))
-      return(NULL)
-    be_data1<-read.csv(hh_inFile$datapath)
-    be_data1
+    household_data()
   })
   
+  # school data
   be_data2 <- reactive({
-    sch_inFile <- input$sch_file
-    if (is.null(sch_inFile))
-      return(NULL)
-    be_data2<-read.csv(sch_inFile$datapath)
-    be_data2
+    school_data()
   })
   
+  # community data
   be_data3 <- reactive({
-    com_inFile <- input$com_file
-    if (is.null(com_inFile))
-      return(NULL)
-    be_data3<-read.csv(com_inFile$datapath)
-    be_data3
+    community_data()
   })
   
   frq1 <- reactive({
-    hh_inFile <- input$hh_file    
-    if (is.null(hh_inFile))
-      return(NULL)
-    be_data<-read.csv(hh_inFile$datapath)
     freq<-list()
     
-    for (i in 1:length(unique(be_data$neighbor))){
+    for (i in 1:length(unique(be_data1()$neighbor))){
       # sample type 1|2=drain, 3|4=produce, 5|6=piped water, 7|8=ocean water, 9|10=surface water, 11|12=flood water, 13|14=Public Latrine Surfaces  
-      freq[[14*(sort(unique(be_data$neighbor))[i]-1)+1]]=as.numeric(be_data$hh_q6[which(be_data$hh_q6!="n/a" & be_data$neighbor==i)]);
-      freq[[14*(sort(unique(be_data$neighbor))[i]-1)+2]]=as.numeric(be_data$hh_q7[which(be_data$hh_q7!="n/a" & be_data$neighbor==i)]);
-      freq[[14*(sort(unique(be_data$neighbor))[i]-1)+3]]=as.numeric(be_data$hh_q13[which(be_data$hh_q13!="n/a" & be_data$neighbor==i)]);
-      freq[[14*(sort(unique(be_data$neighbor))[i]-1)+4]]=as.numeric(be_data$hh_q14[which(be_data$hh_q14!="n/a" & be_data$neighbor==i)]);
-      freq[[14*(sort(unique(be_data$neighbor))[i]-1)+5]]=as.numeric(be_data$hh_q10[which(be_data$hh_q10!="n/a" & be_data$neighbor==i)]);
-      freq[[14*(sort(unique(be_data$neighbor))[i]-1)+6]]=as.numeric(be_data$hh_q11[which(be_data$hh_q11!="n/a" & be_data$neighbor==i)]);
-      freq[[14*(sort(unique(be_data$neighbor))[i]-1)+7]]=as.numeric(be_data$hh_q2[which(be_data$hh_q2!="n/a" & be_data$neighbor==i)]);
-      freq[[14*(sort(unique(be_data$neighbor))[i]-1)+8]]=as.numeric(be_data$hh_q3[which(be_data$hh_q3!="n/a" & be_data$neighbor==i)]);
-      freq[[14*(sort(unique(be_data$neighbor))[i]-1)+9]]=as.numeric(be_data$hh_q4[which(be_data$hh_q4!="n/a" & be_data$neighbor==i)]);
-      freq[[14*(sort(unique(be_data$neighbor))[i]-1)+10]]=as.numeric(be_data$hh_q5[which(be_data$hh_q5!="n/a" & be_data$neighbor==i)]);
-      freq[[14*(sort(unique(be_data$neighbor))[i]-1)+11]]=as.numeric(be_data$hh_q8[which(be_data$hh_q8!="n/a" & be_data$neighbor==i)]);
-      freq[[14*(sort(unique(be_data$neighbor))[i]-1)+12]]=as.numeric(be_data$hh_q9[which(be_data$hh_q9!="n/a" & be_data$neighbor==i)]);
-      freq[[14*(sort(unique(be_data$neighbor))[i]-1)+13]]=as.numeric(be_data$hh_q15[which(be_data$hh_q15!="n/a" & be_data$neighbor==i)]);
-      freq[[14*(sort(unique(be_data$neighbor))[i]-1)+14]]=as.numeric(be_data$hh_q16[which(be_data$hh_q16!="n/a" & be_data$neighbor==i)]);
+      freq[[14*(sort(unique(be_data1()$neighbor))[i]-1)+1]]=as.numeric(be_data1()$hh_q6[which(be_data1()$hh_q6!="n/a" & be_data1()$neighbor==i)]);
+      freq[[14*(sort(unique(be_data1()$neighbor))[i]-1)+2]]=as.numeric(be_data1()$hh_q7[which(be_data1()$hh_q7!="n/a" & be_data1()$neighbor==i)]);
+      freq[[14*(sort(unique(be_data1()$neighbor))[i]-1)+3]]=as.numeric(be_data1()$hh_q13[which(be_data1()$hh_q13!="n/a" & be_data1()$neighbor==i)]);
+      freq[[14*(sort(unique(be_data1()$neighbor))[i]-1)+4]]=as.numeric(be_data1()$hh_q14[which(be_data1()$hh_q14!="n/a" & be_data1()$neighbor==i)]);
+      freq[[14*(sort(unique(be_data1()$neighbor))[i]-1)+5]]=as.numeric(be_data1()$hh_q10[which(be_data1()$hh_q10!="n/a" & be_data1()$neighbor==i)]);
+      freq[[14*(sort(unique(be_data1()$neighbor))[i]-1)+6]]=as.numeric(be_data1()$hh_q11[which(be_data1()$hh_q11!="n/a" & be_data1()$neighbor==i)]);
+      freq[[14*(sort(unique(be_data1()$neighbor))[i]-1)+7]]=as.numeric(be_data1()$hh_q2[which(be_data1()$hh_q2!="n/a" & be_data1()$neighbor==i)]);
+      freq[[14*(sort(unique(be_data1()$neighbor))[i]-1)+8]]=as.numeric(be_data1()$hh_q3[which(be_data1()$hh_q3!="n/a" & be_data1()$neighbor==i)]);
+      freq[[14*(sort(unique(be_data1()$neighbor))[i]-1)+9]]=as.numeric(be_data1()$hh_q4[which(be_data1()$hh_q4!="n/a" & be_data1()$neighbor==i)]);
+      freq[[14*(sort(unique(be_data1()$neighbor))[i]-1)+10]]=as.numeric(be_data1()$hh_q5[which(be_data1()$hh_q5!="n/a" & be_data1()$neighbor==i)]);
+      freq[[14*(sort(unique(be_data1()$neighbor))[i]-1)+11]]=as.numeric(be_data1()$hh_q8[which(be_data1()$hh_q8!="n/a" & be_data1()$neighbor==i)]);
+      freq[[14*(sort(unique(be_data1()$neighbor))[i]-1)+12]]=as.numeric(be_data1()$hh_q9[which(be_data1()$hh_q9!="n/a" & be_data1()$neighbor==i)]);
+      freq[[14*(sort(unique(be_data1()$neighbor))[i]-1)+13]]=as.numeric(be_data1()$hh_q15[which(be_data1()$hh_q15!="n/a" & be_data1()$neighbor==i)]);
+      freq[[14*(sort(unique(be_data1()$neighbor))[i]-1)+14]]=as.numeric(be_data1()$hh_q16[which(be_data1()$hh_q16!="n/a" & be_data1()$neighbor==i)]);
     }
     freq
   })
@@ -553,36 +604,30 @@ shinyServer(function(input, output, session) {
   })
   
     
+
   output$ec_table <- renderTable({
-    col_inFile<-input$col_file
-    lab_inFile<-input$lab_file
-    if(is.null(col_inFile)|is.null(lab_inFile)) #two datasets for environment samples have to be loaded.
-      return(NULL)
-    col_data<-read.csv(input$col_file$datapath)
-    lab_data<-read.csv(input$lab_file$datapath)
-    merge(col_data,lab_data,by=c("sample_type","sampleid"))
-#    ec_inFile <- input$ec_file    
-#    if (is.null(ec_inFile))
-#      return(NULL)
-#    read.csv(ec_inFile$datapath)
+    ec_data()
   })
   output$hh_table <- renderTable({
-    hh_inFile <- input$hh_file    
-    if (is.null(hh_inFile))
-      return(NULL)
-    read.csv(hh_inFile$datapath)
+    be_data()
   })
   output$sch_table <- renderTable({
-    sch_inFile <- input$sch_file    
-    if (is.null(sch_inFile))
-      return(NULL)
-    read.csv(sch_inFile$datapath)
+    school_data()
   })
+  
+## Tables for raw printing ------------------------------------------------------------------------------------------------------------
+  output$ec_table <- renderTable({
+    ec_data()
+  })
+  output$hh_table <- renderTable({
+    be_data()
+  })
+  output$sch_table <- renderTable({
+    school_data()
+  })
+  
   output$com_table <- renderTable({
-    com_inFile <- input$com_file    
-    if (is.null(com_inFile))
-      return(NULL)
-    read.csv(com_inFile$datapath)
+    community_data()
   }) 
   
 #This table is for test only#
