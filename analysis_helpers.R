@@ -2,6 +2,66 @@
 ## these have been derived from the original server.R 
 ## file.
 
+
+# MERGING --------------------------------------------------------------------
+create_ecData <- function(collection_data, lab_data) {
+  # merge and calculate e. coli data?
+  
+  ec_data<-merge(collection_data,lab_data,by=c("sample_type","sampleid"))
+  ec_data$ec_denom=100
+  ec_data$ec_denom[which(ec_data$sample_type==2)]=500
+  ec_data$ec_denom[which(ec_data$sample_type==2)]=14
+  ec_data$ec_denom[which(ec_data$sample_type==8)]=2
+  ec_data$ec_denom[is.na(ec_data$sample_type)]=NA
+  
+  ec_data$count1[ec_data$ec_dil1>=ec_data$ec_dil2]<-ec_data$ec_ecnt1[ec_data$ec_dil1>=ec_data$ec_dil2]
+  ec_data$count2[ec_data$ec_dil1>=ec_data$ec_dil2]<-ec_data$ec_ecnt2[ec_data$ec_dil1>=ec_data$ec_dil2]
+  ec_data$dil1[ec_data$ec_dil1>=ec_data$ec_dil2]<-ec_data$ec_dil1[ec_data$ec_dil1>=ec_data$ec_dil2]
+  ec_data$dil2[ec_data$ec_dil1>=ec_data$ec_dil2]<-ec_data$ec_dil2[ec_data$ec_dil1>=ec_data$ec_dil2]
+  
+  ec_data$count2[ec_data$ec_dil1<ec_data$ec_dil2]<-ec_data$ec_ecnt1[ec_data$ec_dil1<ec_data$ec_dil2]
+  ec_data$count1[ec_data$ec_dil1<ec_data$ec_dil2]<-ec_data$ec_ecnt2[ec_data$ec_dil1<ec_data$ec_dil2]
+  ec_data$dil2[ec_data$ec_dil1<ec_data$ec_dil2]<-ec_data$ec_dil1[ec_data$ec_dil1<ec_data$ec_dil2]
+  ec_data$dil1[ec_data$ec_dil1<ec_data$ec_dil2]<-ec_data$ec_dil2[ec_data$ec_dil1<ec_data$ec_dil2]
+  
+  
+  condition1=which((ec_data$count1==999 | ec_data$count1==998) & (ec_data$count2==999 | ec_data$count2==998))
+  condition2=which((ec_data$count1==999 | ec_data$count1==998) & ec_data$count2>=10 & ec_data$count2<=200)
+  condition3=which((ec_data$count1==999 | ec_data$count1==998) & ec_data$count2>=1 & ec_data$count2<=9)
+  condition4=which(ec_data$count1>=10 & ec_data$count1<=200 & ec_data$count2>=10 & ec_data$count2<=200)
+  condition5=which(ec_data$count1>=10 & ec_data$count1<=200 & ec_data$count2>=1 & ec_data$count2<=9)
+  condition6=which(ec_data$count1>=10 & ec_data$count1<=200 & ec_data$count2==0)
+  condition7=which(ec_data$count1>=1 & ec_data$count1<=9 & ec_data$count2>=1 & ec_data$count2<=9)
+  condition8=which(ec_data$count1>=1 & ec_data$count1<=9 & ec_data$count2==0)
+  condition9=which(ec_data$count1==0 & ec_data$count2==0)
+  
+  ec_con<-c()
+  ec_con[condition1]=200/ec_data$dil2[condition1]*ec_data$ec_denom[condition1]
+  ec_con[condition2]=ec_data$count2[condition2]/ec_data$dil2[condition2]*ec_data$ec_denom[condition2]
+  ec_con[condition3]=ec_data$count2[condition3]/ec_data$dil2[condition3]*ec_data$ec_denom[condition3]
+  ec_con[condition4]=(ec_data$count1[condition4]+ec_data$count2[condition4])/(ec_data$dil1[condition4]+ec_data$dil2[condition4])*ec_data$ec_denom[condition4]
+  ec_con[condition5]=ec_data$count1[condition5]/ec_data$dil1[condition5]*ec_data$ec_denom[condition5]
+  ec_con[condition6]=ec_data$count1[condition6]/ec_data$dil1[condition6]*ec_data$ec_denom[condition6]
+  ec_con[condition7]=(ec_data$count1[condition7]+ec_data$count2[condition7])/(ec_data$dil1[condition7]+ec_data$dil2[condition7])*ec_data$ec_denom[condition7]
+  ec_con[condition8]=ec_data$count1[condition8]/ec_data$dil1[condition8]*ec_data$ec_denom[condition8]
+  ec_con[condition9]=0.5/(ec_data$dil1[condition9]+ec_data$dil2[condition9])*ec_data$ec_denom[condition9]
+  ec_data$ec_conc<-ec_con
+}
+
+create_concData <- function(ec_data) {
+  # Calculate concentration amounts?
+  
+  conc<-list()
+  for (i in 1:length(unique(as.numeric(ec_data$neighbor)))){
+    # sample type 1=drain water, 2=produce, 3=piped water, 4=ocean water, 5=surface water, 6=flood water, 7=Public Latrine Surfaces, 8=particulate, 9=bathing
+    for (j in 1:9){
+      conc[[9*(sort(unique(as.numeric(ec_data$neighbor)))[i]-1)+j]]=ec_data$ec_conc[which(ec_data$neighbor==sort(unique(ec_data$neighbor))[i] 
+                                                                                          & ec_data$sample_type==j)]
+    }
+  }
+}
+
+# FREQUENCIES ----------------------------------------------------------------
 calculate_householdFreq <- function(household_data, type='pie chart') {
   # calculate the appropriate factors for plotting pie charts
   # and people plots.  This is specific to the household 
