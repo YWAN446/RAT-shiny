@@ -82,24 +82,39 @@ calculate_householdFreq <- function(household_data, type='pie chart') {
   freq<-list()
   
   for (i in 1:length(unique(household_data$neighbor))){
+    sub <- list()
     # sample type 1|2=drain, 3|4=produce, 5|6=piped water, 7|8=ocean water, 9|10=surface water, 11|12=flood water, 13|14=Public Latrine Surfaces  
-    freq[[14*(sort(unique(household_data$neighbor))[i]-1)+1]]=as.numeric(household_data$hh_q6[which(household_data$hh_q6!="n/a" & household_data$neighbor==i)]);
-    freq[[14*(sort(unique(household_data$neighbor))[i]-1)+2]]=as.numeric(household_data$hh_q7[which(household_data$hh_q7!="n/a" & household_data$neighbor==i)]);
-    freq[[14*(sort(unique(household_data$neighbor))[i]-1)+3]]=as.numeric(household_data$hh_q13[which(household_data$hh_q13!="n/a" & household_data$neighbor==i)]);
-    freq[[14*(sort(unique(household_data$neighbor))[i]-1)+4]]=as.numeric(household_data$hh_q14[which(household_data$hh_q14!="n/a" & household_data$neighbor==i)]);
-    freq[[14*(sort(unique(household_data$neighbor))[i]-1)+5]]=as.numeric(household_data$hh_q10[which(household_data$hh_q10!="n/a" & household_data$neighbor==i)]);
-    freq[[14*(sort(unique(household_data$neighbor))[i]-1)+6]]=as.numeric(household_data$hh_q11[which(household_data$hh_q11!="n/a" & household_data$neighbor==i)]);
-    freq[[14*(sort(unique(household_data$neighbor))[i]-1)+7]]=as.numeric(household_data$hh_q2[which(household_data$hh_q2!="n/a" & household_data$neighbor==i)]);
-    freq[[14*(sort(unique(household_data$neighbor))[i]-1)+8]]=as.numeric(household_data$hh_q3[which(household_data$hh_q3!="n/a" & household_data$neighbor==i)]);
-    freq[[14*(sort(unique(household_data$neighbor))[i]-1)+9]]=as.numeric(household_data$hh_q4[which(household_data$hh_q4!="n/a" & household_data$neighbor==i)]);
-    freq[[14*(sort(unique(household_data$neighbor))[i]-1)+10]]=as.numeric(household_data$hh_q5[which(household_data$hh_q5!="n/a" & household_data$neighbor==i)]);
-    freq[[14*(sort(unique(household_data$neighbor))[i]-1)+11]]=as.numeric(household_data$hh_q8[which(household_data$hh_q8!="n/a" & household_data$neighbor==i)]);
-    freq[[14*(sort(unique(household_data$neighbor))[i]-1)+12]]=as.numeric(household_data$hh_q9[which(household_data$hh_q9!="n/a" & household_data$neighbor==i)]);
-    freq[[14*(sort(unique(household_data$neighbor))[i]-1)+13]]=as.numeric(household_data$hh_q15[which(household_data$hh_q15!="n/a" & household_data$neighbor==i)]);
-    freq[[14*(sort(unique(household_data$neighbor))[i]-1)+14]]=as.numeric(household_data$hh_q16[which(household_data$hh_q16!="n/a" & household_data$neighbor==i)]);
+    
+    sub[['drain']] <- list('adults' = as.numeric(household_data$hh_q6[which(household_data$hh_q6!="n/a" & household_data$neighbor==i)]),
+                         'children' = as.numeric(household_data$hh_q7[which(household_data$hh_q7!="n/a" & household_data$neighbor==i)])
+    )
+    sub[['produce']] <- list('adults' = as.numeric(household_data$hh_q13[which(household_data$hh_q13!="n/a" & household_data$neighbor==i)]),
+                           'children' = as.numeric(household_data$hh_q14[which(household_data$hh_q14!="n/a" & household_data$neighbor==i)])
+    )
+    sub[['piped_water']] <- list('adults' = as.numeric(household_data$hh_q10[which(household_data$hh_q10!="n/a" & household_data$neighbor==i)]),
+                               'children' = as.numeric(household_data$hh_q11[which(household_data$hh_q11!="n/a" & household_data$neighbor==i)])
+    )
+    sub[['ocean_water']] <- list('adults' = as.numeric(household_data$hh_q2[which(household_data$hh_q2!="n/a" & household_data$neighbor==i)]),
+                               'children' = as.numeric(household_data$hh_q3[which(household_data$hh_q3!="n/a" & household_data$neighbor==i)])
+    )
+    sub[['surface_water']] <- list('adults' = as.numeric(household_data$hh_q4[which(household_data$hh_q4!="n/a" & household_data$neighbor==i)]),
+                                 'children' = as.numeric(household_data$hh_q5[which(household_data$hh_q5!="n/a" & household_data$neighbor==i)])
+    )
+    sub[['flood_water']] <- list('adults' = as.numeric(household_data$hh_q8[which(household_data$hh_q8!="n/a" & household_data$neighbor==i)]),
+                               'children' = as.numeric(household_data$hh_q9[which(household_data$hh_q9!="n/a" & household_data$neighbor==i)])
+    )
+    sub[['public_latrine']] <- list('adults' = as.numeric(household_data$hh_q15[which(household_data$hh_q15!="n/a" & household_data$neighbor==i)]),
+                                  'children' = as.numeric(household_data$hh_q16[which(household_data$hh_q16!="n/a" & household_data$neighbor==i)])
+    )
+    
+    sub <- list(sub)
+    names(sub) <- paste0('neighborhood', i)
+    freq <- append(freq, sub)
   }
   
+  
   if (type == 'pie chart') {
+    # freq <- lapply(freq, function(x) round(table(x)/sum(table(x)),3))
     return(freq)
   }
   # frequencies for pie charts
@@ -109,7 +124,7 @@ calculate_householdFreq <- function(household_data, type='pie chart') {
     return(freq)
   }
   else {
-    cat('Unknown type.  Options are "pie chart" or "ppl plot"\n')
+    warning('Unknown type.  Options are "pie chart" or "ppl plot"\n')
   }
 }
 
@@ -431,4 +446,48 @@ make_histogram <- function(samtype, ec_data, conc) {
          main=paste("Neighborhood ",k.neighb[j],", Sample Type:",label3[k.path],"( N =",length(which(!is.na(conc[[9*(k.neighb[j]-1)+k.path]]))),")"),cex.main=1.3,xlab=expression(paste("log10 ", italic("E. coli"), "concentration (CFU/100mL)")))
     axis(2,at=seq(0,1,0.2),labels=paste(c(0,20,40,60,80,100),"%",sep=""))
   }
+}
+
+## Graphing support -----------------------------------------------------
+plotElements <- # these are global settings that are applied to all plots generated
+  # make changes here to apply across the board (most of the time)
+  theme(
+    plot.title = element_text(face = "bold", size = 26),
+    panel.background = element_blank(),
+    # X axis settings
+    axis.text.x = element_text(size = 14),
+    axis.title.x = element_text(size = 16, face='bold'),
+    # Y axis settings
+    axis.text.y = element_text(size = 16),
+    axis.title.y = element_text(size = 16, face='bold')
+  ) + theme_bw() + theme(legend.text = element_text(size=16),
+                         legend.title = element_text(size=16))
+
+
+ggpie <- function (dat, group_by, value_column) {
+  # found this function online to create pie charts using ggplot
+  # pass the melted data set, group column (group_by) and value column (value_column)
+  
+  plot <-
+    ggplot(dat, aes_string(
+      x = factor(1), y = value_column, fill = group_by, colour = group_by
+    )) +
+    geom_bar(stat = 'identity', size = 1, alpha = .6) +
+    guides(fill = guide_legend(override.aes = list(colour = NA))) + # removes black borders from legend
+    coord_polar(theta = 'y') + theme_bw() +
+    theme(
+      axis.ticks = element_blank(),
+      axis.text.y = element_blank(),
+      axis.text.x = element_text(
+        colour = 'black', size = 12, angle = 0, hjust = 1
+      ),
+      axis.title = element_blank(),
+      panel.border = element_blank()
+    ) +
+    scale_y_continuous(breaks = cumsum(dat[[value_column]]) - dat[[value_column]] / 2,
+                       labels = paste0(round(dat[[value_column]] / sum(dat[[value_column]]) *
+                                               100, 1), "%"))
+  
+  
+  return(plot)
 }
