@@ -1,7 +1,8 @@
 ## Analysis helpers for the SaniPath Analysis tool
 ## these have been derived from the original server.R 
 ## file.
-
+library(ggplot2)
+library(gridExtra)
 
 # MERGING --------------------------------------------------------------------
 create_ecData <- function(collection_data, lab_data) {
@@ -67,6 +68,20 @@ create_concData <- function(ec_data) {
 }
 
 # FREQUENCIES ----------------------------------------------------------------
+freq_to_ppl_plot <- function(freq) {
+  # take an object of freq values and convert them for ps plotting
+  for (p in 1:length(freq)) { # each path
+    for (n in 1:length(freq[[p]])) { # each neighborhood
+      for (a in 1:length(freq[[p]][[n]])) { # each age
+        if (length(freq[[p]][[n]][[a]]) > 0) {
+          freq[[p]][[n]][[a]] <- (4 - freq[[p]][[n]][[a]])
+        }
+      }
+    }
+  }
+  return(freq)
+}
+
 calculate_householdFreq <- function(household_data, type='pie chart') {
   # calculate the appropriate factors for plotting pie charts
   # and people plots.  This is specific to the household 
@@ -75,44 +90,99 @@ calculate_householdFreq <- function(household_data, type='pie chart') {
   #
   # Ex.
   # > calculate_householdFreq(household_data, 'pie chart')
-  # $[[1]]
-  # [1] 3 4 2 1
-  # ...
-
-  freq<-list()
+  # $drain$neighborhood1$adults
+  # [1] 4 4 4 4 4 4 ...
   
-  for (i in 1:length(unique(household_data$neighbor))){
-    sub <- list()
-    # sample type 1|2=drain, 3|4=produce, 5|6=piped water, 7|8=ocean water, 9|10=surface water, 11|12=flood water, 13|14=Public Latrine Surfaces  
-    
-    sub[['drain']] <- list('adults' = as.numeric(household_data$hh_q6[which(household_data$hh_q6!="n/a" & household_data$neighbor==i)]),
-                         'children' = as.numeric(household_data$hh_q7[which(household_data$hh_q7!="n/a" & household_data$neighbor==i)])
+
+  freq <- list('drain' = list(), 'produce' = list(), 'piped_water' = list(), 'ocean_water' = list(),
+               'surface_water' = list(), 'flood_water' = list(), 'public_latrine' = list()
+  )
+  
+  # For each pathway, we're going to look at the neighborhoods and ages-------
+  # drain 
+  for (i in 1:length(unique(household_data$neighbor))) {
+    sub <- list(
+      list('adults' = as.numeric(household_data$hh_q6[which(household_data$hh_q6!="n/a" & household_data$neighbor==i)]),
+               'children' = as.numeric(household_data$hh_q7[which(household_data$hh_q7!="n/a" & household_data$neighbor==i)])
+          )
     )
-    sub[['produce']] <- list('adults' = as.numeric(household_data$hh_q13[which(household_data$hh_q13!="n/a" & household_data$neighbor==i)]),
-                           'children' = as.numeric(household_data$hh_q14[which(household_data$hh_q14!="n/a" & household_data$neighbor==i)])
-    )
-    sub[['piped_water']] <- list('adults' = as.numeric(household_data$hh_q10[which(household_data$hh_q10!="n/a" & household_data$neighbor==i)]),
-                               'children' = as.numeric(household_data$hh_q11[which(household_data$hh_q11!="n/a" & household_data$neighbor==i)])
-    )
-    sub[['ocean_water']] <- list('adults' = as.numeric(household_data$hh_q2[which(household_data$hh_q2!="n/a" & household_data$neighbor==i)]),
-                               'children' = as.numeric(household_data$hh_q3[which(household_data$hh_q3!="n/a" & household_data$neighbor==i)])
-    )
-    sub[['surface_water']] <- list('adults' = as.numeric(household_data$hh_q4[which(household_data$hh_q4!="n/a" & household_data$neighbor==i)]),
-                                 'children' = as.numeric(household_data$hh_q5[which(household_data$hh_q5!="n/a" & household_data$neighbor==i)])
-    )
-    sub[['flood_water']] <- list('adults' = as.numeric(household_data$hh_q8[which(household_data$hh_q8!="n/a" & household_data$neighbor==i)]),
-                               'children' = as.numeric(household_data$hh_q9[which(household_data$hh_q9!="n/a" & household_data$neighbor==i)])
-    )
-    sub[['public_latrine']] <- list('adults' = as.numeric(household_data$hh_q15[which(household_data$hh_q15!="n/a" & household_data$neighbor==i)]),
-                                  'children' = as.numeric(household_data$hh_q16[which(household_data$hh_q16!="n/a" & household_data$neighbor==i)])
-    )
-    
-    sub <- list(sub)
-    names(sub) <- paste0('neighborhood', i)
-    freq <- append(freq, sub)
+    names(sub) <- paste0('neighborhood',i)
+    freq$drain <- append(freq$drain, sub)
+            
   }
   
+  # produce
+  for (i in 1:length(unique(household_data$neighbor))) {
+    sub <- list(
+      list('adults' = as.numeric(household_data$hh_q13[which(household_data$hh_q13!="n/a" & household_data$neighbor==i)]),
+           'children' = as.numeric(household_data$hh_q14[which(household_data$hh_q14!="n/a" & household_data$neighbor==i)])
+      )
+    )
+    names(sub) <- paste0('neighborhood',i)
+    freq$produce <- append(freq$produce, sub)
+    
+  }
   
+  # municipal/piped water
+  for (i in 1:length(unique(household_data$neighbor))) {
+    sub <- list(
+      list('adults' = as.numeric(household_data$hh_q10[which(household_data$hh_q10!="n/a" & household_data$neighbor==i)]),
+           'children' = as.numeric(household_data$hh_q11[which(household_data$hh_q11!="n/a" & household_data$neighbor==i)])
+      )
+    )
+    names(sub) <- paste0('neighborhood',i)
+    freq$piped_water <- append(freq$piped_water, sub)
+    
+  }
+  
+  # ocean water
+  for (i in 1:length(unique(household_data$neighbor))) {
+    sub <- list(
+      list('adults' = as.numeric(household_data$hh_q2[which(household_data$hh_q2!="n/a" & household_data$neighbor==i)]),
+           'children' = as.numeric(household_data$hh_q3[which(household_data$hh_q3!="n/a" & household_data$neighbor==i)])
+      )
+    )
+    names(sub) <- paste0('neighborhood',i)
+    freq$ocean_water <- append(freq$ocean_water, sub)
+    
+  }
+
+  # surface water
+  for (i in 1:length(unique(household_data$neighbor))) {
+    sub <- list(
+      list('adults' = as.numeric(household_data$hh_q4[which(household_data$hh_q4!="n/a" & household_data$neighbor==i)]),
+           'children' = as.numeric(household_data$hh_q5[which(household_data$hh_q5!="n/a" & household_data$neighbor==i)])
+      )
+    )
+    names(sub) <- paste0('neighborhood',i)
+    freq$surface_water <- append(freq$surface_water, sub)
+    
+  }
+  
+  # flood water
+  for (i in 1:length(unique(household_data$neighbor))) {
+    sub <- list(
+      list('adults' = as.numeric(household_data$hh_q8[which(household_data$hh_q8!="n/a" & household_data$neighbor==i)]),
+           'children' = as.numeric(household_data$hh_q9[which(household_data$hh_q9!="n/a" & household_data$neighbor==i)])
+      )
+    )
+    names(sub) <- paste0('neighborhood',i)
+    freq$flood_water <- append(freq$flood_water, sub)
+    
+  }
+  
+  # public latrine
+  for (i in 1:length(unique(household_data$neighbor))) {
+    sub <- list(
+      list('adults' = as.numeric(household_data$hh_q15[which(household_data$hh_q15!="n/a" & household_data$neighbor==i)]),
+           'children' = as.numeric(household_data$hh_q16[which(household_data$hh_q16!="n/a" & household_data$neighbor==i)])
+      )
+    )
+    names(sub) <- paste0('neighborhood',i)
+    freq$public_latrine <- append(freq$public_latrine, sub)
+    
+  }
+
   if (type == 'pie chart') {
     # freq <- lapply(freq, function(x) round(table(x)/sum(table(x)),3))
     return(freq)
@@ -120,7 +190,7 @@ calculate_householdFreq <- function(household_data, type='pie chart') {
   # frequencies for pie charts
   else if (type == 'ppl plot') {
     # if we want data for a people plot, calculate 4 - the value per vector object in the list
-    freq <- lapply(freq, function(x) 4 - x)
+    freq <- freq_to_ppl_plot(freq)
     return(freq)
   }
   else {
@@ -142,47 +212,105 @@ calculate_schoolFreq <- function(school_data, type='pie chart') {
   # ...
   
   # it's the same calculations for a pie chart or a people plot, just shifted. 
-  freq<-list()
-
-  for (i in 1:length(unique(school_data$neighbor))){
-      # sample type 1|2=drain, 3|4=produce, 5|6=piped water, 7|8=ocean water, 9|10=surface water, 11|12=flood water, 13|14=Public Latrine Surfaces  
-      freq[[14*(sort(unique(school_data$neighbor))[i]-1)+1]]=c(rep(1,sum(school_data$sch_q9a[which(school_data$neighbor==i)])),rep(2,sum(school_data$sch_q9c[which(school_data$neighbor==i)])),
-                                                           rep(3,sum(school_data$sch_q9e[which(school_data$neighbor==i)])),rep(4,sum(school_data$sch_q9g[which(school_data$neighbor==i)])),
-                                                           rep(5,sum(school_data$sch_q9i[which(school_data$neighbor==i)])));
-      freq[[14*(sort(unique(school_data$neighbor))[i]-1)+2]]=c(rep(1,sum(school_data$sch_q8a[which(school_data$neighbor==i)])),rep(2,sum(school_data$sch_q8c[which(school_data$neighbor==i)])),
-                                                           rep(3,sum(school_data$sch_q8e[which(school_data$neighbor==i)])),rep(4,sum(school_data$sch_q8g[which(school_data$neighbor==i)])));
-      freq[[14*(sort(unique(school_data$neighbor))[i]-1)+3]]=c(rep(1,sum(school_data$sch_q15a[which(school_data$neighbor==i)])),rep(2,sum(school_data$sch_q15c[which(school_data$neighbor==i)])),
-                                                           rep(3,sum(school_data$sch_q15e[which(school_data$neighbor==i)])),rep(4,sum(school_data$sch_q15g[which(school_data$neighbor==i)])),
-                                                           rep(5,sum(school_data$sch_q15i[which(school_data$neighbor==i)])));
-      freq[[14*(sort(unique(school_data$neighbor))[i]-1)+4]]=c(rep(1,sum(school_data$sch_q14a[which(school_data$neighbor==i)])),rep(2,sum(school_data$sch_q14c[which(school_data$neighbor==i)])),
-                                                           rep(3,sum(school_data$sch_q14e[which(school_data$neighbor==i)])),rep(4,sum(school_data$sch_q14g[which(school_data$neighbor==i)])));
-      freq[[14*(sort(unique(school_data$neighbor))[i]-1)+5]]=c(rep(1,sum(school_data$sch_q13a[which(school_data$neighbor==i)])),rep(2,sum(school_data$sch_q13c[which(school_data$neighbor==i)])),
-                                                           rep(3,sum(school_data$sch_q13e[which(school_data$neighbor==i)])),rep(4,sum(school_data$sch_q13g[which(school_data$neighbor==i)])),
-                                                           rep(5,sum(school_data$sch_q13i[which(school_data$neighbor==i)])));
-      freq[[14*(sort(unique(school_data$neighbor))[i]-1)+6]]=c(rep(1,sum(school_data$sch_q12a[which(school_data$neighbor==i)])),rep(2,sum(school_data$sch_q12c[which(school_data$neighbor==i)])),
-                                                           rep(3,sum(school_data$sch_q12e[which(school_data$neighbor==i)])),rep(4,sum(school_data$sch_q12g[which(school_data$neighbor==i)])));
-      freq[[14*(sort(unique(school_data$neighbor))[i]-1)+7]]=c(rep(1,sum(school_data$sch_q5a[which(school_data$neighbor==i)])),rep(2,sum(school_data$sch_q5c[which(school_data$neighbor==i)])),
-                                                           rep(3,sum(school_data$sch_q5e[which(school_data$neighbor==i)])),rep(4,sum(school_data$sch_q5g[which(school_data$neighbor==i)])),
-                                                           rep(5,sum(school_data$sch_q5i[which(school_data$neighbor==i)])));
-      freq[[14*(sort(unique(school_data$neighbor))[i]-1)+8]]=c(rep(1,sum(school_data$sch_q4a[which(school_data$neighbor==i)])),rep(2,sum(school_data$sch_q4c[which(school_data$neighbor==i)])),
-                                                           rep(3,sum(school_data$sch_q4e[which(school_data$neighbor==i)])),rep(4,sum(school_data$sch_q4g[which(school_data$neighbor==i)])));
-      freq[[14*(sort(unique(school_data$neighbor))[i]-1)+9]]=c(rep(1,sum(school_data$sch_q7a[which(school_data$neighbor==i)])),rep(2,sum(school_data$sch_q7c[which(school_data$neighbor==i)])),
-                                                           rep(3,sum(school_data$sch_q7e[which(school_data$neighbor==i)])),rep(4,sum(school_data$sch_q7g[which(school_data$neighbor==i)])),
-                                                           rep(5,sum(school_data$sch_q7i[which(school_data$neighbor==i)])));
-      freq[[14*(sort(unique(school_data$neighbor))[i]-1)+10]]=c(rep(1,sum(school_data$sch_q6a[which(school_data$neighbor==i)])),rep(2,sum(school_data$sch_q6c[which(school_data$neighbor==i)])),
-                                                            rep(3,sum(school_data$sch_q6e[which(school_data$neighbor==i)])),rep(4,sum(school_data$sch_q6g[which(school_data$neighbor==i)])));
-      freq[[14*(sort(unique(school_data$neighbor))[i]-1)+11]]=c(rep(1,sum(school_data$sch_q11a[which(school_data$neighbor==i)])),rep(2,sum(school_data$sch_q11c[which(school_data$neighbor==i)])),
-                                                            rep(3,sum(school_data$sch_q11e[which(school_data$neighbor==i)])),rep(4,sum(school_data$sch_q11g[which(school_data$neighbor==i)])),
-                                                            rep(5,sum(school_data$sch_q11i[which(school_data$neighbor==i)])));
-      freq[[14*(sort(unique(school_data$neighbor))[i]-1)+12]]=c(rep(1,sum(school_data$sch_q10a[which(school_data$neighbor==i)])),rep(2,sum(school_data$sch_q10c[which(school_data$neighbor==i)])),
-                                                            rep(3,sum(school_data$sch_q10e[which(school_data$neighbor==i)])),rep(4,sum(school_data$sch_q10g[which(school_data$neighbor==i)])));
-      freq[[14*(sort(unique(school_data$neighbor))[i]-1)+13]]=c(rep(1,sum(school_data$sch_q17a[which(school_data$neighbor==i)])),rep(2,sum(school_data$sch_q17c[which(school_data$neighbor==i)])),
-                                                            rep(3,sum(school_data$sch_q17e[which(school_data$neighbor==i)])),rep(4,sum(school_data$sch_q17g[which(school_data$neighbor==i)])),
-                                                            rep(5,sum(school_data$sch_q17i[which(school_data$neighbor==i)])));
-      freq[[14*(sort(unique(school_data$neighbor))[i]-1)+14]]=c(rep(1,sum(school_data$sch_q16a[which(school_data$neighbor==i)])),rep(2,sum(school_data$sch_q16c[which(school_data$neighbor==i)])),
-                                                            rep(3,sum(school_data$sch_q16e[which(school_data$neighbor==i)])),rep(4,sum(school_data$sch_q16g[which(school_data$neighbor==i)])));
+  freq <- list('drain' = list(), 'produce' = list(), 'piped_water' = list(), 'ocean_water' = list(),
+               'surface_water' = list(), 'flood_water' = list(), 'public_latrine' = list()
+  )
+  
+  for (i in 1:length(unique(school_data$neighbor))) {
+    sub <- list(
+      list('adults' = as.numeric(c(rep(1,sum(school_data$sch_q9a[which(school_data$neighbor==i)])),rep(2,sum(school_data$sch_q9c[which(school_data$neighbor==i)])),
+                                   rep(3,sum(school_data$sch_q9e[which(school_data$neighbor==i)])),rep(4,sum(school_data$sch_q9g[which(school_data$neighbor==i)])),
+                                   rep(5,sum(school_data$sch_q9i[which(school_data$neighbor==i)])))),
+           'children' = as.numeric(c(rep(1,sum(school_data$sch_q8a[which(school_data$neighbor==i)])),rep(2,sum(school_data$sch_q8c[which(school_data$neighbor==i)])),
+                                     rep(3,sum(school_data$sch_q8e[which(school_data$neighbor==i)])),rep(4,sum(school_data$sch_q8g[which(school_data$neighbor==i)]))))
+      )
+    )
+    names(sub) <- paste0('neighborhood',i)
+    freq$drain <- append(freq$drain, sub)
+    
   }
-
+  for (i in 1:length(unique(school_data$neighbor))) {
+    sub <- list(
+      list('adults' = as.numeric(c(rep(1,sum(school_data$sch_q15a[which(school_data$neighbor==i)])),rep(2,sum(school_data$sch_q15c[which(school_data$neighbor==i)])),
+                                   rep(3,sum(school_data$sch_q15e[which(school_data$neighbor==i)])),rep(4,sum(school_data$sch_q15g[which(school_data$neighbor==i)])),
+                                   rep(5,sum(school_data$sch_q15i[which(school_data$neighbor==i)])))),
+           'children' = as.numeric(c(rep(1,sum(school_data$sch_q14a[which(school_data$neighbor==i)])),rep(2,sum(school_data$sch_q14c[which(school_data$neighbor==i)])),
+                                     rep(3,sum(school_data$sch_q14e[which(school_data$neighbor==i)])),rep(4,sum(school_data$sch_q14g[which(school_data$neighbor==i)]))))
+      )
+    )
+    names(sub) <- paste0('neighborhood',i)
+    freq$produce <- append(freq$produce, sub)
+    
+  }
+  for (i in 1:length(unique(school_data$neighbor))) {
+    sub <- list(
+      list('adults' = as.numeric(c(rep(1,sum(school_data$sch_q13a[which(school_data$neighbor==i)])),rep(2,sum(school_data$sch_q13c[which(school_data$neighbor==i)])),
+                                   rep(3,sum(school_data$sch_q13e[which(school_data$neighbor==i)])),rep(4,sum(school_data$sch_q13g[which(school_data$neighbor==i)])),
+                                   rep(5,sum(school_data$sch_q13i[which(school_data$neighbor==i)])))),
+           'children' = as.numeric(c(rep(1,sum(school_data$sch_q12a[which(school_data$neighbor==i)])),rep(2,sum(school_data$sch_q12c[which(school_data$neighbor==i)])),
+                                     rep(3,sum(school_data$sch_q12e[which(school_data$neighbor==i)])),rep(4,sum(school_data$sch_q12g[which(school_data$neighbor==i)]))))
+      )
+    )
+    names(sub) <- paste0('neighborhood',i)
+    freq$piped_water <- append(freq$piped_water, sub)
+    
+  }
+  for (i in 1:length(unique(school_data$neighbor))) {
+    sub <- list(
+      list('adults' = as.numeric(c(rep(1,sum(school_data$sch_q5a[which(school_data$neighbor==i)])),rep(2,sum(school_data$sch_q5c[which(school_data$neighbor==i)])),
+                                   rep(3,sum(school_data$sch_q5e[which(school_data$neighbor==i)])),rep(4,sum(school_data$sch_q5g[which(school_data$neighbor==i)])),
+                                   rep(5,sum(school_data$sch_q5i[which(school_data$neighbor==i)])))),
+           'children' = as.numeric(c(rep(1,sum(school_data$sch_q4a[which(school_data$neighbor==i)])),rep(2,sum(school_data$sch_q4c[which(school_data$neighbor==i)])),
+                                     rep(3,sum(school_data$sch_q4e[which(school_data$neighbor==i)])),rep(4,sum(school_data$sch_q4g[which(school_data$neighbor==i)]))))
+      )
+    )
+    names(sub) <- paste0('neighborhood',i)
+    freq$ocean_water <- append(freq$ocean_water, sub)
+    
+  }
+  
+  for (i in 1:length(unique(school_data$neighbor))) {
+    sub <- list(
+      list('adults' = as.numeric(c(rep(1,sum(school_data$sch_q7a[which(school_data$neighbor==i)])),rep(2,sum(school_data$sch_q7c[which(school_data$neighbor==i)])),
+                                   rep(3,sum(school_data$sch_q7e[which(school_data$neighbor==i)])),rep(4,sum(school_data$sch_q7g[which(school_data$neighbor==i)])),
+                                   rep(5,sum(school_data$sch_q7i[which(school_data$neighbor==i)])))),
+           'children' = as.numeric(c(rep(1,sum(school_data$sch_q6a[which(school_data$neighbor==i)])),rep(2,sum(school_data$sch_q6c[which(school_data$neighbor==i)])),
+                                     rep(3,sum(school_data$sch_q6e[which(school_data$neighbor==i)])),rep(4,sum(school_data$sch_q6g[which(school_data$neighbor==i)]))))
+      )
+    )
+    names(sub) <- paste0('neighborhood',i)
+    freq$surface_water <- append(freq$surface_water, sub)
+    
+  }
+  
+  for (i in 1:length(unique(school_data$neighbor))) {
+    sub <- list(
+      list('adults' = as.numeric(c(rep(1,sum(school_data$sch_q11a[which(school_data$neighbor==i)])),rep(2,sum(school_data$sch_q11c[which(school_data$neighbor==i)])),
+                                   rep(3,sum(school_data$sch_q11e[which(school_data$neighbor==i)])),rep(4,sum(school_data$sch_q11g[which(school_data$neighbor==i)])),
+                                   rep(5,sum(school_data$sch_q11i[which(school_data$neighbor==i)])))),
+           'children' = as.numeric(c(rep(1,sum(school_data$sch_q10a[which(school_data$neighbor==i)])),rep(2,sum(school_data$sch_q10c[which(school_data$neighbor==i)])),
+                                     rep(3,sum(school_data$sch_q10e[which(school_data$neighbor==i)])),rep(4,sum(school_data$sch_q10g[which(school_data$neighbor==i)]))))
+      )
+    )
+    names(sub) <- paste0('neighborhood',i)
+    freq$flood_water <- append(freq$flood_water, sub)
+    
+  }
+  
+  for (i in 1:length(unique(school_data$neighbor))) {
+    sub <- list(
+      list('adults' = as.numeric(c(rep(1,sum(school_data$sch_q17a[which(school_data$neighbor==i)])),rep(2,sum(school_data$sch_q17c[which(school_data$neighbor==i)])),
+                                   rep(3,sum(school_data$sch_q17e[which(school_data$neighbor==i)])),rep(4,sum(school_data$sch_q17g[which(school_data$neighbor==i)])),
+                                   rep(5,sum(school_data$sch_q17i[which(school_data$neighbor==i)])))),
+           'children' = as.numeric(c(rep(1,sum(school_data$sch_q16a[which(school_data$neighbor==i)])),rep(2,sum(school_data$sch_q16c[which(school_data$neighbor==i)])),
+                                     rep(3,sum(school_data$sch_q16e[which(school_data$neighbor==i)])),rep(4,sum(school_data$sch_q16g[which(school_data$neighbor==i)]))))
+      )
+    )
+    names(sub) <- paste0('neighborhood',i)
+    freq$public_latrine <- append(freq$public_latrine, sub)
+    
+  }
+ 
   # it's the same calculations for a pie chart or a people plot, just shifted. 
   if (type == 'pie chart') {
     return(freq)
@@ -190,7 +318,7 @@ calculate_schoolFreq <- function(school_data, type='pie chart') {
   # frequencies for pie charts
   else if (type == 'ppl plot') {
     # if we want data for a people plot, calculate 4 - the value per vector object in the list to shift the values
-    freq <- lapply(freq, function(x) 4 - x)
+    freq <- freq_to_ppl_plot(freq)
     return(freq)
   }
   else {
@@ -210,45 +338,106 @@ calculate_communityFreq <- function(community_data, type='pie chart') {
   # $[[1]]
   # [1] 3 4 2 1
   # ...
-  freq<-list()
+  freq <- list('drain' = list(), 'produce' = list(), 'piped_water' = list(), 'ocean_water' = list(),
+               'surface_water' = list(), 'flood_water' = list(), 'public_latrine' = list()
+  )
+  
+  for (i in 1:length(unique(community_data$neighbor))) {
+    sub <- list(
+      list('adults' = as.numeric(c(rep(1,sum(community_data$com_q6a[which(community_data$neighbor==i)])),rep(2,sum(community_data$com_q6c[which(community_data$neighbor==i)])),
+                                   rep(3,sum(community_data$com_q6e[which(community_data$neighbor==i)])),rep(4,sum(community_data$com_q6g[which(community_data$neighbor==i)])))),
+           'children' = as.numeric(c(rep(1,sum(community_data$com_q21a[which(community_data$neighbor==i)])),rep(2,sum(community_data$com_q21c[which(community_data$neighbor==i)])),
+                                     rep(3,sum(community_data$com_q21e[which(community_data$neighbor==i)])),rep(4,sum(community_data$com_q21g[which(community_data$neighbor==i)])),
+                                     rep(5,sum(community_data$com_q21i[which(community_data$neighbor==i)]))))
+      )
+    )
+    names(sub) <- paste0('neighborhood',i)
+    freq$drain <- append(freq$drain, sub)
+    
+  }
+  
+  for (i in 1:length(unique(community_data$neighbor))) {
+    sub <- list(
+      list('adults' = as.numeric(c(rep(1,sum(community_data$com_q9a[which(community_data$neighbor==i)])),rep(2,sum(community_data$com_q9c[which(community_data$neighbor==i)])),
+                                   rep(3,sum(community_data$com_q9e[which(community_data$neighbor==i)])),rep(4,sum(community_data$com_q9g[which(community_data$neighbor==i)])))),
+           'children' = as.numeric(c(rep(1,sum(community_data$com_q24a[which(community_data$neighbor==i)])),rep(2,sum(community_data$com_q24c[which(community_data$neighbor==i)])),
+                                     rep(3,sum(community_data$com_q24e[which(community_data$neighbor==i)])),rep(4,sum(community_data$com_q24g[which(community_data$neighbor==i)])),
+                                     rep(5,sum(community_data$com_q24i[which(community_data$neighbor==i)]))))
+      )
+    )
+    names(sub) <- paste0('neighborhood',i)
+    freq$produce <- append(freq$produce, sub)
+    
+  }
 
-  for (i in 1:length(unique(community_data$neighbor))){
-    # sample type 1|2=drain, 3|4=produce, 5|6=piped water, 7|8=ocean water, 9|10=surface water, 11|12=flood water, 13|14=Public Latrine Surfaces  
-    freq[[14*(sort(unique(community_data$neighbor))[i]-1)+1]]=c(rep(1,sum(community_data$com_q6a[which(community_data$neighbor==i)])),rep(2,sum(community_data$com_q6c[which(community_data$neighbor==i)])),
-                                                         rep(3,sum(community_data$com_q6e[which(community_data$neighbor==i)])),rep(4,sum(community_data$com_q6g[which(community_data$neighbor==i)])));
-    freq[[14*(sort(unique(community_data$neighbor))[i]-1)+2]]=c(rep(1,sum(community_data$com_q21a[which(community_data$neighbor==i)])),rep(2,sum(community_data$com_q21c[which(community_data$neighbor==i)])),
-                                                         rep(3,sum(community_data$com_q21e[which(community_data$neighbor==i)])),rep(4,sum(community_data$com_q21g[which(community_data$neighbor==i)])),
-                                                         rep(5,sum(community_data$com_q21i[which(community_data$neighbor==i)])));
-    freq[[14*(sort(unique(community_data$neighbor))[i]-1)+3]]=c(rep(1,sum(community_data$com_q9a[which(community_data$neighbor==i)])),rep(2,sum(community_data$com_q9c[which(community_data$neighbor==i)])),
-                                                         rep(3,sum(community_data$com_q9e[which(community_data$neighbor==i)])),rep(4,sum(community_data$com_q9g[which(community_data$neighbor==i)])));
-    freq[[14*(sort(unique(community_data$neighbor))[i]-1)+4]]=c(rep(1,sum(community_data$com_q24a[which(community_data$neighbor==i)])),rep(2,sum(community_data$com_q24c[which(community_data$neighbor==i)])),
-                                                         rep(3,sum(community_data$com_q24e[which(community_data$neighbor==i)])),rep(4,sum(community_data$com_q24g[which(community_data$neighbor==i)])),
-                                                         rep(5,sum(community_data$com_q24i[which(community_data$neighbor==i)])));
-    freq[[14*(sort(unique(community_data$neighbor))[i]-1)+5]]=c(rep(1,sum(community_data$com_q8a[which(community_data$neighbor==i)])),rep(2,sum(community_data$com_q8c[which(community_data$neighbor==i)])),
-                                                         rep(3,sum(community_data$com_q8e[which(community_data$neighbor==i)])),rep(4,sum(community_data$com_q8g[which(community_data$neighbor==i)])));
-    freq[[14*(sort(unique(community_data$neighbor))[i]-1)+6]]=c(rep(1,sum(community_data$com_q23a[which(community_data$neighbor==i)])),rep(2,sum(community_data$com_q23c[which(community_data$neighbor==i)])),
-                                                         rep(3,sum(community_data$com_q23e[which(community_data$neighbor==i)])),rep(4,sum(community_data$com_q23g[which(community_data$neighbor==i)])),
-                                                         rep(5,sum(community_data$com_q23i[which(community_data$neighbor==i)])));
-    freq[[14*(sort(unique(community_data$neighbor))[i]-1)+7]]=c(rep(1,sum(community_data$com_q4a[which(community_data$neighbor==i)])),rep(2,sum(community_data$com_q4c[which(community_data$neighbor==i)])),
-                                                         rep(3,sum(community_data$com_q4e[which(community_data$neighbor==i)])),rep(4,sum(community_data$com_q4g[which(community_data$neighbor==i)])));
-    freq[[14*(sort(unique(community_data$neighbor))[i]-1)+8]]=c(rep(1,sum(community_data$com_q19a[which(community_data$neighbor==i)])),rep(2,sum(community_data$com_q19c[which(community_data$neighbor==i)])),
-                                                         rep(3,sum(community_data$com_q19e[which(community_data$neighbor==i)])),rep(4,sum(community_data$com_q19g[which(community_data$neighbor==i)])),
-                                                         rep(5,sum(community_data$com_q19i[which(community_data$neighbor==i)])));
-    freq[[14*(sort(unique(community_data$neighbor))[i]-1)+9]]=c(rep(1,sum(community_data$com_q5a[which(community_data$neighbor==i)])),rep(2,sum(community_data$com_q5c[which(community_data$neighbor==i)])),
-                                                         rep(3,sum(community_data$com_q5e[which(community_data$neighbor==i)])),rep(4,sum(community_data$com_q5g[which(community_data$neighbor==i)])));
-    freq[[14*(sort(unique(community_data$neighbor))[i]-1)+10]]=c(rep(1,sum(community_data$com_q20a[which(community_data$neighbor==i)])),rep(2,sum(community_data$com_q20c[which(community_data$neighbor==i)])),
-                                                          rep(3,sum(community_data$com_q20e[which(community_data$neighbor==i)])),rep(4,sum(community_data$com_q20g[which(community_data$neighbor==i)])),
-                                                          rep(5,sum(community_data$com_q20i[which(community_data$neighbor==i)])));
-    freq[[14*(sort(unique(community_data$neighbor))[i]-1)+11]]=c(rep(1,sum(community_data$com_q7a[which(community_data$neighbor==i)])),rep(2,sum(community_data$com_q7c[which(community_data$neighbor==i)])),
-                                                          rep(3,sum(community_data$com_q7e[which(community_data$neighbor==i)])),rep(4,sum(community_data$com_q7g[which(community_data$neighbor==i)])));
-    freq[[14*(sort(unique(community_data$neighbor))[i]-1)+12]]=c(rep(1,sum(community_data$com_q22a[which(community_data$neighbor==i)])),rep(2,sum(community_data$com_q22c[which(community_data$neighbor==i)])),
-                                                          rep(3,sum(community_data$com_q22e[which(community_data$neighbor==i)])),rep(4,sum(community_data$com_q22g[which(community_data$neighbor==i)])),
-                                                          rep(5,sum(community_data$com_q22i[which(community_data$neighbor==i)])));
-    freq[[14*(sort(unique(community_data$neighbor))[i]-1)+13]]=c(rep(1,sum(community_data$com_q10a[which(community_data$neighbor==i)])),rep(2,sum(community_data$com_q10c[which(community_data$neighbor==i)])),
-                                                          rep(3,sum(community_data$com_q10e[which(community_data$neighbor==i)])),rep(4,sum(community_data$com_q10g[which(community_data$neighbor==i)])));
-    freq[[14*(sort(unique(community_data$neighbor))[i]-1)+14]]=c(rep(1,sum(community_data$com_q25a[which(community_data$neighbor==i)])),rep(2,sum(community_data$com_q25c[which(community_data$neighbor==i)])),
-                                                          rep(3,sum(community_data$com_q25e[which(community_data$neighbor==i)])),rep(4,sum(community_data$com_q25g[which(community_data$neighbor==i)])),
-                                                          rep(5,sum(community_data$com_q25i[which(community_data$neighbor==i)])));
+  for (i in 1:length(unique(community_data$neighbor))) {
+    sub <- list(
+      list('adults' = as.numeric(c(rep(1,sum(community_data$com_q8a[which(community_data$neighbor==i)])),rep(2,sum(community_data$com_q8c[which(community_data$neighbor==i)])),
+                                   rep(3,sum(community_data$com_q8e[which(community_data$neighbor==i)])),rep(4,sum(community_data$com_q8g[which(community_data$neighbor==i)])))),
+           'children' = as.numeric(c(rep(1,sum(community_data$com_q23a[which(community_data$neighbor==i)])),rep(2,sum(community_data$com_q23c[which(community_data$neighbor==i)])),
+                                     rep(3,sum(community_data$com_q23e[which(community_data$neighbor==i)])),rep(4,sum(community_data$com_q23g[which(community_data$neighbor==i)])),
+                                     rep(5,sum(community_data$com_q23i[which(community_data$neighbor==i)]))))
+      )
+    )
+    names(sub) <- paste0('neighborhood',i)
+    freq$piped_water <- append(freq$piped_water, sub)
+    
+  }
+  
+  for (i in 1:length(unique(community_data$neighbor))) {
+    sub <- list(
+      list('adults' = as.numeric(c(rep(1,sum(community_data$com_q4a[which(community_data$neighbor==i)])),rep(2,sum(community_data$com_q4c[which(community_data$neighbor==i)])),
+                                   rep(3,sum(community_data$com_q4e[which(community_data$neighbor==i)])),rep(4,sum(community_data$com_q4g[which(community_data$neighbor==i)])))),
+           'children' = as.numeric(c(rep(1,sum(community_data$com_q19a[which(community_data$neighbor==i)])),rep(2,sum(community_data$com_q19c[which(community_data$neighbor==i)])),
+                                     rep(3,sum(community_data$com_q19e[which(community_data$neighbor==i)])),rep(4,sum(community_data$com_q19g[which(community_data$neighbor==i)])),
+                                     rep(5,sum(community_data$com_q19i[which(community_data$neighbor==i)]))))
+      )
+    )
+    names(sub) <- paste0('neighborhood',i)
+    freq$ocean_water <- append(freq$ocean_water, sub)
+    
+  }
+  
+  for (i in 1:length(unique(community_data$neighbor))) {
+    sub <- list(
+      list('adults' = as.numeric(c(rep(1,sum(community_data$com_q5a[which(community_data$neighbor==i)])),rep(2,sum(community_data$com_q5c[which(community_data$neighbor==i)])),
+                                   rep(3,sum(community_data$com_q5e[which(community_data$neighbor==i)])),rep(4,sum(community_data$com_q5g[which(community_data$neighbor==i)])))),
+           'children' = as.numeric(c(rep(1,sum(community_data$com_q20a[which(community_data$neighbor==i)])),rep(2,sum(community_data$com_q20c[which(community_data$neighbor==i)])),
+                                     rep(3,sum(community_data$com_q20e[which(community_data$neighbor==i)])),rep(4,sum(community_data$com_q20g[which(community_data$neighbor==i)])),
+                                     rep(5,sum(community_data$com_q20i[which(community_data$neighbor==i)]))))
+      )
+    )
+    names(sub) <- paste0('neighborhood',i)
+    freq$surface_water <- append(freq$surface_water, sub)
+    
+  }
+  
+  for (i in 1:length(unique(community_data$neighbor))) {
+    sub <- list(
+      list('adults' = as.numeric(c(rep(1,sum(community_data$com_q7a[which(community_data$neighbor==i)])),rep(2,sum(community_data$com_q7c[which(community_data$neighbor==i)])),
+                                   rep(3,sum(community_data$com_q7e[which(community_data$neighbor==i)])),rep(4,sum(community_data$com_q7g[which(community_data$neighbor==i)])))),
+           'children' = as.numeric(c(rep(1,sum(community_data$com_q22a[which(community_data$neighbor==i)])),rep(2,sum(community_data$com_q22c[which(community_data$neighbor==i)])),
+                                     rep(3,sum(community_data$com_q22e[which(community_data$neighbor==i)])),rep(4,sum(community_data$com_q22g[which(community_data$neighbor==i)])),
+                                     rep(5,sum(community_data$com_q22i[which(community_data$neighbor==i)]))))
+      )
+    )
+    names(sub) <- paste0('neighborhood',i)
+    freq$flood_water <- append(freq$flood_water, sub)
+    
+  }
+  
+  for (i in 1:length(unique(community_data$neighbor))) {
+    sub <- list(
+      list('adults' = as.numeric(c(rep(1,sum(community_data$com_q10a[which(community_data$neighbor==i)])),rep(2,sum(community_data$com_q10c[which(community_data$neighbor==i)])),
+                                   rep(3,sum(community_data$com_q10e[which(community_data$neighbor==i)])),rep(4,sum(community_data$com_q10g[which(community_data$neighbor==i)])))),
+           'children' = as.numeric(c(rep(1,sum(community_data$com_q25a[which(community_data$neighbor==i)])),rep(2,sum(community_data$com_q25c[which(community_data$neighbor==i)])),
+                                     rep(3,sum(community_data$com_q25e[which(community_data$neighbor==i)])),rep(4,sum(community_data$com_q25g[which(community_data$neighbor==i)])),
+                                     rep(5,sum(community_data$com_q25i[which(community_data$neighbor==i)]))))
+      )
+    )
+    names(sub) <- paste0('neighborhood',i)
+    freq$public_latrine <- append(freq$public_latrine, sub)
+    
   }
     
   # it's the same calculations for a pie chart or a people plot, just shifted. 
@@ -258,7 +447,7 @@ calculate_communityFreq <- function(community_data, type='pie chart') {
   # frequencies for pie charts
   else if (type == 'ppl plot') {
     # if we want data for a people plot, calculate 4 - the value per vector object in the list to shift the values
-    freq <- lapply(freq, function(x) 4 - x)
+    freq <- freq_to_ppl_plot(freq)
     return(freq)
   }
   else {
@@ -386,46 +575,51 @@ calculate_combinedFreq <- function(household_data, school_data, community_data, 
 
 # PLOTTING ====================================================================
 ## PIE CHARTS 
-make_pieChart <- function(df, freq, num.neighb=NULL, n.path=1, n.age=2, samtype=1) {
-  # make params for sample type, number of neighbors, and number of paths. 
-  # have one that aggregates info based on the information provided. 
-  # potentially rewrite freq function to better account for this.`
-  # num.neighb is a numeric vector with neighborhood (convert from factor before passing)
-  # n.path always seems to be set to 1
-  # n.age defaults to 2
+create_pieCharts <- function(freq) {
+  # this will make a grid of pie charts based on neighborhood rows
+  # and age columns
   
-  if (num.neighb[1] == 1 & num.neighb[1] != 0) {k.neighb=num.neighb} else {k.neighb=sort(num.neighb)} 
+  # first let's regroup the data into a table that can be used
+  # for plotting.  it will have 4 columns, neighborhood, age, answer, Freq
+
+
   
-  if (samtype !=0) {k.path=as.numeric(input$samtype)} else{k.path=1}
-  
-  if (n.age==1 & input$ad_ch!=0) {k.age=as.numeric(input$ad_ch)} else {k.age=c(1,2)}
-  
-  nrow=n.path
-  ncol=n.age*n.neighb
-  par(mfrow=c(nrow,ncol))
-  par(mar=c(0.5,6.5,4.5,6.5))
-  label1<-c(">10 times/month","6-10 times/month","1-5 times/month","never","don't know")
-  label_path<-c("Drain Water", "Produce", "Piped Water", "Ocean Water", "Surface Water", "Flood Water", "Public Latrine Surfaces", "Particulate", "Bathing")
-  label_age<-c("Adults","Children")
-  if (input$samtype!=8 & input$samtype!=9){
-    for (i in 1:n.path){
-      for (j in 1:n.neighb){
-        for (k in 1:n.age){
-          slices <- c(table(as.numeric(freq[[14*(k.neighb[j]-1)+2*(k.path-1)+k.age[k]]]))) 
-          label1<-c(">10 times/month","6-10 times/month","1-5 times/month","never","don't know")
-          pct <- c(0,0,0,0,0)
-          pct[sort(unique(as.numeric(freq[[14*(k.neighb[j]-1)+2*(k.path-1)+k.age[k]]])))] <- round(slices/sum(slices)*100)
-          label1 <- paste(label1, "\n", pct, sep="") # add percents to labels 
-          label1 <- paste(label1,"%",sep="") # add % to labels 
-          pie(slices,
-              labels = label1[sort(unique(as.numeric(freq[[14*(k.neighb[j]-1)+2*(k.path-1)+k.age[k]]])))], 
-              col=rainbow(5)[sort(unique(as.numeric(freq[[14*(k.neighb[j]-1)+2*(k.path-1)+k.age[k]]])))],
-              main=paste("Neighborhood ",k.neighb[j],", ",label_path[k.path],", ",label_age[k.age[k]]),
-              cex=1.3,cex.main=1.5,init.angle = 90)
+  for (p in 1:length(freq)) { # for each path
+    path <- freq[[p]]
+    labels <- unlist(ifelse(p==3, 
+                            list(c("everyday","4-6/wk","1-3/mo","never","don't know")),
+                            list(c(">10/mo","6-10/mo","1-5/mo","never","don't know"))
+    ))
+    for (n in 1:length(path)) { # freq is now subset to just the neighborhoods for a specific path
+      neighborhood <- path[[n]]
+      for (a in 1:length(neighborhood)) {
+        if (length(neighborhood[[a]]) > 0) {
+          # check if there's actually data first, then plot, otherwise the list elements are left
+          # untouched
+          tbl <- create_freqTbl(neighborhood[[a]], labels)
+          freq[[p]][[n]][[a]] <- ggpie(tbl, 'answer', 'Freq', ifelse(a == 1, 'Adults', 'Children'))
         }
+
+        
       }
+      
     }
   }
+  
+  
+  
+  return(freq)
+}
+
+create_freqTbl <- function(freq_vector, labels) {
+  # convert the answers from the frequency calculation funcitons into 
+  # a table for plotting
+  tbl <- as.data.frame(table('answer'= freq_vector))
+  tbl$answer <- labels[tbl$answer]
+  tbl$breaks <- cumsum(tbl$Freq) - tbl$Freq / 2
+  tbl$labels = paste0(round(tbl$Freq / sum(tbl$Freq) *
+                              100, 1), "%")
+  return(tbl)
 }
 
 make_histogram <- function(samtype, ec_data, conc) {
@@ -464,7 +658,7 @@ plotElements <- # these are global settings that are applied to all plots genera
                          legend.title = element_text(size=16))
 
 
-ggpie <- function (dat, group_by, value_column) {
+ggpie <- function (dat, group_by, value_column, title) {
   # found this function online to create pie charts using ggplot
   # pass the melted data set, group column (group_by) and value column (value_column)
   
@@ -474,19 +668,21 @@ ggpie <- function (dat, group_by, value_column) {
     )) +
     geom_bar(stat = 'identity', size = 1, alpha = .6) +
     guides(fill = guide_legend(override.aes = list(colour = NA))) + # removes black borders from legend
-    coord_polar(theta = 'y') + theme_bw() +
+    coord_polar(theta = 'y') + theme_bw()  +
     theme(
       axis.ticks = element_blank(),
       axis.text.y = element_blank(),
       axis.text.x = element_text(
-        colour = 'black', size = 12, angle = 0, hjust = 1
+        colour = 'black', size = 12, angle = 0, hjust = 1, vjust=0
       ),
       axis.title = element_blank(),
-      panel.border = element_blank()
+      panel.border = element_blank(),
+      legend.position = 'none'
     ) +
     scale_y_continuous(breaks = cumsum(dat[[value_column]]) - dat[[value_column]] / 2,
                        labels = paste0(round(dat[[value_column]] / sum(dat[[value_column]]) *
-                                               100, 1), "%"))
+                                               100, 1), "%","\n",dat$answer ))  +
+    ggtitle(title)
   
   
   return(plot)

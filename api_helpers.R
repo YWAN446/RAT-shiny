@@ -19,10 +19,6 @@ library(jsonlite)
 # This is specific to the SP user at the moment.  Ideally, we modify this so
 # each user has a stored key and the system can tell who is logged in and 
 # changes the key accordingly. 
-apiToken <- '8d0336d37ef28df590574f1cd4531f142e31ca02' 
-u <- 'sp'
-p <- '2007beagle'
-baseURL <- 'http://54.210.2.87/'
 
 
 # FORMHUB INTERACTIONS -----------------------------------------------------
