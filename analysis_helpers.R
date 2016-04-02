@@ -504,6 +504,22 @@ calculate_combinedFreq <- function(household_data, school_data, community_data, 
   
 }
 
+convert_to_old_freq <- function(freq) {
+  # this is in order to not refactor all of the people plot code for the moment
+  # this is not intented to be used long term.
+  # this assumes the nested list is path -> neighborhood -> age
+  # result will be path * age
+  out <- list()
+  for (n in 1:length(freq[[1]])) {
+    for (p in 1:length(freq)) {
+      out <- append(out, list(freq[[p]][[n]]$adults))
+      out <- append(out, list(freq[[p]][[n]]$children))
+    }
+  }
+
+  return(out)
+}
+
 # PLOTTING ====================================================================
 ## PIE CHARTS 
 create_pieCharts <- function(freq) {
