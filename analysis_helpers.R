@@ -197,10 +197,13 @@ calculate_schoolFreq <- function(school_data, type='pie chart') {
   # ...
   
   # it's the same calculations for a pie chart or a people plot, just shifted. 
+  
+  # initialize the output list based on the sample types we know exist
   freq <- list('drain' = list(), 'produce' = list(), 'piped_water' = list(), 'ocean_water' = list(),
                'surface_water' = list(), 'flood_water' = list(), 'public_latrine' = list()
   )
   
+  # drain samples
   for (i in 1:length(unique(school_data$neighbor))) {
     sub <- list(
       list('adults' = as.numeric(c(rep(1,sum(school_data$sch_q9a[which(school_data$neighbor==i)])),rep(2,sum(school_data$sch_q9c[which(school_data$neighbor==i)])),
@@ -214,6 +217,8 @@ calculate_schoolFreq <- function(school_data, type='pie chart') {
     freq$drain <- append(freq$drain, sub)
     
   }
+  
+  # produce samples
   for (i in 1:length(unique(school_data$neighbor))) {
     sub <- list(
       list('adults' = as.numeric(c(rep(1,sum(school_data$sch_q15a[which(school_data$neighbor==i)])),rep(2,sum(school_data$sch_q15c[which(school_data$neighbor==i)])),
@@ -227,6 +232,8 @@ calculate_schoolFreq <- function(school_data, type='pie chart') {
     freq$produce <- append(freq$produce, sub)
     
   }
+  
+  # piped water samples
   for (i in 1:length(unique(school_data$neighbor))) {
     sub <- list(
       list('adults' = as.numeric(c(rep(1,sum(school_data$sch_q13a[which(school_data$neighbor==i)])),rep(2,sum(school_data$sch_q13c[which(school_data$neighbor==i)])),
@@ -240,6 +247,8 @@ calculate_schoolFreq <- function(school_data, type='pie chart') {
     freq$piped_water <- append(freq$piped_water, sub)
     
   }
+  
+  # ocean water samples
   for (i in 1:length(unique(school_data$neighbor))) {
     sub <- list(
       list('adults' = as.numeric(c(rep(1,sum(school_data$sch_q5a[which(school_data$neighbor==i)])),rep(2,sum(school_data$sch_q5c[which(school_data$neighbor==i)])),
@@ -254,6 +263,7 @@ calculate_schoolFreq <- function(school_data, type='pie chart') {
     
   }
   
+  # surface water samples
   for (i in 1:length(unique(school_data$neighbor))) {
     sub <- list(
       list('adults' = as.numeric(c(rep(1,sum(school_data$sch_q7a[which(school_data$neighbor==i)])),rep(2,sum(school_data$sch_q7c[which(school_data$neighbor==i)])),
@@ -268,6 +278,7 @@ calculate_schoolFreq <- function(school_data, type='pie chart') {
     
   }
   
+  # flood water samples
   for (i in 1:length(unique(school_data$neighbor))) {
     sub <- list(
       list('adults' = as.numeric(c(rep(1,sum(school_data$sch_q11a[which(school_data$neighbor==i)])),rep(2,sum(school_data$sch_q11c[which(school_data$neighbor==i)])),
@@ -282,6 +293,7 @@ calculate_schoolFreq <- function(school_data, type='pie chart') {
     
   }
   
+  # public latrine samples
   for (i in 1:length(unique(school_data$neighbor))) {
     sub <- list(
       list('adults' = as.numeric(c(rep(1,sum(school_data$sch_q17a[which(school_data$neighbor==i)])),rep(2,sum(school_data$sch_q17c[which(school_data$neighbor==i)])),
