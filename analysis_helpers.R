@@ -67,20 +67,6 @@ create_concData <- function(ec_data) {
 }
 
 # FREQUENCIES ----------------------------------------------------------------
-freq_to_ppl_plot <- function(freq) {
-  # take an object of freq values and convert them for ps plotting
-  for (p in 1:length(freq)) { # each path
-    for (n in 1:length(freq[[p]])) { # each neighborhood
-      for (a in 1:length(freq[[p]][[n]])) { # each age
-        if (length(freq[[p]][[n]][[a]]) > 0) {
-          freq[[p]][[n]][[a]] <- (4 - freq[[p]][[n]][[a]])
-        }
-      }
-    }
-  }
-  return(freq)
-}
-
 calculate_householdFreq <- function(household_data, type='pie chart') {
   # calculate the appropriate factors for plotting pie charts
   # and people plots.  This is specific to the household 
@@ -518,6 +504,20 @@ convert_to_old_freq <- function(freq) {
   return(out)
 }
 
+freq_to_ppl_plot <- function(freq) {
+  # take an object of freq values and convert them for ps plotting
+  # based on original code.  ideally this will be temporary. 
+  for (p in 1:length(freq)) { # each path
+    for (n in 1:length(freq[[p]])) { # each neighborhood
+      for (a in 1:length(freq[[p]][[n]])) { # each age
+        if (length(freq[[p]][[n]][[a]]) > 0) {
+          freq[[p]][[n]][[a]] <- (4 - freq[[p]][[n]][[a]])
+        }
+      }
+    }
+  }
+  return(freq)
+}
 # PLOTTING ====================================================================
 ## PIE CHARTS 
 create_pieCharts <- function(freq) {
