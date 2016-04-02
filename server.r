@@ -1,5 +1,5 @@
 library(shiny)
-# library(rjags)
+library(rjags)
 source("./model/PS_Plot.r")
 options(shiny.maxRequestSize = 9*1024^2)
 source('api_helpers.R')
@@ -115,6 +115,7 @@ shinyServer(function(input, output, session) {
     )
   })
   
+  # BUILD THE UI FOR THE PIE CHARTS ---------------------------------------------------------
   output$plots <- renderUI({
     # generate the actual plot output objects 
     input$surtype # watch survey type to change what we're using
@@ -155,6 +156,7 @@ shinyServer(function(input, output, session) {
     do.call(tagList, plot_output_list)
   })
   
+  # ACTUAL PIE CHART GENERATION --------------------------------------------------------------------
   observe({
     input$surtype # change when survey type changes
     # Call renderPlot for each one. Plots are only actually generated when they
@@ -169,7 +171,6 @@ shinyServer(function(input, output, session) {
       # of when the expression is evaluated.
       
       for (n in 1:length(freq()[[p]])) { # each neighborhood
-        if (length(freq()[[p]][[n]]) > 0) { # check that we actually have data
           for (a in 1:length(freq()[[p]][[n]])) { # each age
             local({
               # local makes sure that the iterators change.  this is a quirk of shiny
@@ -197,7 +198,7 @@ shinyServer(function(input, output, session) {
               
             })
           }
-        }
+        
         
       }
     } 
