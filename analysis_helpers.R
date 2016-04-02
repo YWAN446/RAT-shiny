@@ -487,9 +487,8 @@ calculate_combinedFreq <- function(household_data, school_data, community_data, 
                                         school_freq[[p]][[n]]$children,
                                         community_freq[[p]][[n]]$children)
                     )
-
+      freq[[p]][[paste0('neighborhood',n)]] <- sub_a
     }
-    freq[[p]][[paste0('neighborhood',n)]] <- sub_a
     
   }
 
