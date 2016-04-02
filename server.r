@@ -103,8 +103,7 @@ shinyServer(function(input, output, session) {
   conc <- reactive({
     create_concData(ec_data())
   })
-  output$conc <- renderText(class(conc()))
-  
+
   
   # PIE CHART PLOTTING INFO ----------------------------------------------------------------
   freq <- reactive({
@@ -225,47 +224,7 @@ shinyServer(function(input, output, session) {
            )
   })
   
-  output$conc <- renderPrint({
-    unlist(conc())
-  })
-  #   
-  #   output$raw_table <- renderTable({
-  #     d <- switch(input$raw_view,
-  #            'Household'= household_data(),
-  #            'School' = school_data(),
-  #            'Community' = community_data(),
-  #            'E. Coli' = ec_data()
-  #            )
-  #     d
-  #   })
-  
-  # #This table is for test only#
-  # output$table1 <- renderPrint({
-  #   be_data<-be_data()
-  #   freq<-frq()
-  #   n.neighb=ifelse(input$neighb==0, length(unique(as.numeric(be_data$neighbor))),1)
-  #   n.path=ifelse(input$samtype==0, 7, 1)
-  #   n.age=ifelse(input$ad_ch==0, 2, 1)
-  #   if (n.neighb==1 & input$neighb!=0) {k.neighb=as.numeric(input$neighb)}
-  #   else {k.neighb=sort(unique(as.numeric(be_data$neighbor)))}
-  #   if (n.path==1 & input$samtype!=0) {k.path=as.numeric(input$samtype)}
-  #   else {k.path=c(2,3,4,5,6,8,9)}
-  #   if (n.age==1 & input$ad_ch!=0) {k.age=as.numeric(input$ad_ch)}
-  #   else {k.age=c(1,2)}
-  #   nrow=n.path
-  #   ncol=n.age*n.neighb
-  #   list(n.neighb, 
-  #               n.path,
-  #               n.age,
-  #               k.neighb, 
-  #               k.path,
-  #               k.age,
-  #        nrow,ncol)
-  # })
- 
-  
 
-  
   output$hist1 <- renderPlot({
     ec_data<-ec_data()
     conc<-conc()
