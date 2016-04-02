@@ -15,13 +15,9 @@ shinyUI(fluidPage(theme = "bootstrap.css",
 #  titlePanel("SaniPath"),
   sidebarLayout(
     sidebarPanel(
-      h3('FormHub Settings:'),
-      selectizeInput('col_file', 'Collection Data', multiple=F, choices=NULL, selected=NULL),
-      selectizeInput('lab_file', 'Lab Data', multiple=F, choices=NULL, selected=NULL),
-      selectizeInput('hh_file', 'Household Data', multiple=F, choices='sp_household_form_2_01b', selected='sp_household_form_2_01b'),
-      selectizeInput('sch_file', 'School Data', multiple=F, choices='school_d', selected='school_d'),
-      selectizeInput('com_file', 'Community Data', multiple=F, choices='community_d', selected='community_d'),
-
+      h3('Temporary Viz Settings'),
+      sliderInput('pw',"Pie Width:", min=200, max=500, value=300, step=25),
+      sliderInput('ph',"Pie Height:", min=200, max=500, value=350, step=25),
       h3('Analysis Settings:'),
       selectInput('neighb', 'Neighborhood', choices=""),
       selectInput('samtype', 'Sample Type', choices = c("All"=0,c("Drain Water"=1, "Produce"=2, "Piped Water"=3, 
@@ -39,7 +35,8 @@ shinyUI(fluidPage(theme = "bootstrap.css",
     ),
     mainPanel(
       tabsetPanel(type = "tabs", 
-                  tabPanel("Pie Chart", uiOutput("plots")),
+                  tabPanel("Pie Chart", 
+                           uiOutput("plots")),
                   tabPanel("Histogram", plotOutput("hist1",height = 500, width = 1100),plotOutput("hist2",height = 500, width = 1100),plotOutput("hist3",height = 500, width = 1100),
                            plotOutput("hist4",height = 500, width = 1100),plotOutput("hist5",height = 500, width = 1100),plotOutput("hist6",height = 500, width = 1100),
                            plotOutput("hist7",height = 500, width = 1100),plotOutput("hist8",height = 500, width = 1100),plotOutput("hist9",height = 500, width = 1100)),
@@ -49,9 +46,18 @@ shinyUI(fluidPage(theme = "bootstrap.css",
                   tabPanel("Raw Data", 
                            selectInput('raw_view', 'Select table to view:', 
                                        c('Household', 'Community', 'School', 'E. Coli'), selected='Household'),
-                           dataTableOutput('raw_table'))
-                  
+                           dataTableOutput('raw_table')),
+                  tabPanel("Formhub Settings",
+                           h3('Forms:'),
+                           selectizeInput('col_file', 'Collection Data', multiple=F, choices=NULL, selected=NULL),
+                           selectizeInput('lab_file', 'Lab Data', multiple=F, choices=NULL, selected=NULL),
+                           selectizeInput('hh_file', 'Household Data', multiple=F, choices='sp_household_form_2_01b', selected='sp_household_form_2_01b'),
+                           selectizeInput('sch_file', 'School Data', multiple=F, choices='school_d', selected='school_d'),
+                           selectizeInput('com_file', 'Community Data', multiple=F, choices='community_d', selected='community_d')
                   )
+                  
+                )
+      
     )
   )
 ))

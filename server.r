@@ -136,8 +136,8 @@ shinyServer(function(input, output, session) {
             h2(ifelse(n>1, "", paste(toupper(names(sampleTypes)[p])))), # set the header to the path name
             hr(), # dividing line
             h4(paste("Neighborhood",n)), # neighborhood header (smaller)
-            column(6,plotOutput(plotname1, height = 350, width = 450)), # Adults
-            column(6,plotOutput(plotname2, height = 350, width = 450)) # Children
+            column(6,plotOutput(plotname1, height = input$ph, width = input$pw)), # Adults
+            column(6,plotOutput(plotname2, height = input$ph, width = input$pw)) # Children
           )
         }
         else {
@@ -168,34 +168,38 @@ shinyServer(function(input, output, session) {
       # Need local so that each item gets its own number. Without it, the value
       # of i in the renderPlot() will be the same across all instances, because
       # of when the expression is evaluated.
+      
       for (n in 1:length(freq()[[p]])) { # each neighborhood
-        for (a in 1:length(freq()[[p]][[n]])) { # each age
-          local({
-            # local makes sure that the iterators change.  this is a quirk of shiny
-            my_p <- p
-            my_n <- n
-            my_a <- a
-            plotname <- paste("plot-", my_p,"-neighborhood-",my_n,"-",names(freq()[[my_p]][[my_n]][my_a]), sep="")
-            
-            # set the labels
-            labels <- unlist(ifelse(my_p==3, 
-                                    list(c("everyday","4-6/wk","1-3/mo","never","don't know")),
-                                    list(c(">10/mo","6-10/mo","1-5/mo","never","don't know"))
-            ))
-            
-            # if we actually have values, make a pie chart
-            if (length(freq()[[my_p]][[my_n]][[my_a]]) > 0 ) {
-              output[[plotname]] <- renderPlot({
-                ggpie(
-                  create_freqTbl(freq()[[my_p]][[my_n]][[my_a]], labels), # make the table for plotting
-                  'answer', # use the answer column for labels
-                  'Freq', # use the Freq for values
-                  ifelse(my_a == 1, 'Adults', 'Children')) # set the title of the pie chart
-              })
-            }
-            
-          })
+        if (length(freq()[[p]][[n]]) > 0) { # check that we actually have data
+          for (a in 1:length(freq()[[p]][[n]])) { # each age
+            local({
+              # local makes sure that the iterators change.  this is a quirk of shiny
+              my_p <- p
+              my_n <- n
+              my_a <- a
+              plotname <- paste("plot-", my_p,"-neighborhood-",my_n,"-",names(freq()[[my_p]][[my_n]][my_a]), sep="")
+              
+              # set the labels
+              labels <- unlist(ifelse(my_p==3, 
+                                      list(c("everyday","4-6/wk","1-3/mo","never","don't know")),
+                                      list(c(">10/mo","6-10/mo","1-5/mo","never","don't know"))
+              ))
+              
+              # if we actually have values, make a pie chart
+              if (length(freq()[[my_p]][[my_n]][[my_a]]) > 0 ) {
+                output[[plotname]] <- renderPlot({
+                  ggpie(
+                    create_freqTbl(freq()[[my_p]][[my_n]][[my_a]], labels), # make the table for plotting
+                    'answer', # use the answer column for labels
+                    'Freq', # use the Freq for values
+                    ifelse(my_a == 1, 'Adults', 'Children')) # set the title of the pie chart
+                })
+              }
+              
+            })
+          }
         }
+        
       }
     } 
   })
