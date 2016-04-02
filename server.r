@@ -34,9 +34,9 @@ shinyServer(function(input, output, session) {
     # update the options
     updateSelectizeInput(session, 'col_file', choices=filterAPI_forms('collection', forms)$menu_items)
     updateSelectizeInput(session, 'lab_file', choices=filterAPI_forms('lab', forms)$menu_items)
-    updateSelectizeInput(session, 'hh_file', choices=filterAPI_forms('household', forms)$menu_items)
-    updateSelectizeInput(session, 'sch_file', choices=filterAPI_forms('school', forms)$menu_items)
-    updateSelectizeInput(session, 'com_file', choices=filterAPI_forms('community', forms)$menu_items)
+    updateSelectizeInput(session, 'hh_file', choices=filterAPI_forms('household', forms)$menu_items, selected='sp_household_form_2_01b')
+    updateSelectizeInput(session, 'sch_file', choices=filterAPI_forms('school', forms)$menu_items, selected='school_d')
+    updateSelectizeInput(session, 'com_file', choices=filterAPI_forms('community', forms)$menu_items, selected='community_d')
     
   })
   # Download the data ----------------------------------------------------------------
@@ -54,17 +54,8 @@ shinyServer(function(input, output, session) {
     household <- formhubGET_csv(baseURL, usr, pwd, input$hh_file)
     if (length(grep('does not have any data uploaded yet!', household)) != 1) { # check for an error message
       household$neighbor <- as.factor(household$neighbor)
-      
-      #     # it seems like these are used for analysis and they need to be numeric. 
-      #     columns <- c('sampleid', 'free_cl', 'containr', 'total_cl', 'source_ty', 'covered', 'dis_lat', 
-      #                  'latrine_user_num', 'vis_fec', 'source_type', 'hw_stat', 'n_stall', 
-      #                  'particle_sample_type', 'sample_weight', 'source_dist')
-      #     household[,columns] <- apply(household[,columns], 2, as.numeric)
+
       updateSelectInput(session, "neighb", choices = c("All"=0,unique(household$neighbor)))
-      updateSelectInput(session, "samtype", choices = c("All"=0,c("Drain Water"=1, "Produce"=2, "Piped Water"=3, 
-                                                                  "Ocean Water"=4, "Surface Water"=5, "Flood Water"=6,
-                                                                  "Public Latrine Surfaces"=7, "Particulate"=8, "Bathing"=9)[unique(household$sample_type)]))
-      
       household
     }
     else {
@@ -128,21 +119,35 @@ shinyServer(function(input, output, session) {
   output$plots <- renderUI({
     # generate the actual plot output objects 
     input$surtype # watch survey type to change what we're using
-    sam <- as.character(input$samtype)
-    plot_output_list <- lapply(ifelse(sam == 0, 1:length(freq()), as.numeric(sam)), function(p) { # each path
+    sam <- as.numeric(input$samtype)
+    if (sam == 0) {
+      sam <- 1:length(freq())
+    }
+    
+    plot_output_list <- lapply(sam, function(p) { # each path
       lapply(1:length(freq()[[p]]), function(n) { # each neighborhood
         # make a row with two plots next to each other filling out the space
         # in the main window
-        plotname1 <- paste("plot-", p,'-neighborhood-',n,"-adults", sep="") 
-        plotname2 <- paste("plot-", p,'-neighborhood-',n,"-children", sep="")
-        
-        fluidRow(
-                 h2(ifelse(n>1, "", paste(toupper(names(sampleTypes)[p])))), # set the header to the path name
-                 hr(), # dividing line
-                 h4(paste("Neighborhood",n)), # neighborhood header (smaller)
-                 column(6,plotOutput(plotname1, height = 350, width = 450)), # Adults
-                 column(6,plotOutput(plotname2, height = 350, width = 450)) # Children
-        )
+        if (length(freq()[[p]][[n]]$adults) > 0 | length(freq()[[p]][[n]]$children > 0)) {
+          plotname1 <- paste("plot-", p,'-neighborhood-',n,"-adults", sep="") 
+          plotname2 <- paste("plot-", p,'-neighborhood-',n,"-children", sep="")
+          
+          fluidRow(
+            h2(ifelse(n>1, "", paste(toupper(names(sampleTypes)[p])))), # set the header to the path name
+            hr(), # dividing line
+            h4(paste("Neighborhood",n)), # neighborhood header (smaller)
+            column(6,plotOutput(plotname1, height = 350, width = 450)), # Adults
+            column(6,plotOutput(plotname2, height = 350, width = 450)) # Children
+          )
+        }
+        else {
+          fluidRow(
+            h2(paste(toupper(names(sampleTypes)[p]))), # set the header to the path name
+            hr(), # dividing line
+            h5('No data collected yet.')
+          )
+        }
+
       })
     })
     
@@ -155,9 +160,11 @@ shinyServer(function(input, output, session) {
     input$surtype # change when survey type changes
     # Call renderPlot for each one. Plots are only actually generated when they
     # are visible on the web page.
-    sam <- as.character(input$samtype)
-    
-    for (p in ifelse(sam == 0, 1:length(freq()), as.numeric(sam))) { # each path
+    sam <- as.numeric(input$samtype)
+    if (sam == 0) {
+      sam <- 1:length(freq())
+    }
+    for (p in sam) { # each path
       # Need local so that each item gets its own number. Without it, the value
       # of i in the renderPlot() will be the same across all instances, because
       # of when the expression is evaluated.

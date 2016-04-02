@@ -2,7 +2,6 @@
 ## these have been derived from the original server.R 
 ## file.
 library(ggplot2)
-library(gridExtra)
 
 # MERGING --------------------------------------------------------------------
 create_ecData <- function(collection_data, lab_data) {
