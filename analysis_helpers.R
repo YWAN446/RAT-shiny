@@ -83,99 +83,110 @@ calculate_householdFreq <- function(household_data, type='pie chart') {
                'surface_water' = list(), 'flood_water' = list(), 'public_latrine' = list()
   )
   
+  freq <- list()
   # For each pathway, we're going to look at the neighborhoods and ages-------
   # drain 
   for (i in 1:length(unique(household_data$neighbor))) {
-    sub <- list(
-      list('adults' = as.numeric(household_data$hh_q6[which(household_data$hh_q6!="n/a" & household_data$neighbor==i)]),
-               'children' = as.numeric(household_data$hh_q7[which(household_data$hh_q7!="n/a" & household_data$neighbor==i)])
-          )
+    sub = list(path=
+                 list(sample = 'Drain',
+                      age = 'Adults',
+                      neighborhood = paste('Neighborhood',i),
+                      data = as.numeric(household_data$hh_q6[which(household_data$hh_q6!="n/a" & household_data$neighbor==i)])
+                      ),
+               path=
+                 list(sample = 'Drain',
+                      age = 'Children',
+                      neighborhood = paste('Neighborhood',i),
+                      data = as.numeric(household_data$hh_q7[which(household_data$hh_q7!="n/a" & household_data$neighbor==i)])
+                      ),
+               path=
+                 list(sample = 'Produce',
+                      age = 'Adults',
+                      neighborhood = paste('Neighborhood',i),
+                      data = as.numeric(household_data$hh_q13[which(household_data$hh_q13!="n/a" & household_data$neighbor==i)])
+                 ),
+               path=
+                 list(sample = 'Produce',
+                      age = 'Children',
+                      neighborhood = paste('Neighborhood',i),
+                      data = as.numeric(household_data$hh_q14[which(household_data$hh_q14!="n/a" & household_data$neighbor==i)])
+                 ),
+               path=
+                 list(sample = 'Municipal and Piped Water',
+                      age = 'Adults',
+                      neighborhood = paste('Neighborhood',i),
+                      data = as.numeric(household_data$hh_q10[which(household_data$hh_q10!="n/a" & household_data$neighbor==i)])
+                 ),
+               path=
+                 list(sample = 'Municipal and Piped Water',
+                    age = 'Children',
+                      neighborhood = paste('Neighborhood',i),
+                      data = as.numeric(household_data$hh_q11[which(household_data$hh_q11!="n/a" & household_data$neighbor==i)])
+                 ),
+               path=
+                 list(sample = 'Ocean Water',
+                      age = 'Adults',
+                      neighborhood = paste('Neighborhood',i),
+                      data = as.numeric(household_data$hh_q2[which(household_data$hh_q2!="n/a" & household_data$neighbor==i)])
+                 ),
+               path=
+                 list(sample = 'Ocean Water',
+                      age = 'Children',
+                      neighborhood = paste('Neighborhood',i),
+                      data = as.numeric(household_data$hh_q3[which(household_data$hh_q3!="n/a" & household_data$neighbor==i)])
+                 ),
+               path=
+                 list(sample = 'Surface Water',
+                      age = 'Adults',
+                      neighborhood = paste('Neighborhood',i),
+                      data = as.numeric(household_data$hh_q4[which(household_data$hh_q4!="n/a" & household_data$neighbor==i)])
+                 ),
+               path=
+                 list(sample = 'Surface Water',
+                      age = 'Children',
+                      neighborhood = paste('Neighborhood',i),
+                      data = as.numeric(household_data$hh_q5[which(household_data$hh_q5!="n/a" & household_data$neighbor==i)])
+                 ),
+               path=
+                 list(sample = 'Flood Water',
+                      age = 'Adults',
+                      neighborhood = paste('Neighborhood',i),
+                      data =  as.numeric(household_data$hh_q8[which(household_data$hh_q8!="n/a" & household_data$neighbor==i)])
+                 ),
+               path=
+                 list(sample = 'Flood Water',
+                      age = 'Children',
+                      neighborhood = paste('Neighborhood',i),
+                      data = as.numeric(household_data$hh_q9[which(household_data$hh_q9!="n/a" & household_data$neighbor==i)])
+                 ),
+               path=
+                 list(sample = 'Public Latrine',
+                      age = 'Adults',
+                      neighborhood = paste('Neighborhood',i),
+                      data =  as.numeric(household_data$hh_q15[which(household_data$hh_q15!="n/a" & household_data$neighbor==i)])
+                 ),
+               path=
+                 list(sample = 'Public Latrine',
+                      age = 'Children',
+                      neighborhood = paste('Neighborhood',i),
+                      data = as.numeric(household_data$hh_q16[which(household_data$hh_q16!="n/a" & household_data$neighbor==i)])
+                 )
+               
     )
-    names(sub) <- paste0('neighborhood',i)
-    freq$drain <- append(freq$drain, sub)
-            
-  }
-  
-  # produce
-  for (i in 1:length(unique(household_data$neighbor))) {
-    sub <- list(
-      list('adults' = as.numeric(household_data$hh_q13[which(household_data$hh_q13!="n/a" & household_data$neighbor==i)]),
-           'children' = as.numeric(household_data$hh_q14[which(household_data$hh_q14!="n/a" & household_data$neighbor==i)])
-      )
-    )
-    names(sub) <- paste0('neighborhood',i)
-    freq$produce <- append(freq$produce, sub)
-    
-  }
-  
-  # municipal/piped water
-  for (i in 1:length(unique(household_data$neighbor))) {
-    sub <- list(
-      list('adults' = as.numeric(household_data$hh_q10[which(household_data$hh_q10!="n/a" & household_data$neighbor==i)]),
-           'children' = as.numeric(household_data$hh_q11[which(household_data$hh_q11!="n/a" & household_data$neighbor==i)])
-      )
-    )
-    names(sub) <- paste0('neighborhood',i)
-    freq$piped_water <- append(freq$piped_water, sub)
-    
-  }
-  
-  # ocean water
-  for (i in 1:length(unique(household_data$neighbor))) {
-    sub <- list(
-      list('adults' = as.numeric(household_data$hh_q2[which(household_data$hh_q2!="n/a" & household_data$neighbor==i)]),
-           'children' = as.numeric(household_data$hh_q3[which(household_data$hh_q3!="n/a" & household_data$neighbor==i)])
-      )
-    )
-    names(sub) <- paste0('neighborhood',i)
-    freq$ocean_water <- append(freq$ocean_water, sub)
-    
-  }
 
-  # surface water
-  for (i in 1:length(unique(household_data$neighbor))) {
-    sub <- list(
-      list('adults' = as.numeric(household_data$hh_q4[which(household_data$hh_q4!="n/a" & household_data$neighbor==i)]),
-           'children' = as.numeric(household_data$hh_q5[which(household_data$hh_q5!="n/a" & household_data$neighbor==i)])
-      )
-    )
-    names(sub) <- paste0('neighborhood',i)
-    freq$surface_water <- append(freq$surface_water, sub)
-    
-  }
-  
-  # flood water
-  for (i in 1:length(unique(household_data$neighbor))) {
-    sub <- list(
-      list('adults' = as.numeric(household_data$hh_q8[which(household_data$hh_q8!="n/a" & household_data$neighbor==i)]),
-           'children' = as.numeric(household_data$hh_q9[which(household_data$hh_q9!="n/a" & household_data$neighbor==i)])
-      )
-    )
-    names(sub) <- paste0('neighborhood',i)
-    freq$flood_water <- append(freq$flood_water, sub)
-    
-  }
-  
-  # public latrine
-  for (i in 1:length(unique(household_data$neighbor))) {
-    sub <- list(
-      list('adults' = as.numeric(household_data$hh_q15[which(household_data$hh_q15!="n/a" & household_data$neighbor==i)]),
-           'children' = as.numeric(household_data$hh_q16[which(household_data$hh_q16!="n/a" & household_data$neighbor==i)])
-      )
-    )
-    names(sub) <- paste0('neighborhood',i)
-    freq$public_latrine <- append(freq$public_latrine, sub)
-    
+    freq <- append(freq, sub)
+
   }
 
   if (type == 'pie chart') {
-    # freq <- lapply(freq, function(x) round(table(x)/sum(table(x)),3))
     return(freq)
   }
   # frequencies for pie charts
   else if (type == 'ppl plot') {
     # if we want data for a people plot, calculate 4 - the value per vector object in the list
-    freq <- freq_to_ppl_plot(freq)
+    for (i in 1:length(freq)) {
+      freq[[i]]$data <- 4 - freq[[i]]$data
+    }
     return(freq)
   }
   else {
