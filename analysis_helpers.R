@@ -67,7 +67,7 @@ create_concData <- function(ec_data) {
 }
 
 # FREQUENCIES ----------------------------------------------------------------
-calculate_householdFreq <- function(household_data, type='pie chart') {
+calculate_freq <- function(..., type='pie chart') {
   # calculate the appropriate factors for plotting pie charts
   # and people plots.  This is specific to the household 
   # form. returns a list with two objects. type can equal
@@ -78,11 +78,34 @@ calculate_householdFreq <- function(household_data, type='pie chart') {
   # $drain$neighborhood1$adults
   # [1] 4 4 4 4 4 4 ...
   
-
-  freq <- list('drain' = list(), 'produce' = list(), 'piped_water' = list(), 'ocean_water' = list(),
-               'surface_water' = list(), 'flood_water' = list(), 'public_latrine' = list()
-  )
   
+  # this allows us to pass multiple data objects without having to explictly 
+  #say what they are. since the surveys always follow a pattern for the question
+  # headers, we can figure out what data we have using that. 
+  dat <- list(...)
+  data_map <- c('household_data' = 'hh_', 'community_data' = 'com_', 'school_data' = 'sch_')
+  
+  surveys_matched <- character()
+  for (x in dat) { # look at each object that we passed in
+    # check if any of the column headers match what we expect
+    match <- sapply(data_map, function(dn) any(grepl(dn, names(x))))
+    if (any(match)) {
+      assign(names(data_map[match]), x)
+      surveys_matched <- c(surveys_matched, names(data_map[match]))
+    }
+   }
+  
+  if (!(length(surveys_matched) == 1 | length(surveys_matched) == 3)) {
+    stop(paste0('Something is wrong with the data. Either pass 1 or 3 data objects.\n',
+                'Matched objects: ', paste(surveys_matched, collapse=', ')))
+  }   
+  if (!any(surveys_matched %in% names(data_map))) {
+    stop(paste('Unable to determine survey type. Do the column headers have hh, sch, or com in the names?\n',
+               'Matched objects:', paste(surveys_matched, collapse=', ')))
+    
+  }
+  survey_type <- ifelse(length(surveys_matched) == 3, 'combined', gsub('_data', '', surveys_matched))
+
   freq <- list()
   # For each pathway, we're going to look at the neighborhoods and ages-------
   # drain 
@@ -91,85 +114,269 @@ calculate_householdFreq <- function(household_data, type='pie chart') {
                  list(sample = 'Drain',
                       age = 'Adults',
                       neighborhood = paste('Neighborhood',i),
-                      data = as.numeric(household_data$hh_q6[which(household_data$hh_q6!="n/a" & household_data$neighbor==i)])
+                      data = switch(survey_type,
+                                    'combined' = c(as.numeric(household_data$hh_q6[which(household_data$hh_q6!="n/a" & household_data$neighbor==i)]),
+                                                   as.numeric(c(rep(1,sum(school_data$sch_q9a[which(school_data$neighbor==i)])),rep(2,sum(school_data$sch_q9c[which(school_data$neighbor==i)])),
+                                                                           rep(3,sum(school_data$sch_q9e[which(school_data$neighbor==i)])),rep(4,sum(school_data$sch_q9g[which(school_data$neighbor==i)])),
+                                                                           rep(5,sum(school_data$sch_q9i[which(school_data$neighbor==i)])))),
+                                                   as.numeric(c(rep(1,sum(community_data$com_q6a[which(community_data$neighbor==i)])),rep(2,sum(community_data$com_q6c[which(community_data$neighbor==i)])),
+                                                                              rep(3,sum(community_data$com_q6e[which(community_data$neighbor==i)])),rep(4,sum(community_data$com_q6g[which(community_data$neighbor==i)]))))),
+                                    'household' = as.numeric(household_data$hh_q6[which(household_data$hh_q6!="n/a" & household_data$neighbor==i)]),
+                                    'school' = as.numeric(c(rep(1,sum(school_data$sch_q9a[which(school_data$neighbor==i)])),rep(2,sum(school_data$sch_q9c[which(school_data$neighbor==i)])),
+                                                            rep(3,sum(school_data$sch_q9e[which(school_data$neighbor==i)])),rep(4,sum(school_data$sch_q9g[which(school_data$neighbor==i)])),
+                                                            rep(5,sum(school_data$sch_q9i[which(school_data$neighbor==i)])))),
+                                    'community' = as.numeric(c(rep(1,sum(community_data$com_q6a[which(community_data$neighbor==i)])),rep(2,sum(community_data$com_q6c[which(community_data$neighbor==i)])),
+                                                               rep(3,sum(community_data$com_q6e[which(community_data$neighbor==i)])),rep(4,sum(community_data$com_q6g[which(community_data$neighbor==i)]))))
+                      ) # end of switch
+                                    
                       ),
                path=
                  list(sample = 'Drain',
                       age = 'Children',
                       neighborhood = paste('Neighborhood',i),
-                      data = as.numeric(household_data$hh_q7[which(household_data$hh_q7!="n/a" & household_data$neighbor==i)])
+                      data = switch(survey_type, 
+                                    'combined' = c(as.numeric(household_data$hh_q7[which(household_data$hh_q7!="n/a" & household_data$neighbor==i)]),
+                                                   as.numeric(c(rep(1,sum(school_data$sch_q8a[which(school_data$neighbor==i)])),rep(2,sum(school_data$sch_q8c[which(school_data$neighbor==i)])),
+                                                                           rep(3,sum(school_data$sch_q8e[which(school_data$neighbor==i)])),rep(4,sum(school_data$sch_q8g[which(school_data$neighbor==i)])))),
+                                                   as.numeric(c(rep(1,sum(community_data$com_q21a[which(community_data$neighbor==i)])),rep(2,sum(community_data$com_q21c[which(community_data$neighbor==i)])),
+                                                                               rep(3,sum(community_data$com_q21e[which(community_data$neighbor==i)])),rep(4,sum(community_data$com_q21g[which(community_data$neighbor==i)])),
+                                                                               rep(5,sum(community_data$com_q21i[which(community_data$neighbor==i)]))))),
+                                    'household' = as.numeric(household_data$hh_q7[which(household_data$hh_q7!="n/a" & household_data$neighbor==i)]),
+                                    'school' = as.numeric(c(rep(1,sum(school_data$sch_q8a[which(school_data$neighbor==i)])),rep(2,sum(school_data$sch_q8c[which(school_data$neighbor==i)])),
+                                                            rep(3,sum(school_data$sch_q8e[which(school_data$neighbor==i)])),rep(4,sum(school_data$sch_q8g[which(school_data$neighbor==i)])))),
+                                    'community' =  as.numeric(c(rep(1,sum(community_data$com_q21a[which(community_data$neighbor==i)])),rep(2,sum(community_data$com_q21c[which(community_data$neighbor==i)])),
+                                                                             rep(3,sum(community_data$com_q21e[which(community_data$neighbor==i)])),rep(4,sum(community_data$com_q21g[which(community_data$neighbor==i)])),
+                                                                             rep(5,sum(community_data$com_q21i[which(community_data$neighbor==i)]))))
+                      ) # end of switch
                       ),
                path=
                  list(sample = 'Produce',
                       age = 'Adults',
                       neighborhood = paste('Neighborhood',i),
-                      data = as.numeric(household_data$hh_q13[which(household_data$hh_q13!="n/a" & household_data$neighbor==i)])
-                 ),
+                      data = switch(survey_type, 
+                                    'combined' = c(as.numeric(household_data$hh_q13[which(household_data$hh_q13!="n/a" & household_data$neighbor==i)]),
+                                                  as.numeric(c(rep(1,sum(school_data$sch_q15a[which(school_data$neighbor==i)])),rep(2,sum(school_data$sch_q15c[which(school_data$neighbor==i)])),
+                                                                           rep(3,sum(school_data$sch_q15e[which(school_data$neighbor==i)])),rep(4,sum(school_data$sch_q15g[which(school_data$neighbor==i)])),
+                                                                           rep(5,sum(school_data$sch_q15i[which(school_data$neighbor==i)])))),
+                                                  as.numeric(c(rep(1,sum(community_data$com_q9a[which(community_data$neighbor==i)])),rep(2,sum(community_data$com_q9c[which(community_data$neighbor==i)])),
+                                                                              rep(3,sum(community_data$com_q9e[which(community_data$neighbor==i)])),rep(4,sum(community_data$com_q9g[which(community_data$neighbor==i)]))))),
+                                    'household' = as.numeric(household_data$hh_q13[which(household_data$hh_q13!="n/a" & household_data$neighbor==i)]),
+                                    'school' = as.numeric(c(rep(1,sum(school_data$sch_q15a[which(school_data$neighbor==i)])),rep(2,sum(school_data$sch_q15c[which(school_data$neighbor==i)])),
+                                                            rep(3,sum(school_data$sch_q15e[which(school_data$neighbor==i)])),rep(4,sum(school_data$sch_q15g[which(school_data$neighbor==i)])),
+                                                            rep(5,sum(school_data$sch_q15i[which(school_data$neighbor==i)])))),
+                                    'community' = as.numeric(c(rep(1,sum(community_data$com_q9a[which(community_data$neighbor==i)])),rep(2,sum(community_data$com_q9c[which(community_data$neighbor==i)])),
+                                                               rep(3,sum(community_data$com_q9e[which(community_data$neighbor==i)])),rep(4,sum(community_data$com_q9g[which(community_data$neighbor==i)]))))
+                      ) # End of switch
+                      ),
                path=
                  list(sample = 'Produce',
                       age = 'Children',
                       neighborhood = paste('Neighborhood',i),
-                      data = as.numeric(household_data$hh_q14[which(household_data$hh_q14!="n/a" & household_data$neighbor==i)])
-                 ),
+                      data = switch(survey_type, 
+                                    'combined' = c(as.numeric(household_data$hh_q14[which(household_data$hh_q14!="n/a" & household_data$neighbor==i)]),
+                                                   as.numeric(c(rep(1,sum(school_data$sch_q14a[which(school_data$neighbor==i)])),rep(2,sum(school_data$sch_q14c[which(school_data$neighbor==i)])),
+                                                                           rep(3,sum(school_data$sch_q14e[which(school_data$neighbor==i)])),rep(4,sum(school_data$sch_q14g[which(school_data$neighbor==i)])))),
+                                                   as.numeric(c(rep(1,sum(community_data$com_q24a[which(community_data$neighbor==i)])),rep(2,sum(community_data$com_q24c[which(community_data$neighbor==i)])),
+                                                                              rep(3,sum(community_data$com_q24e[which(community_data$neighbor==i)])),rep(4,sum(community_data$com_q24g[which(community_data$neighbor==i)])),
+                                                                              rep(5,sum(community_data$com_q24i[which(community_data$neighbor==i)]))))),
+                                    'household' = as.numeric(household_data$hh_q14[which(household_data$hh_q14!="n/a" & household_data$neighbor==i)]),
+                                    'school' = as.numeric(c(rep(1,sum(school_data$sch_q14a[which(school_data$neighbor==i)])),rep(2,sum(school_data$sch_q14c[which(school_data$neighbor==i)])),
+                                                 rep(3,sum(school_data$sch_q14e[which(school_data$neighbor==i)])),rep(4,sum(school_data$sch_q14g[which(school_data$neighbor==i)])))),
+                                    'community' = as.numeric(c(rep(1,sum(community_data$com_q24a[which(community_data$neighbor==i)])),rep(2,sum(community_data$com_q24c[which(community_data$neighbor==i)])),
+                                                               rep(3,sum(community_data$com_q24e[which(community_data$neighbor==i)])),rep(4,sum(community_data$com_q24g[which(community_data$neighbor==i)])),
+                                                               rep(5,sum(community_data$com_q24i[which(community_data$neighbor==i)]))))
+                      ) # end of switch
+                      ),
                path=
                  list(sample = 'Municipal and Piped Water',
                       age = 'Adults',
                       neighborhood = paste('Neighborhood',i),
-                      data = as.numeric(household_data$hh_q10[which(household_data$hh_q10!="n/a" & household_data$neighbor==i)])
-                 ),
+                      data = switch(survey_type, 
+                                    'combined' = c(as.numeric(household_data$hh_q10[which(household_data$hh_q10!="n/a" & household_data$neighbor==i)]),
+                                                   as.numeric(c(rep(1,sum(school_data$sch_q13a[which(school_data$neighbor==i)])),rep(2,sum(school_data$sch_q13c[which(school_data$neighbor==i)])),
+                                                                           rep(3,sum(school_data$sch_q13e[which(school_data$neighbor==i)])),rep(4,sum(school_data$sch_q13g[which(school_data$neighbor==i)])),
+                                                                           rep(5,sum(school_data$sch_q13i[which(school_data$neighbor==i)])))),
+                                                   as.numeric(c(rep(1,sum(community_data$com_q8a[which(community_data$neighbor==i)])),rep(2,sum(community_data$com_q8c[which(community_data$neighbor==i)])),
+                                                                              rep(3,sum(community_data$com_q8e[which(community_data$neighbor==i)])),rep(4,sum(community_data$com_q8g[which(community_data$neighbor==i)]))))),
+                                    'household' = as.numeric(household_data$hh_q10[which(household_data$hh_q10!="n/a" & household_data$neighbor==i)]),
+                                    'school' = as.numeric(c(rep(1,sum(school_data$sch_q13a[which(school_data$neighbor==i)])),rep(2,sum(school_data$sch_q13c[which(school_data$neighbor==i)])),
+                                                            rep(3,sum(school_data$sch_q13e[which(school_data$neighbor==i)])),rep(4,sum(school_data$sch_q13g[which(school_data$neighbor==i)])),
+                                                            rep(5,sum(school_data$sch_q13i[which(school_data$neighbor==i)])))),
+                                    'community' = as.numeric(c(rep(1,sum(community_data$com_q8a[which(community_data$neighbor==i)])),rep(2,sum(community_data$com_q8c[which(community_data$neighbor==i)])),
+                                                               rep(3,sum(community_data$com_q8e[which(community_data$neighbor==i)])),rep(4,sum(community_data$com_q8g[which(community_data$neighbor==i)]))))
+                      )# end of switch
+                      ),
                path=
                  list(sample = 'Municipal and Piped Water',
                     age = 'Children',
                       neighborhood = paste('Neighborhood',i),
-                      data = as.numeric(household_data$hh_q11[which(household_data$hh_q11!="n/a" & household_data$neighbor==i)])
+                      data = switch(survey_type, 
+                                    'combined' = c(as.numeric(household_data$hh_q11[which(household_data$hh_q11!="n/a" & household_data$neighbor==i)]),
+                                                   as.numeric(c(rep(1,sum(school_data$sch_q12a[which(school_data$neighbor==i)])),rep(2,sum(school_data$sch_q12c[which(school_data$neighbor==i)])),
+                                                                           rep(3,sum(school_data$sch_q12e[which(school_data$neighbor==i)])),rep(4,sum(school_data$sch_q12g[which(school_data$neighbor==i)])))),
+                                                   as.numeric(c(rep(1,sum(community_data$com_q23a[which(community_data$neighbor==i)])),rep(2,sum(community_data$com_q23c[which(community_data$neighbor==i)])),
+                                                                              rep(3,sum(community_data$com_q23e[which(community_data$neighbor==i)])),rep(4,sum(community_data$com_q23g[which(community_data$neighbor==i)])),
+                                                                              rep(5,sum(community_data$com_q23i[which(community_data$neighbor==i)]))))),
+                                    'household' = as.numeric(household_data$hh_q11[which(household_data$hh_q11!="n/a" & household_data$neighbor==i)]),
+                                    'school' = as.numeric(c(rep(1,sum(school_data$sch_q12a[which(school_data$neighbor==i)])),rep(2,sum(school_data$sch_q12c[which(school_data$neighbor==i)])),
+                                                            rep(3,sum(school_data$sch_q12e[which(school_data$neighbor==i)])),rep(4,sum(school_data$sch_q12g[which(school_data$neighbor==i)])))),
+                                    'community' = as.numeric(c(rep(1,sum(community_data$com_q23a[which(community_data$neighbor==i)])),rep(2,sum(community_data$com_q23c[which(community_data$neighbor==i)])),
+                                                               rep(3,sum(community_data$com_q23e[which(community_data$neighbor==i)])),rep(4,sum(community_data$com_q23g[which(community_data$neighbor==i)])),
+                                                               rep(5,sum(community_data$com_q23i[which(community_data$neighbor==i)]))))
+                      ) # end of switch
                  ),
                path=
                  list(sample = 'Ocean Water',
                       age = 'Adults',
                       neighborhood = paste('Neighborhood',i),
-                      data = as.numeric(household_data$hh_q2[which(household_data$hh_q2!="n/a" & household_data$neighbor==i)])
+                      data = switch(survey_type, 
+                                    'combined' = c(as.numeric(household_data$hh_q2[which(household_data$hh_q2!="n/a" & household_data$neighbor==i)]),
+                                                   as.numeric(c(rep(1,sum(school_data$sch_q5a[which(school_data$neighbor==i)])),rep(2,sum(school_data$sch_q5c[which(school_data$neighbor==i)])),
+                                                                           rep(3,sum(school_data$sch_q5e[which(school_data$neighbor==i)])),rep(4,sum(school_data$sch_q5g[which(school_data$neighbor==i)])),
+                                                                           rep(5,sum(school_data$sch_q5i[which(school_data$neighbor==i)])))),
+                                                   as.numeric(c(rep(1,sum(community_data$com_q4a[which(community_data$neighbor==i)])),rep(2,sum(community_data$com_q4c[which(community_data$neighbor==i)])),
+                                                                              rep(3,sum(community_data$com_q4e[which(community_data$neighbor==i)])),rep(4,sum(community_data$com_q4g[which(community_data$neighbor==i)]))))),
+                                    'household' = as.numeric(household_data$hh_q2[which(household_data$hh_q2!="n/a" & household_data$neighbor==i)]),
+                                    'school' = as.numeric(c(rep(1,sum(school_data$sch_q5a[which(school_data$neighbor==i)])),rep(2,sum(school_data$sch_q5c[which(school_data$neighbor==i)])),
+                                                 rep(3,sum(school_data$sch_q5e[which(school_data$neighbor==i)])),rep(4,sum(school_data$sch_q5g[which(school_data$neighbor==i)])),
+                                                 rep(5,sum(school_data$sch_q5i[which(school_data$neighbor==i)])))),
+                                    'community' = as.numeric(c(rep(1,sum(community_data$com_q4a[which(community_data$neighbor==i)])),rep(2,sum(community_data$com_q4c[which(community_data$neighbor==i)])),
+                                                               rep(3,sum(community_data$com_q4e[which(community_data$neighbor==i)])),rep(4,sum(community_data$com_q4g[which(community_data$neighbor==i)]))))
+                      ) # end of switch
+                                    
                  ),
                path=
                  list(sample = 'Ocean Water',
                       age = 'Children',
                       neighborhood = paste('Neighborhood',i),
-                      data = as.numeric(household_data$hh_q3[which(household_data$hh_q3!="n/a" & household_data$neighbor==i)])
+                      data = switch(survey_type, 
+                                    'combined' = c(as.numeric(household_data$hh_q3[which(household_data$hh_q3!="n/a" & household_data$neighbor==i)]),
+                                                   as.numeric(c(rep(1,sum(school_data$sch_q4a[which(school_data$neighbor==i)])),rep(2,sum(school_data$sch_q4c[which(school_data$neighbor==i)])),
+                                                                           rep(3,sum(school_data$sch_q4e[which(school_data$neighbor==i)])),rep(4,sum(school_data$sch_q4g[which(school_data$neighbor==i)])))),
+                                                   as.numeric(c(rep(1,sum(community_data$com_q19a[which(community_data$neighbor==i)])),rep(2,sum(community_data$com_q19c[which(community_data$neighbor==i)])),
+                                                                              rep(3,sum(community_data$com_q19e[which(community_data$neighbor==i)])),rep(4,sum(community_data$com_q19g[which(community_data$neighbor==i)])),
+                                                                              rep(5,sum(community_data$com_q19i[which(community_data$neighbor==i)]))))),
+                                    'household' = as.numeric(household_data$hh_q3[which(household_data$hh_q3!="n/a" & household_data$neighbor==i)]),
+                                    'school' = as.numeric(c(rep(1,sum(school_data$sch_q4a[which(school_data$neighbor==i)])),rep(2,sum(school_data$sch_q4c[which(school_data$neighbor==i)])),
+                                                            rep(3,sum(school_data$sch_q4e[which(school_data$neighbor==i)])),rep(4,sum(school_data$sch_q4g[which(school_data$neighbor==i)])))),
+                                    'community' = as.numeric(c(rep(1,sum(community_data$com_q19a[which(community_data$neighbor==i)])),rep(2,sum(community_data$com_q19c[which(community_data$neighbor==i)])),
+                                                               rep(3,sum(community_data$com_q19e[which(community_data$neighbor==i)])),rep(4,sum(community_data$com_q19g[which(community_data$neighbor==i)])),
+                                                               rep(5,sum(community_data$com_q19i[which(community_data$neighbor==i)]))))
+                      ) # end of switch
                  ),
                path=
                  list(sample = 'Surface Water',
                       age = 'Adults',
                       neighborhood = paste('Neighborhood',i),
-                      data = as.numeric(household_data$hh_q4[which(household_data$hh_q4!="n/a" & household_data$neighbor==i)])
+                      data = switch(survey_type, 
+                                    'combined' = c(as.numeric(household_data$hh_q4[which(household_data$hh_q4!="n/a" & household_data$neighbor==i)]),
+                                                  as.numeric(c(rep(1,sum(school_data$sch_q7a[which(school_data$neighbor==i)])),rep(2,sum(school_data$sch_q7c[which(school_data$neighbor==i)])),
+                                                                           rep(3,sum(school_data$sch_q7e[which(school_data$neighbor==i)])),rep(4,sum(school_data$sch_q7g[which(school_data$neighbor==i)])),
+                                                                           rep(5,sum(school_data$sch_q7i[which(school_data$neighbor==i)])))),
+                                                   as.numeric(c(rep(1,sum(community_data$com_q5a[which(community_data$neighbor==i)])),rep(2,sum(community_data$com_q5c[which(community_data$neighbor==i)])),
+                                                                              rep(3,sum(community_data$com_q5e[which(community_data$neighbor==i)])),rep(4,sum(community_data$com_q5g[which(community_data$neighbor==i)]))))),
+                                    'household' = as.numeric(household_data$hh_q4[which(household_data$hh_q4!="n/a" & household_data$neighbor==i)]),
+                                    'school' = as.numeric(c(rep(1,sum(school_data$sch_q7a[which(school_data$neighbor==i)])),rep(2,sum(school_data$sch_q7c[which(school_data$neighbor==i)])),
+                                                            rep(3,sum(school_data$sch_q7e[which(school_data$neighbor==i)])),rep(4,sum(school_data$sch_q7g[which(school_data$neighbor==i)])),
+                                                            rep(5,sum(school_data$sch_q7i[which(school_data$neighbor==i)])))),
+                                    'community' = as.numeric(c(rep(1,sum(community_data$com_q5a[which(community_data$neighbor==i)])),rep(2,sum(community_data$com_q5c[which(community_data$neighbor==i)])),
+                                                               rep(3,sum(community_data$com_q5e[which(community_data$neighbor==i)])),rep(4,sum(community_data$com_q5g[which(community_data$neighbor==i)]))))
+                      ) # end of switch
                  ),
                path=
                  list(sample = 'Surface Water',
                       age = 'Children',
                       neighborhood = paste('Neighborhood',i),
-                      data = as.numeric(household_data$hh_q5[which(household_data$hh_q5!="n/a" & household_data$neighbor==i)])
+                      data = switch(survey_type, 
+                                    'combined' = c(as.numeric(household_data$hh_q5[which(household_data$hh_q5!="n/a" & household_data$neighbor==i)]),
+                                                   as.numeric(c(rep(1,sum(school_data$sch_q6a[which(school_data$neighbor==i)])),rep(2,sum(school_data$sch_q6c[which(school_data$neighbor==i)])),
+                                                                           rep(3,sum(school_data$sch_q6e[which(school_data$neighbor==i)])),rep(4,sum(school_data$sch_q6g[which(school_data$neighbor==i)])))),
+                                                   as.numeric(c(rep(1,sum(community_data$com_q20a[which(community_data$neighbor==i)])),rep(2,sum(community_data$com_q20c[which(community_data$neighbor==i)])),
+                                                                              rep(3,sum(community_data$com_q20e[which(community_data$neighbor==i)])),rep(4,sum(community_data$com_q20g[which(community_data$neighbor==i)])),
+                                                                              rep(5,sum(community_data$com_q20i[which(community_data$neighbor==i)]))))),
+                                    'household' = as.numeric(household_data$hh_q5[which(household_data$hh_q5!="n/a" & household_data$neighbor==i)]),
+                                    'school' = as.numeric(c(rep(1,sum(school_data$sch_q6a[which(school_data$neighbor==i)])),rep(2,sum(school_data$sch_q6c[which(school_data$neighbor==i)])),
+                                                            rep(3,sum(school_data$sch_q6e[which(school_data$neighbor==i)])),rep(4,sum(school_data$sch_q6g[which(school_data$neighbor==i)])))),
+                                    'community' = as.numeric(c(rep(1,sum(community_data$com_q20a[which(community_data$neighbor==i)])),rep(2,sum(community_data$com_q20c[which(community_data$neighbor==i)])),
+                                                               rep(3,sum(community_data$com_q20e[which(community_data$neighbor==i)])),rep(4,sum(community_data$com_q20g[which(community_data$neighbor==i)])),
+                                                               rep(5,sum(community_data$com_q20i[which(community_data$neighbor==i)]))))
+                      ) # end of switch
                  ),
                path=
                  list(sample = 'Flood Water',
                       age = 'Adults',
                       neighborhood = paste('Neighborhood',i),
-                      data =  as.numeric(household_data$hh_q8[which(household_data$hh_q8!="n/a" & household_data$neighbor==i)])
+                      data = switch(survey_type, 
+                                    'combined' = c(as.numeric(household_data$hh_q8[which(household_data$hh_q8!="n/a" & household_data$neighbor==i)]),
+                                                   as.numeric(c(rep(1,sum(school_data$sch_q11a[which(school_data$neighbor==i)])),rep(2,sum(school_data$sch_q11c[which(school_data$neighbor==i)])),
+                                                                           rep(3,sum(school_data$sch_q11e[which(school_data$neighbor==i)])),rep(4,sum(school_data$sch_q11g[which(school_data$neighbor==i)])),
+                                                                           rep(5,sum(school_data$sch_q11i[which(school_data$neighbor==i)])))),
+                                                   as.numeric(c(rep(1,sum(community_data$com_q7a[which(community_data$neighbor==i)])),rep(2,sum(community_data$com_q7c[which(community_data$neighbor==i)])),
+                                                                              rep(3,sum(community_data$com_q7e[which(community_data$neighbor==i)])),rep(4,sum(community_data$com_q7g[which(community_data$neighbor==i)]))))),
+                                    'household' = as.numeric(household_data$hh_q8[which(household_data$hh_q8!="n/a" & household_data$neighbor==i)]),
+                                    'school' = as.numeric(c(rep(1,sum(school_data$sch_q11a[which(school_data$neighbor==i)])),rep(2,sum(school_data$sch_q11c[which(school_data$neighbor==i)])),
+                                                            rep(3,sum(school_data$sch_q11e[which(school_data$neighbor==i)])),rep(4,sum(school_data$sch_q11g[which(school_data$neighbor==i)])),
+                                                            rep(5,sum(school_data$sch_q11i[which(school_data$neighbor==i)])))),
+                                    'community' = as.numeric(c(rep(1,sum(community_data$com_q7a[which(community_data$neighbor==i)])),rep(2,sum(community_data$com_q7c[which(community_data$neighbor==i)])),
+                                                               rep(3,sum(community_data$com_q7e[which(community_data$neighbor==i)])),rep(4,sum(community_data$com_q7g[which(community_data$neighbor==i)]))))
+                      ) # end of switch
                  ),
                path=
                  list(sample = 'Flood Water',
                       age = 'Children',
                       neighborhood = paste('Neighborhood',i),
-                      data = as.numeric(household_data$hh_q9[which(household_data$hh_q9!="n/a" & household_data$neighbor==i)])
+                      data = switch(survey_type, 
+                                    'combined' = c(as.numeric(household_data$hh_q9[which(household_data$hh_q9!="n/a" & household_data$neighbor==i)]),
+                                                   as.numeric(c(rep(1,sum(school_data$sch_q10a[which(school_data$neighbor==i)])),rep(2,sum(school_data$sch_q10c[which(school_data$neighbor==i)])),
+                                                                           rep(3,sum(school_data$sch_q10e[which(school_data$neighbor==i)])),rep(4,sum(school_data$sch_q10g[which(school_data$neighbor==i)])))),
+                                                   as.numeric(c(rep(1,sum(community_data$com_q22a[which(community_data$neighbor==i)])),rep(2,sum(community_data$com_q22c[which(community_data$neighbor==i)])),
+                                                                              rep(3,sum(community_data$com_q22e[which(community_data$neighbor==i)])),rep(4,sum(community_data$com_q22g[which(community_data$neighbor==i)])),
+                                                                              rep(5,sum(community_data$com_q22i[which(community_data$neighbor==i)]))))),
+                                    'household' = as.numeric(household_data$hh_q9[which(household_data$hh_q9!="n/a" & household_data$neighbor==i)]),
+                                    'school' = as.numeric(c(rep(1,sum(school_data$sch_q10a[which(school_data$neighbor==i)])),rep(2,sum(school_data$sch_q10c[which(school_data$neighbor==i)])),
+                                                            rep(3,sum(school_data$sch_q10e[which(school_data$neighbor==i)])),rep(4,sum(school_data$sch_q10g[which(school_data$neighbor==i)])))),
+                                    'community' = as.numeric(c(rep(1,sum(community_data$com_q22a[which(community_data$neighbor==i)])),rep(2,sum(community_data$com_q22c[which(community_data$neighbor==i)])),
+                                                               rep(3,sum(community_data$com_q22e[which(community_data$neighbor==i)])),rep(4,sum(community_data$com_q22g[which(community_data$neighbor==i)])),
+                                                               rep(5,sum(community_data$com_q22i[which(community_data$neighbor==i)]))))
+                      ) # end of switch
                  ),
                path=
                  list(sample = 'Public Latrine',
                       age = 'Adults',
                       neighborhood = paste('Neighborhood',i),
-                      data =  as.numeric(household_data$hh_q15[which(household_data$hh_q15!="n/a" & household_data$neighbor==i)])
+                      data = switch(survey_type, 
+                                    'combined' = c(as.numeric(household_data$hh_q15[which(household_data$hh_q15!="n/a" & household_data$neighbor==i)]),
+                                                   as.numeric(c(rep(1,sum(school_data$sch_q17a[which(school_data$neighbor==i)])),rep(2,sum(school_data$sch_q17c[which(school_data$neighbor==i)])),
+                                                                           rep(3,sum(school_data$sch_q17e[which(school_data$neighbor==i)])),rep(4,sum(school_data$sch_q17g[which(school_data$neighbor==i)])),
+                                                                           rep(5,sum(school_data$sch_q17i[which(school_data$neighbor==i)])))),
+                                                   as.numeric(c(rep(1,sum(community_data$com_q10a[which(community_data$neighbor==i)])),rep(2,sum(community_data$com_q10c[which(community_data$neighbor==i)])),
+                                                                              rep(3,sum(community_data$com_q10e[which(community_data$neighbor==i)])),rep(4,sum(community_data$com_q10g[which(community_data$neighbor==i)]))))),
+                                    'household' = as.numeric(household_data$hh_q15[which(household_data$hh_q15!="n/a" & household_data$neighbor==i)]),
+                                    'school' = as.numeric(c(rep(1,sum(school_data$sch_q17a[which(school_data$neighbor==i)])),rep(2,sum(school_data$sch_q17c[which(school_data$neighbor==i)])),
+                                                            rep(3,sum(school_data$sch_q17e[which(school_data$neighbor==i)])),rep(4,sum(school_data$sch_q17g[which(school_data$neighbor==i)])),
+                                                            rep(5,sum(school_data$sch_q17i[which(school_data$neighbor==i)])))),
+                                    'community' = as.numeric(c(rep(1,sum(community_data$com_q10a[which(community_data$neighbor==i)])),rep(2,sum(community_data$com_q10c[which(community_data$neighbor==i)])),
+                                                               rep(3,sum(community_data$com_q10e[which(community_data$neighbor==i)])),rep(4,sum(community_data$com_q10g[which(community_data$neighbor==i)]))))
+                      ) # end of switch
                  ),
                path=
                  list(sample = 'Public Latrine',
                       age = 'Children',
                       neighborhood = paste('Neighborhood',i),
-                      data = as.numeric(household_data$hh_q16[which(household_data$hh_q16!="n/a" & household_data$neighbor==i)])
+                      data = switch(survey_type, 
+                                    'combined' = c(as.numeric(household_data$hh_q16[which(household_data$hh_q16!="n/a" & household_data$neighbor==i)]),
+                                                   as.numeric(c(rep(1,sum(school_data$sch_q16a[which(school_data$neighbor==i)])),rep(2,sum(school_data$sch_q16c[which(school_data$neighbor==i)])),
+                                                                           rep(3,sum(school_data$sch_q16e[which(school_data$neighbor==i)])),rep(4,sum(school_data$sch_q16g[which(school_data$neighbor==i)])))),
+                                                   as.numeric(c(rep(1,sum(community_data$com_q25a[which(community_data$neighbor==i)])),rep(2,sum(community_data$com_q25c[which(community_data$neighbor==i)])),
+                                                                               rep(3,sum(community_data$com_q25e[which(community_data$neighbor==i)])),rep(4,sum(community_data$com_q25g[which(community_data$neighbor==i)])),
+                                                                               rep(5,sum(community_data$com_q25i[which(community_data$neighbor==i)]))))),
+                                    'household' = as.numeric(household_data$hh_q16[which(household_data$hh_q16!="n/a" & household_data$neighbor==i)]),
+                                    'school' = as.numeric(c(rep(1,sum(school_data$sch_q16a[which(school_data$neighbor==i)])),rep(2,sum(school_data$sch_q16c[which(school_data$neighbor==i)])),
+                                                            rep(3,sum(school_data$sch_q16e[which(school_data$neighbor==i)])),rep(4,sum(school_data$sch_q16g[which(school_data$neighbor==i)])))),
+                                    'community' =  as.numeric(c(rep(1,sum(community_data$com_q25a[which(community_data$neighbor==i)])),rep(2,sum(community_data$com_q25c[which(community_data$neighbor==i)])),
+                                                                rep(3,sum(community_data$com_q25e[which(community_data$neighbor==i)])),rep(4,sum(community_data$com_q25g[which(community_data$neighbor==i)])),
+                                                                rep(5,sum(community_data$com_q25i[which(community_data$neighbor==i)]))))
+                      ) # end of switch
                  )
                
     )
@@ -194,323 +401,6 @@ calculate_householdFreq <- function(household_data, type='pie chart') {
   }
 }
 
-
-calculate_schoolFreq <- function(school_data, type='pie chart') {
-  # calculate the appropriate factors for plotting pie charts
-  # and people plots.  This is specific to the school 
-  # form. returns a list with two objects. type can equal
-  # 'pie chart' or 'ppl plot'
-  #
-  # Ex.
-  # > calculate_schoolFreq(school_data, 'pie chart')
-  # $[[1]]
-  # [1] 3 4 2 1
-  # ...
-  
-  # it's the same calculations for a pie chart or a people plot, just shifted. 
-  
-  # initialize the output list based on the sample types we know exist
-  freq <- list('drain' = list(), 'produce' = list(), 'piped_water' = list(), 'ocean_water' = list(),
-               'surface_water' = list(), 'flood_water' = list(), 'public_latrine' = list()
-  )
-  
-  # drain samples
-  for (i in 1:length(unique(school_data$neighbor))) {
-    sub <- list(
-      list('adults' = as.numeric(c(rep(1,sum(school_data$sch_q9a[which(school_data$neighbor==i)])),rep(2,sum(school_data$sch_q9c[which(school_data$neighbor==i)])),
-                                   rep(3,sum(school_data$sch_q9e[which(school_data$neighbor==i)])),rep(4,sum(school_data$sch_q9g[which(school_data$neighbor==i)])),
-                                   rep(5,sum(school_data$sch_q9i[which(school_data$neighbor==i)])))),
-           'children' = as.numeric(c(rep(1,sum(school_data$sch_q8a[which(school_data$neighbor==i)])),rep(2,sum(school_data$sch_q8c[which(school_data$neighbor==i)])),
-                                     rep(3,sum(school_data$sch_q8e[which(school_data$neighbor==i)])),rep(4,sum(school_data$sch_q8g[which(school_data$neighbor==i)]))))
-      )
-    )
-    names(sub) <- paste0('neighborhood',i)
-    freq$drain <- append(freq$drain, sub)
-    
-  }
-  
-  # produce samples
-  for (i in 1:length(unique(school_data$neighbor))) {
-    sub <- list(
-      list('adults' = as.numeric(c(rep(1,sum(school_data$sch_q15a[which(school_data$neighbor==i)])),rep(2,sum(school_data$sch_q15c[which(school_data$neighbor==i)])),
-                                   rep(3,sum(school_data$sch_q15e[which(school_data$neighbor==i)])),rep(4,sum(school_data$sch_q15g[which(school_data$neighbor==i)])),
-                                   rep(5,sum(school_data$sch_q15i[which(school_data$neighbor==i)])))),
-           'children' = as.numeric(c(rep(1,sum(school_data$sch_q14a[which(school_data$neighbor==i)])),rep(2,sum(school_data$sch_q14c[which(school_data$neighbor==i)])),
-                                     rep(3,sum(school_data$sch_q14e[which(school_data$neighbor==i)])),rep(4,sum(school_data$sch_q14g[which(school_data$neighbor==i)]))))
-      )
-    )
-    names(sub) <- paste0('neighborhood',i)
-    freq$produce <- append(freq$produce, sub)
-    
-  }
-  
-  # piped water samples
-  for (i in 1:length(unique(school_data$neighbor))) {
-    sub <- list(
-      list('adults' = as.numeric(c(rep(1,sum(school_data$sch_q13a[which(school_data$neighbor==i)])),rep(2,sum(school_data$sch_q13c[which(school_data$neighbor==i)])),
-                                   rep(3,sum(school_data$sch_q13e[which(school_data$neighbor==i)])),rep(4,sum(school_data$sch_q13g[which(school_data$neighbor==i)])),
-                                   rep(5,sum(school_data$sch_q13i[which(school_data$neighbor==i)])))),
-           'children' = as.numeric(c(rep(1,sum(school_data$sch_q12a[which(school_data$neighbor==i)])),rep(2,sum(school_data$sch_q12c[which(school_data$neighbor==i)])),
-                                     rep(3,sum(school_data$sch_q12e[which(school_data$neighbor==i)])),rep(4,sum(school_data$sch_q12g[which(school_data$neighbor==i)]))))
-      )
-    )
-    names(sub) <- paste0('neighborhood',i)
-    freq$piped_water <- append(freq$piped_water, sub)
-    
-  }
-  
-  # ocean water samples
-  for (i in 1:length(unique(school_data$neighbor))) {
-    sub <- list(
-      list('adults' = as.numeric(c(rep(1,sum(school_data$sch_q5a[which(school_data$neighbor==i)])),rep(2,sum(school_data$sch_q5c[which(school_data$neighbor==i)])),
-                                   rep(3,sum(school_data$sch_q5e[which(school_data$neighbor==i)])),rep(4,sum(school_data$sch_q5g[which(school_data$neighbor==i)])),
-                                   rep(5,sum(school_data$sch_q5i[which(school_data$neighbor==i)])))),
-           'children' = as.numeric(c(rep(1,sum(school_data$sch_q4a[which(school_data$neighbor==i)])),rep(2,sum(school_data$sch_q4c[which(school_data$neighbor==i)])),
-                                     rep(3,sum(school_data$sch_q4e[which(school_data$neighbor==i)])),rep(4,sum(school_data$sch_q4g[which(school_data$neighbor==i)]))))
-      )
-    )
-    names(sub) <- paste0('neighborhood',i)
-    freq$ocean_water <- append(freq$ocean_water, sub)
-    
-  }
-  
-  # surface water samples
-  for (i in 1:length(unique(school_data$neighbor))) {
-    sub <- list(
-      list('adults' = as.numeric(c(rep(1,sum(school_data$sch_q7a[which(school_data$neighbor==i)])),rep(2,sum(school_data$sch_q7c[which(school_data$neighbor==i)])),
-                                   rep(3,sum(school_data$sch_q7e[which(school_data$neighbor==i)])),rep(4,sum(school_data$sch_q7g[which(school_data$neighbor==i)])),
-                                   rep(5,sum(school_data$sch_q7i[which(school_data$neighbor==i)])))),
-           'children' = as.numeric(c(rep(1,sum(school_data$sch_q6a[which(school_data$neighbor==i)])),rep(2,sum(school_data$sch_q6c[which(school_data$neighbor==i)])),
-                                     rep(3,sum(school_data$sch_q6e[which(school_data$neighbor==i)])),rep(4,sum(school_data$sch_q6g[which(school_data$neighbor==i)]))))
-      )
-    )
-    names(sub) <- paste0('neighborhood',i)
-    freq$surface_water <- append(freq$surface_water, sub)
-    
-  }
-  
-  # flood water samples
-  for (i in 1:length(unique(school_data$neighbor))) {
-    sub <- list(
-      list('adults' = as.numeric(c(rep(1,sum(school_data$sch_q11a[which(school_data$neighbor==i)])),rep(2,sum(school_data$sch_q11c[which(school_data$neighbor==i)])),
-                                   rep(3,sum(school_data$sch_q11e[which(school_data$neighbor==i)])),rep(4,sum(school_data$sch_q11g[which(school_data$neighbor==i)])),
-                                   rep(5,sum(school_data$sch_q11i[which(school_data$neighbor==i)])))),
-           'children' = as.numeric(c(rep(1,sum(school_data$sch_q10a[which(school_data$neighbor==i)])),rep(2,sum(school_data$sch_q10c[which(school_data$neighbor==i)])),
-                                     rep(3,sum(school_data$sch_q10e[which(school_data$neighbor==i)])),rep(4,sum(school_data$sch_q10g[which(school_data$neighbor==i)]))))
-      )
-    )
-    names(sub) <- paste0('neighborhood',i)
-    freq$flood_water <- append(freq$flood_water, sub)
-    
-  }
-  
-  # public latrine samples
-  for (i in 1:length(unique(school_data$neighbor))) {
-    sub <- list(
-      list('adults' = as.numeric(c(rep(1,sum(school_data$sch_q17a[which(school_data$neighbor==i)])),rep(2,sum(school_data$sch_q17c[which(school_data$neighbor==i)])),
-                                   rep(3,sum(school_data$sch_q17e[which(school_data$neighbor==i)])),rep(4,sum(school_data$sch_q17g[which(school_data$neighbor==i)])),
-                                   rep(5,sum(school_data$sch_q17i[which(school_data$neighbor==i)])))),
-           'children' = as.numeric(c(rep(1,sum(school_data$sch_q16a[which(school_data$neighbor==i)])),rep(2,sum(school_data$sch_q16c[which(school_data$neighbor==i)])),
-                                     rep(3,sum(school_data$sch_q16e[which(school_data$neighbor==i)])),rep(4,sum(school_data$sch_q16g[which(school_data$neighbor==i)]))))
-      )
-    )
-    names(sub) <- paste0('neighborhood',i)
-    freq$public_latrine <- append(freq$public_latrine, sub)
-    
-  }
- 
-  # it's the same calculations for a pie chart or a people plot, just shifted. 
-  if (type == 'pie chart') {
-    return(freq)
-  }
-  # frequencies for pie charts
-  else if (type == 'ppl plot') {
-    # if we want data for a people plot, calculate 4 - the value per vector object in the list to shift the values
-    freq <- freq_to_ppl_plot(freq)
-    return(freq)
-  }
-  else {
-    cat('Unknown type.  Options are "pie chart" or "ppl plot"\n')
-  }
-  
-}
-
-calculate_communityFreq <- function(community_data, type='pie chart') {
-  # calculate the appropriate factors for plotting pie charts
-  # and people plots.  This is specific to the community 
-  # form. returns a list with two objects. type can equal
-  # 'pie chart' or 'ppl plot'
-  #
-  # Ex.
-  # > calculate_communityFreq(community_data, 'pie chart')
-  # $[[1]]
-  # [1] 3 4 2 1
-  # ...
-  freq <- list('drain' = list(), 'produce' = list(), 'piped_water' = list(), 'ocean_water' = list(),
-               'surface_water' = list(), 'flood_water' = list(), 'public_latrine' = list()
-  )
-  
-  for (i in 1:length(unique(community_data$neighbor))) {
-    sub <- list(
-      list('adults' = as.numeric(c(rep(1,sum(community_data$com_q6a[which(community_data$neighbor==i)])),rep(2,sum(community_data$com_q6c[which(community_data$neighbor==i)])),
-                                   rep(3,sum(community_data$com_q6e[which(community_data$neighbor==i)])),rep(4,sum(community_data$com_q6g[which(community_data$neighbor==i)])))),
-           'children' = as.numeric(c(rep(1,sum(community_data$com_q21a[which(community_data$neighbor==i)])),rep(2,sum(community_data$com_q21c[which(community_data$neighbor==i)])),
-                                     rep(3,sum(community_data$com_q21e[which(community_data$neighbor==i)])),rep(4,sum(community_data$com_q21g[which(community_data$neighbor==i)])),
-                                     rep(5,sum(community_data$com_q21i[which(community_data$neighbor==i)]))))
-      )
-    )
-    names(sub) <- paste0('neighborhood',i)
-    freq$drain <- append(freq$drain, sub)
-    
-  }
-  
-  for (i in 1:length(unique(community_data$neighbor))) {
-    sub <- list(
-      list('adults' = as.numeric(c(rep(1,sum(community_data$com_q9a[which(community_data$neighbor==i)])),rep(2,sum(community_data$com_q9c[which(community_data$neighbor==i)])),
-                                   rep(3,sum(community_data$com_q9e[which(community_data$neighbor==i)])),rep(4,sum(community_data$com_q9g[which(community_data$neighbor==i)])))),
-           'children' = as.numeric(c(rep(1,sum(community_data$com_q24a[which(community_data$neighbor==i)])),rep(2,sum(community_data$com_q24c[which(community_data$neighbor==i)])),
-                                     rep(3,sum(community_data$com_q24e[which(community_data$neighbor==i)])),rep(4,sum(community_data$com_q24g[which(community_data$neighbor==i)])),
-                                     rep(5,sum(community_data$com_q24i[which(community_data$neighbor==i)]))))
-      )
-    )
-    names(sub) <- paste0('neighborhood',i)
-    freq$produce <- append(freq$produce, sub)
-    
-  }
-
-  for (i in 1:length(unique(community_data$neighbor))) {
-    sub <- list(
-      list('adults' = as.numeric(c(rep(1,sum(community_data$com_q8a[which(community_data$neighbor==i)])),rep(2,sum(community_data$com_q8c[which(community_data$neighbor==i)])),
-                                   rep(3,sum(community_data$com_q8e[which(community_data$neighbor==i)])),rep(4,sum(community_data$com_q8g[which(community_data$neighbor==i)])))),
-           'children' = as.numeric(c(rep(1,sum(community_data$com_q23a[which(community_data$neighbor==i)])),rep(2,sum(community_data$com_q23c[which(community_data$neighbor==i)])),
-                                     rep(3,sum(community_data$com_q23e[which(community_data$neighbor==i)])),rep(4,sum(community_data$com_q23g[which(community_data$neighbor==i)])),
-                                     rep(5,sum(community_data$com_q23i[which(community_data$neighbor==i)]))))
-      )
-    )
-    names(sub) <- paste0('neighborhood',i)
-    freq$piped_water <- append(freq$piped_water, sub)
-    
-  }
-  
-  for (i in 1:length(unique(community_data$neighbor))) {
-    sub <- list(
-      list('adults' = as.numeric(c(rep(1,sum(community_data$com_q4a[which(community_data$neighbor==i)])),rep(2,sum(community_data$com_q4c[which(community_data$neighbor==i)])),
-                                   rep(3,sum(community_data$com_q4e[which(community_data$neighbor==i)])),rep(4,sum(community_data$com_q4g[which(community_data$neighbor==i)])))),
-           'children' = as.numeric(c(rep(1,sum(community_data$com_q19a[which(community_data$neighbor==i)])),rep(2,sum(community_data$com_q19c[which(community_data$neighbor==i)])),
-                                     rep(3,sum(community_data$com_q19e[which(community_data$neighbor==i)])),rep(4,sum(community_data$com_q19g[which(community_data$neighbor==i)])),
-                                     rep(5,sum(community_data$com_q19i[which(community_data$neighbor==i)]))))
-      )
-    )
-    names(sub) <- paste0('neighborhood',i)
-    freq$ocean_water <- append(freq$ocean_water, sub)
-    
-  }
-  
-  for (i in 1:length(unique(community_data$neighbor))) {
-    sub <- list(
-      list('adults' = as.numeric(c(rep(1,sum(community_data$com_q5a[which(community_data$neighbor==i)])),rep(2,sum(community_data$com_q5c[which(community_data$neighbor==i)])),
-                                   rep(3,sum(community_data$com_q5e[which(community_data$neighbor==i)])),rep(4,sum(community_data$com_q5g[which(community_data$neighbor==i)])))),
-           'children' = as.numeric(c(rep(1,sum(community_data$com_q20a[which(community_data$neighbor==i)])),rep(2,sum(community_data$com_q20c[which(community_data$neighbor==i)])),
-                                     rep(3,sum(community_data$com_q20e[which(community_data$neighbor==i)])),rep(4,sum(community_data$com_q20g[which(community_data$neighbor==i)])),
-                                     rep(5,sum(community_data$com_q20i[which(community_data$neighbor==i)]))))
-      )
-    )
-    names(sub) <- paste0('neighborhood',i)
-    freq$surface_water <- append(freq$surface_water, sub)
-    
-  }
-  
-  for (i in 1:length(unique(community_data$neighbor))) {
-    sub <- list(
-      list('adults' = as.numeric(c(rep(1,sum(community_data$com_q7a[which(community_data$neighbor==i)])),rep(2,sum(community_data$com_q7c[which(community_data$neighbor==i)])),
-                                   rep(3,sum(community_data$com_q7e[which(community_data$neighbor==i)])),rep(4,sum(community_data$com_q7g[which(community_data$neighbor==i)])))),
-           'children' = as.numeric(c(rep(1,sum(community_data$com_q22a[which(community_data$neighbor==i)])),rep(2,sum(community_data$com_q22c[which(community_data$neighbor==i)])),
-                                     rep(3,sum(community_data$com_q22e[which(community_data$neighbor==i)])),rep(4,sum(community_data$com_q22g[which(community_data$neighbor==i)])),
-                                     rep(5,sum(community_data$com_q22i[which(community_data$neighbor==i)]))))
-      )
-    )
-    names(sub) <- paste0('neighborhood',i)
-    freq$flood_water <- append(freq$flood_water, sub)
-    
-  }
-  
-  for (i in 1:length(unique(community_data$neighbor))) {
-    sub <- list(
-      list('adults' = as.numeric(c(rep(1,sum(community_data$com_q10a[which(community_data$neighbor==i)])),rep(2,sum(community_data$com_q10c[which(community_data$neighbor==i)])),
-                                   rep(3,sum(community_data$com_q10e[which(community_data$neighbor==i)])),rep(4,sum(community_data$com_q10g[which(community_data$neighbor==i)])))),
-           'children' = as.numeric(c(rep(1,sum(community_data$com_q25a[which(community_data$neighbor==i)])),rep(2,sum(community_data$com_q25c[which(community_data$neighbor==i)])),
-                                     rep(3,sum(community_data$com_q25e[which(community_data$neighbor==i)])),rep(4,sum(community_data$com_q25g[which(community_data$neighbor==i)])),
-                                     rep(5,sum(community_data$com_q25i[which(community_data$neighbor==i)]))))
-      )
-    )
-    names(sub) <- paste0('neighborhood',i)
-    freq$public_latrine <- append(freq$public_latrine, sub)
-    
-  }
-    
-  # it's the same calculations for a pie chart or a people plot, just shifted. 
-  if (type == 'pie chart') {
-    return(freq)
-  }
-  # frequencies for pie charts
-  else if (type == 'ppl plot') {
-    # if we want data for a people plot, calculate 4 - the value per vector object in the list to shift the values
-    freq <- freq_to_ppl_plot(freq)
-    return(freq)
-  }
-  else {
-    cat('Unknown type.  Options are "pie chart" or "ppl plot"\n')
-  }
-}
-
-calculate_combinedFreq <- function(household_data, school_data, community_data, type='pie chart') {
-  # calculate the appropriate factors for plotting pie charts
-  # and people plots.  This is specific to the combined 
-  # form. returns a list with two objects. type can equal
-  # 'pie chart' or 'ppl plot'.  this will combine the other
-  # results from the individual calculations
-  #
-  # Ex.
-  # > calculate_combinedFreq(household_data, school_data, community_data, 'pie chart')
-  # $drain
-  # $drain$neighborhood1
-  # $drain$neighborhood1$adults
-  # [1] 3 4 2 1
-  # ...
-  num.neighb<-sort(unique(c(as.numeric(household_data$neighbor),as.numeric(school_data$neighbor),as.numeric(community_data$neighbor))))
-  
-  
-  freq <- list('drain' = list(), 'produce' = list(), 'piped_water' = list(), 'ocean_water' = list(),
-               'surface_water' = list(), 'flood_water' = list(), 'public_latrine' = list()
-  )
-  household_freq <- calculate_householdFreq(household_data, type)
-  school_freq <- calculate_schoolFreq(school_data, type)
-  community_freq <- calculate_communityFreq(community_data, type)
-  
-  for (p in 1:length(freq)) {
-    for (n in num.neighb) {
-      sub_a <- list('adults' = c(household_freq[[p]][[n]]$adults,
-                                 school_freq[[p]][[n]]$adults,
-                                 community_freq[[p]][[n]]$adults), 
-                    'children' = c(household_freq[[p]][[n]]$children,
-                                        school_freq[[p]][[n]]$children,
-                                        community_freq[[p]][[n]]$children)
-                    )
-      freq[[p]][[paste0('neighborhood',n)]] <- sub_a
-    }
-    
-  }
-
-  # it's the same calculations for a pie chart or a people plot, just shifted. 
-  if (type == 'pie chart' | type == 'ppl plot') {
-    return(freq)
-  }
-  else {
-    cat('Unknown type.  Options are "pie chart" or "ppl plot"\n')
-  }
-  
-}
-
 convert_to_old_freq <- function(freq) {
   # this is in order to not refactor all of the people plot code for the moment
   # this is not intented to be used long term.
@@ -527,20 +417,6 @@ convert_to_old_freq <- function(freq) {
   return(out)
 }
 
-freq_to_ppl_plot <- function(freq) {
-  # take an object of freq values and convert them for ps plotting
-  # based on original code.  ideally this will be temporary. 
-  for (p in 1:length(freq)) { # each path
-    for (n in 1:length(freq[[p]])) { # each neighborhood
-      for (a in 1:length(freq[[p]][[n]])) { # each age
-        if (length(freq[[p]][[n]][[a]]) > 0) {
-          freq[[p]][[n]][[a]] <- (4 - freq[[p]][[n]][[a]])
-        }
-      }
-    }
-  }
-  return(freq)
-}
 # PLOTTING ====================================================================
 ## PIE CHARTS 
 create_pieCharts <- function(freq) {
