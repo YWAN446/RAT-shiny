@@ -644,3 +644,66 @@ ggpie <- function (dat, group_by, value_column, title) {
   
   return(plot)
 }
+
+order_samples <- function(dat, level1_type=NULL, level2_type=NULL, level3_type=NULL, 
+                          level1_filter=NULL, level2_filter=NULL, level3_filter=NULL) {
+  # Take a loosely structured list of frequency samples where each sample list contains list elements of 'sample', 'age', 'neighborhood'
+  # and 'data'.  Default will return a nested list with the structure, sample -> neighborhood -> age
+  
+  # double check that the level types stated are correct and do not repeat
+  correct_types <- c('sample', 'neighborhood', 'age')
+  stated_types <- list(level1_type, level2_type, level3_type)
+  
+  # check if there are any dupes
+  dupe_check <- unlist(stated_types)
+  dupe_types <- duplicated(dupe_check)
+  if (any(dupe_types)) {
+    stop(paste('Duplicate level type:', stated_types[dupe_check][dupe_types]))
+  }
+  
+  
+  # Check if all of the types stated exist
+  # we return TRUE if the value is NULL because we check for NULL vals after
+  correct_test <- sapply(stated_types, function(x) {if(!is.null(x)) x %in% correct_types else T}) 
+  if(all(correct_test) != T) {
+    stop(paste('Unrecognized level type:', stated_types[correct_test != T],
+               '\nLevel type must be one of the following:', paste(correct_types, collapse=', ')))
+  }
+  
+  # check for NULL values
+  null_vals <- sapply(stated_types, is.null)
+  if (any(null_vals)) {
+    for (n in 1:length(stated_types[null_vals])) {
+      # loop through the null parameters and fill in the first correct type available
+      stated_types[null_vals][n] <- correct_types[!(correct_types %in% stated_types)][1]
+    } 
+  }
+  
+  if (is.null(level1_filter)) level1_filter <- unique(names(list.names(dat, eval(parse(text=stated_types[1])))))
+  if (is.null(level2_filter)) level2_filter <- unique(names(list.names(dat, eval(parse(text=stated_types[2])))))
+  if (is.null(level3_filter)) level3_filter <- unique(names(list.names(dat, eval(parse(text=stated_types[3])))))
+  
+  ordered_list <- list()
+  for (l1 in level1_filter) {
+    print(l1)
+    level2_list <- list()
+    
+    l1_sub <- dat[list.which(dat, eval(parse(text=stated_types[1]))== l1)]
+    for (l2 in level2_filter) {
+      print(l2)
+      level3_list <- list()
+      
+      l2_sub <- l1_sub[list.which(l1_sub, eval(parse(text=stated_types[2]))==l2)]
+      for (l3 in level3_filter) {
+        print(l3)
+        l3_sub <- l2_sub[list.which(l2_sub, eval(parse(text=stated_types[3]))== l3)]
+        print(l3_sub$path$data)
+        level3_list[[l3]] <- l3_sub$path$data
+      }
+      level2_list[[l2]] <- level3_list
+      
+    }
+    ordered_list[[l1]] <- level2_list
+  }
+  return(ordered_list)
+}
