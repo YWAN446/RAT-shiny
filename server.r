@@ -108,7 +108,7 @@ shinyServer(function(input, output, session) {
   
   # BUILD THE UI FOR THE PIE CHARTS ---------------------------------------------------------
   # this will lay out the plots in the appropriate order
-  pie_chart_order <- eventReactive(c(input$level3, input$pw, input$ph), {
+  pie_chart_order <- reactive({
     ordered_shinyCharts(freq(), columns= input$num_columns, level1_type = input$level1, level2_type = input$level2,
                         sample_filter=input$sample, neighborhood_filter = input$neighborhood, age_filter = input$age,
                         height = input$ph, width = input$pw)
@@ -121,7 +121,7 @@ shinyServer(function(input, output, session) {
   })
   
   # generate the ggplot objects
-  observe({
+  observeEvent(input$level3, {
     dat <- freq()
     dat <- dat[list.which(dat, sample %in% input$sample && 
                             neighborhood %in% input$neighborhood &&
@@ -146,7 +146,7 @@ shinyServer(function(input, output, session) {
     
   })
   
-  hist_order <- eventReactive(input$level2, {
+  hist_order <- reactive({
     ordered_shinyHists(conc(), input$num_columns, level1_type = input$level1, sample_filter = input$sample, neighborhood_filter = input$neighborhood)
   })
   
@@ -155,7 +155,7 @@ shinyServer(function(input, output, session) {
     do.call(tagList, hist_order())
   })
   
-  observe({
+  observeEvent(input$level2, {
     if (length(conc()) > 0 ) {
       
       dat <- conc()
@@ -174,7 +174,7 @@ shinyServer(function(input, output, session) {
             p_name <- gsub(' ', '', p_name)
             print(p_name)
             output[[p_name]] <- renderPlot({
-              make_histogram(my_i$data, paste(my_i$neighborhood, ",", my_i$sample, '\n(N=',length(my_i$data),")"))
+              make_histogram(my_i$data, paste0(my_i$neighborhood,", ", my_i$sample, '\n(N=',length(my_i$data),")"))
             })
             
           })
