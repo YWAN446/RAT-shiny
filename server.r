@@ -146,7 +146,7 @@ shinyServer(function(input, output, session) {
     
   })
   
-  hist_order <- eventReactive(input$level3, {
+  hist_order <- eventReactive(input$level2, {
     ordered_shinyHists(conc(), input$num_columns, level1_type = input$level1, sample_filter = input$sample, neighborhood_filter = input$neighborhood)
   })
   
