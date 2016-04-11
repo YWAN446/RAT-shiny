@@ -2,6 +2,7 @@
 ## these have been derived from the original server.R 
 ## file.
 library(ggplot2)
+library(rlist)
 
 # MERGING --------------------------------------------------------------------
 create_ecData <- function(collection_data, lab_data) {
@@ -67,17 +68,32 @@ create_concData <- function(ec_data) {
 }
 
 # FREQUENCIES ----------------------------------------------------------------
-calculate_freq <- function(..., type='pie chart') {
+calculate_freq <- function(..., type='pie chart', survey_type=NULL) {
   # calculate the appropriate factors for plotting pie charts
-  # and people plots.  This is specific to the household 
-  # form. returns a list with two objects. type can equal
-  # 'pie chart' or 'ppl plot'
+  # and people plots.  This can handle all of the different survey types
+  # household, community, and school.  The function returns a long list.
+  # Each object in the list contains 4 elements:
+  # sample, neighborhood, age, and data
+  # The first three offer the identifying information of the path
+  # in question.  The final, data, has the frequency counts. Specify
+  # the type of freqencies necessary by specifying type = 'ppl plot' 
+  # or 'pie chart'.  Default is pie chart. 
   #
   # Ex.
-  # > calculate_householdFreq(household_data, 'pie chart')
-  # $drain$neighborhood1$adults
-  # [1] 4 4 4 4 4 4 ...
-  
+  # > calculate_freq(household_data, type= 'pie chart')
+  #  $path
+  #  $path$sample
+  #  [1] "Public Latrine"
+  #  $path$age
+  #  [1] "Children"
+  #  $path$neighborhood
+  #  [1] "Neighborhood 2"
+  #  $path$data
+  #  [1] 1 1 1 1 1 1 2 2 3 3 3 3 4 4 5 5
+  #
+  # Or Ex.
+  # > calculate_freq(hh, sch, comm)
+
   
   # this allows us to pass multiple data objects without having to explictly 
   #say what they are. since the surveys always follow a pattern for the question
@@ -85,16 +101,19 @@ calculate_freq <- function(..., type='pie chart') {
   dat <- list(...)
   data_map <- c('household_data' = 'hh_', 'community_data' = 'com_', 'school_data' = 'sch_')
   
+  # let's figure out what we have
   surveys_matched <- character()
   for (x in dat) { # look at each object that we passed in
     # check if any of the column headers match what we expect
     match <- sapply(data_map, function(dn) any(grepl(dn, names(x))))
     if (any(match)) {
+      # if it matches, make an object with that name
       assign(names(data_map[match]), x)
       surveys_matched <- c(surveys_matched, names(data_map[match]))
     }
    }
   
+  # some error handling
   if (!(length(surveys_matched) == 1 | length(surveys_matched) == 3)) {
     stop(paste0('Something is wrong with the data. Either pass 1 or 3 data objects.\n',
                 'Matched objects: ', paste(surveys_matched, collapse=', ')))
@@ -104,7 +123,11 @@ calculate_freq <- function(..., type='pie chart') {
                'Matched objects:', paste(surveys_matched, collapse=', ')))
     
   }
-  survey_type <- ifelse(length(surveys_matched) == 3, 'combined', gsub('_data', '', surveys_matched))
+  
+  if (is.null(survey_type)) {
+    survey_type <- ifelse(length(surveys_matched) == 3, 'combined', gsub('_data', '', surveys_matched))
+  }
+  
 
   freq <- list()
   # For each pathway, we're going to look at the neighborhoods and ages-------
@@ -384,7 +407,8 @@ calculate_freq <- function(..., type='pie chart') {
     freq <- append(freq, sub)
 
   }
-
+  
+  # lastly, make sure it's the right numbers. 
   if (type == 'pie chart') {
     return(freq)
   }
@@ -401,43 +425,7 @@ calculate_freq <- function(..., type='pie chart') {
   }
 }
 
-# PLOTTING ====================================================================
-## PIE CHARTS 
-create_pieCharts <- function(freq) {
-  # this will make a grid of pie charts based on neighborhood rows
-  # and age columns
-  
-  # first let's regroup the data into a table that can be used
-  # for plotting.  it will have 4 columns, neighborhood, age, answer, Freq
 
-
-  
-  for (p in 1:length(freq)) { # for each path
-    path <- freq[[p]]
-    labels <- unlist(ifelse(p==3, 
-                            list(c("everyday","4-6/wk","1-3/mo","never","don't know")),
-                            list(c(">10/mo","6-10/mo","1-5/mo","never","don't know"))
-    ))
-    for (n in 1:length(path)) { # freq is now subset to just the neighborhoods for a specific path
-      neighborhood <- path[[n]]
-      for (a in 1:length(neighborhood)) {
-        if (length(neighborhood[[a]]) > 0) {
-          # check if there's actually data first, then plot, otherwise the list elements are left
-          # untouched
-          tbl <- create_freqTbl(neighborhood[[a]], labels)
-          freq[[p]][[n]][[a]] <- ggpie(tbl, 'answer', 'Freq', ifelse(a == 1, 'Adults', 'Children'))
-        }
-
-        
-      }
-      
-    }
-  }
-  
-  
-  
-  return(freq)
-}
 
 create_freqTbl <- function(freq_vector, labels) {
   # convert the answers from the frequency calculation funcitons into 
@@ -450,74 +438,81 @@ create_freqTbl <- function(freq_vector, labels) {
   return(tbl)
 }
 
-make_histogram <- function(samtype, ec_data, conc) {
-  if (samtype!=0) return(NULL)
-  n.neighb=ifelse(input$neighb==0, length(unique(as.numeric(ec_data$neighbor))),1)
-  n.path=1
-  if (n.neighb==1 & input$neighb!=0) {k.neighb=as.numeric(input$neighb)}
-  else {k.neighb=sort(unique(as.numeric(ec_data$neighbor)))}
-  k.path=6
-  nrow=n.path
-  ncol=n.neighb
-  par(mfrow=c(nrow,ncol))
-  par(mar=c(4,2,4,1))
-  par(pin=c(6,5))
-  label3<-c("Drain Water", "Produce", "Piped Water", "Ocean Water", "Surface Water", "Flood Water", "Public Latrine Surfaces", "Particulate", "Bathing")
-  for (j in 1:n.neighb){
-    hist(log10(as.numeric(conc[[9*(k.neighb[j]-1)+k.path]])),breaks=seq(0,10,by=1),col="skyblue",ylim=c(0,1),freq=FALSE,yaxt="n",ylab="percent",
-         main=paste("Neighborhood ",k.neighb[j],", Sample Type:",label3[k.path],"( N =",length(which(!is.na(conc[[9*(k.neighb[j]-1)+k.path]]))),")"),cex.main=1.3,xlab=expression(paste("log10 ", italic("E. coli"), "concentration (CFU/100mL)")))
-    axis(2,at=seq(0,1,0.2),labels=paste(c(0,20,40,60,80,100),"%",sep=""))
+
+
+nest_samples <- function(dat, level1_type=NULL, level2_type=NULL, level3_type=NULL, 
+                          level1_filter=NULL, level2_filter=NULL, level3_filter=NULL, 
+                          FUN=NULL) {
+  # Take a loosely structured list of frequency samples where each sample list contains list elements of 'sample', 'age', 'neighborhood'
+  # and 'data'.  Default will return a nested list with the structure, sample -> neighborhood -> age
+  # if level filters are not specified, it will default to all available options on each level
+  # FUN allows you to pass lambda functions to apply to the 3rd level element for transformations, etc. 
+  
+  # double check that the level types stated are correct and do not repeat
+  correct_types <- c('sample', 'neighborhood', 'age')
+  stated_types <- list(level1_type, level2_type, level3_type)
+  
+  # check if there are any dupes
+  dupe_check <- unlist(stated_types)
+  dupe_types <- duplicated(dupe_check)
+  if (any(dupe_types)) {
+    stop(paste('Duplicate level type:', stated_types[dupe_check][dupe_types]))
   }
+  
+  
+  # Check if all of the types stated exist
+  # we return TRUE if the value is NULL because we check for NULL vals after
+  correct_test <- sapply(stated_types, function(x) {if(!is.null(x)) x %in% correct_types else T}) 
+  if(all(correct_test) != T) {
+    stop(paste('Unrecognized level type:', stated_types[correct_test != T],
+               '\nLevel type must be one of the following:', paste(correct_types, collapse=', ')))
+  }
+  
+  # check for NULL values
+  null_vals <- sapply(stated_types, is.null)
+  if (any(null_vals)) {
+    for (n in 1:length(stated_types[null_vals])) {
+      # loop through the null parameters and fill in the first correct type available
+      stated_types[null_vals][n] <- correct_types[!(correct_types %in% stated_types)][1]
+    } 
+  }
+  
+  if (is.null(level1_filter)) level1_filter <- unique(names(list.names(dat, eval(parse(text=stated_types[1])))))
+  if (is.null(level2_filter)) level2_filter <- unique(names(list.names(dat, eval(parse(text=stated_types[2])))))
+  if (is.null(level3_filter)) level3_filter <- unique(names(list.names(dat, eval(parse(text=stated_types[3])))))
+  
+  ordered_list <- list()
+  for (l1 in level1_filter) {
+    level2_list <- list()
+    
+    l1_sub <- dat[list.which(dat, eval(parse(text=stated_types[1]))== l1)]
+    for (l2 in level2_filter) {
+      level3_list <- list()
+      
+      l2_sub <- l1_sub[list.which(l1_sub, eval(parse(text=stated_types[2]))==l2)]
+      for (l3 in level3_filter) {
+        l3_sub <- l2_sub[list.which(l2_sub, eval(parse(text=stated_types[3]))== l3)]
+        if (!is.null(FUN)) {
+          r <- FUN(l3_sub) # lambda function, if defined. 
+          level3_list[[l3]] <- r
+        }
+        else {
+          level3_list[[l3]] <- l3_sub$path$data
+        }
+      }
+      # if !is.null(FUN) this will simply remain empty
+      level2_list[[l2]] <- level3_list
+      
+    }
+    ordered_list[[l1]] <- level2_list
+  }
+  return(ordered_list)
 }
 
-## Graphing support -----------------------------------------------------
-plotElements <- # these are global settings that are applied to all plots generated
-  # make changes here to apply across the board (most of the time)
-  theme(
-    plot.title = element_text(face = "bold", size = 26),
-    panel.background = element_blank(),
-    # X axis settings
-    axis.text.x = element_text(size = 14),
-    axis.title.x = element_text(size = 16, face='bold'),
-    # Y axis settings
-    axis.text.y = element_text(size = 16),
-    axis.title.y = element_text(size = 16, face='bold')
-  ) + theme_bw() + theme(legend.text = element_text(size=16),
-                         legend.title = element_text(size=16))
-
-
-ggpie <- function (dat, group_by, value_column, title) {
-  # found this function online to create pie charts using ggplot
-  # pass the melted data set, group column (group_by) and value column (value_column)
-  
-  plot <-
-    ggplot(dat, aes_string(
-      x = factor(1), y = value_column, fill = group_by, colour = group_by
-    )) +
-    geom_bar(stat = 'identity', size = 1, alpha = .6) +
-    guides(fill = guide_legend(override.aes = list(colour = NA))) + # removes black borders from legend
-    coord_polar(theta = 'y') + theme_bw()  +
-    theme(
-      axis.ticks = element_blank(),
-      axis.text.y = element_blank(),
-      axis.text.x = element_text(
-        colour = 'black', size = 12, angle = 0, hjust = 1, vjust=0
-      ),
-      axis.title = element_blank(),
-      panel.border = element_blank(),
-      legend.position = 'none'
-    ) +
-    scale_y_continuous(breaks = cumsum(dat[[value_column]]) - dat[[value_column]] / 2,
-                       labels = paste0(round(dat[[value_column]] / sum(dat[[value_column]]) *
-                                               100, 1), "%","\n",dat$answer ))  +
-    ggtitle(title)
-  
-  
-  return(plot)
-}
-
-order_samples <- function(dat, level1_type=NULL, level2_type=NULL, level3_type=NULL, 
-                          level1_filter=NULL, level2_filter=NULL, level3_filter=NULL) {
+nest_apply <- function(dat, level1_type=NULL, level2_type=NULL, level3_type=NULL, 
+                          level1_filter=NULL, level2_filter=NULL, level3_filter=NULL, 
+                          FUN=NULL, nested_results=F) {
+  # Returns a one level list, after having reordered the data according to the levels
   # Take a loosely structured list of frequency samples where each sample list contains list elements of 'sample', 'age', 'neighborhood'
   # and 'data'.  Default will return a nested list with the structure, sample -> neighborhood -> age
   
@@ -556,30 +551,39 @@ order_samples <- function(dat, level1_type=NULL, level2_type=NULL, level3_type=N
   
   ordered_list <- list()
   for (l1 in level1_filter) {
-    print(l1)
     level2_list <- list()
     
     l1_sub <- dat[list.which(dat, eval(parse(text=stated_types[1]))== l1)]
     for (l2 in level2_filter) {
-      print(l2)
       level3_list <- list()
       
       l2_sub <- l1_sub[list.which(l1_sub, eval(parse(text=stated_types[2]))==l2)]
       for (l3 in level3_filter) {
-        print(l3)
         l3_sub <- l2_sub[list.which(l2_sub, eval(parse(text=stated_types[3]))== l3)]
-        print(l3_sub$path$data)
-        level3_list[[l3]] <- l3_sub$path$data
+        if (!is.null(FUN)) {
+          r <- FUN(l3_sub) # lambda function, if defined. 
+          ifelse(nested_results==F, ordered_list <- append(ordered_list, r), level3_list[[l3]] <- r) 
+        }
+        else {
+          level3_list[[l3]] <- l3_sub$path$data
+        }
       }
-      level2_list[[l2]] <- level3_list
+      # if !is.null(FUN) this will simply remain empty
+      if (nested_results == T) level2_list[[l2]] <- level3_list
       
     }
-    ordered_list[[l1]] <- level2_list
+    if (nested_results == T) ordered_list[[l1]] <- level2_list
   }
   return(ordered_list)
 }
 
-# Old Frequency Calculations ---------------------------
+
+
+
+
+
+
+# DEPRECATED =========================================================================
 
 calculate_householdFreq <- function(household_data, type='pie chart') {
   # calculate the appropriate factors for plotting pie charts
