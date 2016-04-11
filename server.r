@@ -174,7 +174,7 @@ shinyServer(function(input, output, session) {
             p_name <- gsub(' ', '', p_name)
             print(p_name)
             output[[p_name]] <- renderPlot({
-              make_histogram(my_i$data, paste(my_i$neighborhood, ",", my_i$sample, '(N=',length(my_i$data),")"))
+              make_histogram(my_i$data, paste(my_i$neighborhood, ",", my_i$sample, '\n(N=',length(my_i$data),")"))
             })
             
           })
