@@ -55,13 +55,20 @@ create_ecData <- function(collection_data, lab_data) {
 
 create_concData <- function(ec_data) {
   # Calculate concentration amounts?
-  
+  conc_names <- c("Drain Water", "Produce", "Municipal and Piped Water",'Ocean Water', 'Surface Water', "Flood Water", 
+                  "Public Latrine Surfaces", "Particulate", "Bathing")
   conc<-list()
   for (i in 1:length(unique(as.numeric(ec_data$neighbor)))){
     # sample type 1=drain water, 2=produce, 3=piped water, 4=ocean water, 5=surface water, 6=flood water, 7=Public Latrine Surfaces, 8=particulate, 9=bathing
     for (j in 1:9){
-      conc[[9*(sort(unique(as.numeric(ec_data$neighbor)))[i]-1)+j]]=ec_data$ec_conc[which(ec_data$neighbor==sort(unique(ec_data$neighbor))[i] 
-                                                                                          & ec_data$sample_type==j)]
+      conc <- append(conc, 
+                        list(conc=list(sample = conc_names[j],
+                                       neighborhood = paste("Neighborhood", i),
+                                       data = ec_data$ec_conc[which(ec_data$neighbor==sort(unique(ec_data$neighbor))[i] 
+                                                                                          & ec_data$sample_type==j)])
+                        )
+      )
+      
     }
   }
   return(conc)
@@ -134,7 +141,7 @@ calculate_freq <- function(..., type='pie chart', survey_type=NULL) {
   # drain 
   for (i in 1:length(unique(household_data$neighbor))) {
     sub = list(path=
-                 list(sample = 'Drain',
+                 list(sample = 'Drain Water',
                       age = 'Adults',
                       neighborhood = paste('Neighborhood',i),
                       data = switch(survey_type,
@@ -154,7 +161,7 @@ calculate_freq <- function(..., type='pie chart', survey_type=NULL) {
                                     
                       ),
                path=
-                 list(sample = 'Drain',
+                 list(sample = 'Drain Water',
                       age = 'Children',
                       neighborhood = paste('Neighborhood',i),
                       data = switch(survey_type, 

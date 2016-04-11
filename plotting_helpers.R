@@ -1,7 +1,7 @@
 
 
 ordered_shinyCharts <- function(dat, columns=2, level1_type=NULL, level2_type=NULL,  
-                                sample_filter=NULL, neighborhood_filter=NULL, age_filter=NULL, non_shiny=F) {
+                                sample_filter=NULL, neighborhood_filter=NULL, age_filter=NULL, width=450, height=400, non_shiny=F) {
   
   
   # double check that the level types stated are correct and do not repeat
@@ -85,7 +85,7 @@ ordered_shinyCharts <- function(dat, columns=2, level1_type=NULL, level2_type=NU
           row <- plot_names[(i + 0:(columns - 1))] 
           row <- row[!is.na(row)]
           # make each row element a column
-          row <- sapply(1:length(row), function(a) paste0('column(',col_size,",align='center',h5('",l2_sub[[a]][stated_types[[3]]],"', align='center'), plotOutput('",row[a],"', height=350, width=300))"))
+          row <- sapply(1:length(row), function(a) paste0('column(',col_size,",align='center',h5('",l2_sub[[a]][stated_types[[3]]],"', align='center'), plotOutput('",row[a],"', height=", height,", width=", width,"))"))
           # make that into one long string appropriately separated by commas
           row <- paste(row, collapse = ", ")
           # add a row marker 
@@ -123,24 +123,103 @@ ordered_shinyCharts <- function(dat, columns=2, level1_type=NULL, level2_type=NU
   return(ordered_list)
 }
 
-make_histogram <- function(samtype, ec_data, conc) {
-  if (samtype!=0) return(NULL)
-  n.neighb=ifelse(input$neighb==0, length(unique(as.numeric(ec_data$neighbor))),1)
-  n.path=1
-  if (n.neighb==1 & input$neighb!=0) {k.neighb=as.numeric(input$neighb)}
-  else {k.neighb=sort(unique(as.numeric(ec_data$neighbor)))}
-  k.path=6
-  nrow=n.path
-  ncol=n.neighb
-  par(mfrow=c(nrow,ncol))
-  par(mar=c(4,2,4,1))
-  par(pin=c(6,5))
-  label3<-c("Drain Water", "Produce", "Piped Water", "Ocean Water", "Surface Water", "Flood Water", "Public Latrine Surfaces", "Particulate", "Bathing")
-  for (j in 1:n.neighb){
-    hist(log10(as.numeric(conc[[9*(k.neighb[j]-1)+k.path]])),breaks=seq(0,10,by=1),col="skyblue",ylim=c(0,1),freq=FALSE,yaxt="n",ylab="percent",
-         main=paste("Neighborhood ",k.neighb[j],", Sample Type:",label3[k.path],"( N =",length(which(!is.na(conc[[9*(k.neighb[j]-1)+k.path]]))),")"),cex.main=1.3,xlab=expression(paste("log10 ", italic("E. coli"), "concentration (CFU/100mL)")))
-    axis(2,at=seq(0,1,0.2),labels=paste(c(0,20,40,60,80,100),"%",sep=""))
+ordered_shinyHists <- function(dat, columns=2, level1_type=NULL, 
+                                sample_filter=NULL, neighborhood_filter=NULL) {
+  
+  
+  # double check that the level types stated are correct and do not repeat
+  correct_types <- c('sample', 'neighborhood')
+  stated_types <- list(level1_type)
+  stated_types <- append(stated_types, correct_types[!(correct_types %in% stated_types)])
+  
+  filters <- list('sample' = sample_filter, 'neighborhood' = neighborhood_filter)
+  assign('level1_filter', filters[[stated_types[[1]]]])
+  assign('level2_filter', filters[[stated_types[[2]]]])
+
+  
+  
+  # check if there are any dupes
+  dupe_check <- unlist(stated_types)
+  dupe_types <- duplicated(dupe_check)
+  if (any(dupe_types)) {
+    stop(paste('Duplicate level type:', stated_types[dupe_check][dupe_types]))
   }
+  
+  
+  # Check if all of the types stated exist
+  # we return TRUE if the value is NULL because we check for NULL vals after
+  correct_test <- sapply(stated_types, function(x) {if(!is.null(x)) x %in% correct_types else T}) 
+  if(all(correct_test) != T) {
+    stop(paste('Unrecognized level type:', stated_types[correct_test != T],
+               '\nLevel type must be one of the following:', paste(correct_types, collapse=', ')))
+  }
+  
+  # check for NULL values
+  null_vals <- sapply(stated_types, is.null)
+  if (any(null_vals)) {
+    for (n in 1:length(stated_types[null_vals])) {
+      # loop through the null parameters and fill in the first correct type available
+      stated_types[null_vals][n] <- correct_types[!(correct_types %in% stated_types)][1]
+    } 
+  }
+  
+  
+  
+  if (is.null(level1_filter)) level1_filter <- unique(names(list.names(dat, eval(parse(text=stated_types[1])))))
+  if (is.null(level2_filter)) level2_filter <- unique(names(list.names(dat, eval(parse(text=stated_types[2])))))
+
+  ordered_list <- list()
+    # Shiny Generation
+    for (l1 in level1_filter) {
+      # add the first level header
+      ordered_list <- append(ordered_list, list(fluidRow(h2(toupper(l1)))))
+      ordered_list <- append(ordered_list, list(hr()))
+        # subset the data down to l1 + l2.  this will be the third
+        # level set of data.  Ex. if set to filter by sample then 
+        # neighborhood, this subset will contain adults and children
+        # per combination of sample and neighborhood.
+        l2_sub <- dat[list.which(dat, eval(parse(text=stated_types[1])) == l1 && # level 1 filter
+                                   eval(parse(text=stated_types[2])) %in% level2_filter)] # match anything in the level 2 filter
+        
+        # make plot names for the options that matched by combining sample + neighborhood + age
+        plot_names <- sapply(1:length(l2_sub), function(x) paste0('hist-',l2_sub[x]$conc$sample, '-', l2_sub[x]$conc$neighborhood))
+        # there are spaces in the names, since we're using the for labels too, 
+        # let's remove those for the actual plot names
+        plot_names <- gsub(" ", "", plot_names)
+        # count the plots we need to make
+        num_plots <- length(l2_sub)
+        # count the number of rows specified.
+        num_rows <- ceiling(num_plots/columns)
+        col_size <- 12/columns # this is how wide each column will be. 
+        if(num_plots > 0) {
+          
+          for (i in seq(1, num_plots, by=columns)) {
+            # each value of i indicates a new row in the output
+            # make the columns populated with the plots we want
+            
+            # grab the plots
+            row <- plot_names[(i + 0:(columns - 1))] 
+            row <- row[!is.na(row)]
+            # make each row element a column
+            row <- sapply(1:length(row), function(a) paste0('column(',col_size,",align='center', plotOutput('",row[a],"', height=350, width=300))"))
+            # make that into one long string appropriately separated by commas
+            row <- paste(row, collapse = ", ")
+            # add a row marker 
+            ordered_list <- append(ordered_list, list(eval(parse(text=paste0('fluidRow(',row,')')))))
+          }
+          
+        }
+        
+    }
+  
+ 
+  return(ordered_list)
+}
+make_histogram <- function(conc, title) {
+    hist(log10(as.numeric(conc)),breaks=seq(0,10,by=1),col="skyblue",ylim=c(0,1),freq=FALSE,yaxt="n",ylab="percent",
+         main=title,
+         cex.main=1.3,xlab=expression(paste("log10 ", italic("E. coli"), "concentration (CFU/100mL)")))
+   
 }
 
 ## Graphing support -----------------------------------------------------
