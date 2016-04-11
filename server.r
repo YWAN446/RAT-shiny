@@ -1,5 +1,5 @@
 library(shiny)
-# library(rjags)
+library(rjags)
 source("./model/PS_Plot.r")
 options(shiny.maxRequestSize = 9*1024^2)
 source('api_helpers.R')
