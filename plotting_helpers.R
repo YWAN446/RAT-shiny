@@ -1,7 +1,9 @@
 
 
 ordered_shinyCharts <- function(dat, columns=2, level1_type=NULL, level2_type=NULL,  
-                                sample_filter=NULL, neighborhood_filter=NULL, age_filter=NULL, width=450, height=400, non_shiny=F) {
+                                sample_filter=NULL, neighborhood_filter=NULL, 
+                                age_filter=NULL, width=450, height=400, non_shiny=F, 
+                                shinySession=NULL) {
   
   # this will order the pie charts and people plots according to the levels specified
   # double check that the level types stated are correct and do not repeat
@@ -50,53 +52,58 @@ ordered_shinyCharts <- function(dat, columns=2, level1_type=NULL, level2_type=NU
   ordered_list <- list()
   if (non_shiny == F) {
     # Shiny Generation
-    for (l1 in level1_filter) {
-      # add the first level header
-      ordered_list <- append(ordered_list, list(fluidRow(h2(toupper(l1)))))
-      ordered_list <- append(ordered_list, list(hr()))
-      for (l2 in level2_filter) {
-        # add the second level header 
-        ordered_list <- append(ordered_list, list(fluidRow(h4(toupper(l2)))))
-        # subset the data down to l1 + l2.  this will be the third
-        # level set of data.  Ex. if set to filter by sample then 
-        # neighborhood, this subset will contain adults and children
-        # per combination of sample and neighborhood.
-        l2_sub <- dat[list.which(dat, eval(parse(text=stated_types[1])) == l1 && # level 1 filter
-                                   eval(parse(text=stated_types[2])) == l2 && # level 2 filter
-                                   eval(parse(text=stated_types[3])) %in% level3_filter)] # match anything in the level 3 filter
-        
-        # make plot names for the options that matched by combining sample + neighborhood + age
-        plot_names <- sapply(1:length(l2_sub), function(x) paste0(l2_sub[x]$path$sample, '-', l2_sub[x]$path$neighborhood, "-", l2_sub[x]$path$age))
-        # there are spaces in the names, since we're using the for labels too, 
-        # let's remove those for the actual plot names
-        plot_names <- gsub(" ", "", plot_names)
-        # count the plots we need to make
-        num_plots <- length(l2_sub)
-        # count the number of rows specified.
-        num_rows <- ceiling(num_plots/columns)
-        col_size <- 12/columns # this is how wide each column will be. 
-        
-        if (num_rows > 0) {
-          for (i in seq(1, num_plots, by=columns)) {
-            # each value of i indicates a new row in the output
-            # make the columns populated with the plots we want
-            
-            # grab the plots
-            row <- plot_names[(i + 0:(columns - 1))] 
-            row <- row[!is.na(row)]
-            row_names <- sapply(l2_sub[i + 0:(columns - 1)], function(x) x[stated_types[[3]]])
-            row_names <- row_names[!is.na(row_names) & !is.null(row_names)]
-            # make each row element a column
-            row <- sapply(1:length(row), function(a) paste0('column(',col_size,",align='center',h5('",row_names[a],"', align='center'), plotOutput('",row[a],"', height=", height,", width=", width,"))"))
-            # make that into one long string appropriately separated by commas
-            row <- paste(row, collapse = ", ")
-            # add a row marker 
-            ordered_list <- append(ordered_list, list(eval(parse(text=paste0('fluidRow(',row,')')))))
+    withProgress({
+      count <- 1
+      nplot <- length(dat)
+      for (l1 in level1_filter) {
+        # add the first level header
+        ordered_list <- append(ordered_list, list(fluidRow(h2(toupper(l1)))))
+        ordered_list <- append(ordered_list, list(hr()))
+        for (l2 in level2_filter) {
+          # add the second level header 
+          ordered_list <- append(ordered_list, list(fluidRow(h4(toupper(l2)))))
+          # subset the data down to l1 + l2.  this will be the third
+          # level set of data.  Ex. if set to filter by sample then 
+          # neighborhood, this subset will contain adults and children
+          # per combination of sample and neighborhood.
+          l2_sub <- dat[list.which(dat, eval(parse(text=stated_types[1])) == l1 && # level 1 filter
+                                     eval(parse(text=stated_types[2])) == l2 && # level 2 filter
+                                     eval(parse(text=stated_types[3])) %in% level3_filter)] # match anything in the level 3 filter
+          
+          # make plot names for the options that matched by combining sample + neighborhood + age
+          plot_names <- sapply(1:length(l2_sub), function(x) paste0(l2_sub[x]$path$sample, '-', l2_sub[x]$path$neighborhood, "-", l2_sub[x]$path$age))
+          # there are spaces in the names, since we're using the for labels too, 
+          # let's remove those for the actual plot names
+          plot_names <- gsub(" ", "", plot_names)
+          # count the plots we need to make
+          num_plots <- length(l2_sub)
+          # count the number of rows specified.
+          num_rows <- ceiling(num_plots/columns)
+          col_size <- 12/columns # this is how wide each column will be. 
+          
+          if (num_rows > 0) {
+            for (i in seq(1, num_plots, by=columns)) {
+              # each value of i indicates a new row in the output
+              # make the columns populated with the plots we want
+              
+              # grab the plots
+              row <- plot_names[(i + 0:(columns - 1))] 
+              row <- row[!is.na(row)]
+              row_names <- sapply(l2_sub[i + 0:(columns - 1)], function(x) x[stated_types[[3]]])
+              row_names <- row_names[!is.na(row_names) & !is.null(row_names)]
+              # make each row element a column
+              row <- sapply(1:length(row), function(a) paste0('column(',col_size,",align='center',h5('",row_names[a],"', align='center'), plotOutput('",row[a],"', height=", height,", width=", width,"))"))
+              # make that into one long string appropriately separated by commas
+              row <- paste(row, collapse = ", ")
+              # add a row marker 
+              ordered_list <- append(ordered_list, list(eval(parse(text=paste0('fluidRow(',row,')')))))
+            }
           }
+          incProgress(count/nplot)
+          count <- count + 1
         }
-
       }
-    }
+    }, message='Arranging Pie Charts')
   }
   # #   
   
@@ -231,33 +238,40 @@ make_histogram <- function(conc, title) {
 }
 
 ## Graphing support -----------------------------------------------------
-ggpie <- function (dat, group_by, value_column, title) {
+ggpie <- function (dat, group_by, value_column, title, nudgex=.5) {
   # found this function online to create pie charts using ggplot
   # pass the melted data set, group column (group_by) and value column (value_column)
   # to give credit where credit is due:
   # http://mathematicalcoffee.blogspot.com/2014/06/ggpie-pie-graphs-in-ggplot2.html
+  # label repelling courtesy of ggrepel
+  # https://cran.r-project.org/web/packages/ggrepel/vignettes/ggrepel.html
   
   plot <-
     ggplot(dat, aes_string(
-      x = factor(1), y = value_column, fill = group_by, colour = group_by
-    )) +
-    geom_bar(stat = 'identity', size = 1, alpha = .6) +
+      x = factor(1), y = value_column)) +
+    geom_bar(stat = 'identity', size = 1, alpha = .5, aes(fill= color, colour=color)) +
     guides(fill = guide_legend(override.aes = list(colour = NA))) + # removes black borders from legend
     coord_polar(theta = 'y') + theme_bw()  +
     theme(
       axis.ticks = element_blank(),
       axis.text.y = element_blank(),
-      axis.text.x = element_text(
-        colour = 'black', size = 12, angle = 0, hjust = 1, vjust=0
-      ),
+      axis.text.x = element_blank(),
       axis.title = element_blank(),
       panel.border = element_blank(),
       legend.position = 'none'
     ) +
-    scale_y_continuous(breaks = cumsum(dat[[value_column]]) - dat[[value_column]] / 2,
-                       labels = paste0(round(dat[[value_column]] / sum(dat[[value_column]]) *
-                                               100, 1), "%","\n",dat$answer ))  +
-    ggtitle(title)
+    scale_y_continuous(breaks = cumsum(dat[[value_column]]) - dat[[value_column]] / 2)  +
+    ggtitle(title) + geom_text_repel(aes(y=breaks, label= labels), 
+                                     color='black', fontface='bold',
+                                      box.padding = unit(.1, 'lines'),
+                                      point.padding = unit(.1, 'lines'),nudge_y = 0, nudge_x= nudgex # nudge sets how far out the labels show
+                                      ,alpha=.7) 
+#    
+#     scale_fill_manual(values=dat$color) + scale_color_manual(values=dat$color)
+#     geom_text_repel(aes(y=breaks, label= labels), color='black', 
+#                      box.padding = unit(.18, 'lines'), fontface='bold',
+#                      point.padding = unit(.12, 'lines'),nudge_y = 0, nudge_x=nudgex # nudge sets how far out the labels show
+#                      ,alpha=.60)
   
   
   return(plot)
@@ -292,14 +306,9 @@ create_pieChart <- function(freq, sample_type, title_label) {
   
   # first let's regroup the data into a table that can be used
   # for plotting.  it will have 4 columns, neighborhood, age, answer, Freq
-  labels <- unlist(ifelse(sample_type=='Municipal and Piped Water', 
-                          list(c("everyday","4-6/wk","1-3/mo","never","don't know")),
-                          list(c(">10/mo","6-10/mo","1-5/mo","never","don't know"))
-  )
-  )
-  
-  tbl <- create_freqTbl(freq, labels)
-  p <- ggpie(tbl, 'answer', 'Freq', title_label)
+
+  tbl <- create_freqTbl(freq, sample_type)
+  p <- ggpie(tbl, 'answer', 'Freq', title_label, nudgex=.22)
   
   
   return(p)

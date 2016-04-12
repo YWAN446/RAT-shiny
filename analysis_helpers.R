@@ -434,14 +434,21 @@ calculate_freq <- function(..., type='pie chart', survey_type=NULL) {
 
 
 
-create_freqTbl <- function(freq_vector, labels) {
+create_freqTbl <- function(freq_vector, sample_type) {
   # convert the answers from the frequency calculation funcitons into 
   # a table for plotting
+  labels <- unlist(ifelse(sample_type=='Municipal and Piped Water', 
+                          list(c("everyday","4-6/wk","1-3/mo","never","don't know")),
+                          list(c(">10/mo","6-10/mo","1-5/mo","never","don't know"))
+  )
+  )
+  colors <- c('#00FF00', '#99FF00', '#FF6600', '#FF0000', '#333333')
+  
   tbl <- as.data.frame(table('answer'= freq_vector))
+  tbl$color <- factor(colors[tbl$answer], levels=colors[tbl$answer])
   tbl$answer <- labels[tbl$answer]
   tbl$breaks <- cumsum(tbl$Freq) - tbl$Freq / 2
-  tbl$labels = paste0(round(tbl$Freq / sum(tbl$Freq) *
-                              100, 1), "%")
+  tbl$labels = paste(tbl$answer, "\n", paste0(round(tbl$Freq / sum(tbl$Freq) * 100, 1),"%")) 
   return(tbl)
 }
 

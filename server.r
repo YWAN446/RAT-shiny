@@ -1,5 +1,5 @@
 library(shiny)
-library(rjags)
+# library(rjags)
 source("./model/PS_Plot.r")
 options(shiny.maxRequestSize = 9*1024^2)
 source('api_helpers.R')
@@ -111,7 +111,7 @@ shinyServer(function(input, output, session) {
   pie_chart_order <- reactive({
     ordered_shinyCharts(freq(), columns= input$num_columns, level1_type = input$level1, level2_type = input$level2,
                         sample_filter=input$sample, neighborhood_filter = input$neighborhood, age_filter = input$age,
-                        height = input$ph, width = input$pw)
+                        height = input$ph, width = input$pw, shinySession=session)
   })
   
   # this will actually render them for the UI
@@ -126,23 +126,24 @@ shinyServer(function(input, output, session) {
     dat <- dat[list.which(dat, sample %in% input$sample && 
                             neighborhood %in% input$neighborhood &&
                             age %in% input$age)]
-    withProgress({
+
       count <- 1
       for (i in dat) {
         local({
+          withProgress({
           my_i <- i
           p_name <- paste0(my_i$sample,"-",my_i$neighborhood, '-', my_i$age)
           p_name <- gsub(' ', '', p_name)
           output[[p_name]] <- renderPlot({
             create_pieChart(my_i$data, my_i$sample, '')
           })
-          
+        },message = 'Generating Pie Charts', session=session, value= count/length(dat)
+        )
         })
-        incProgress(count/length(dat), session = session)
+        # incProgress(count/length(dat), session = session)
         count <- count + 1
       }
-    },message = 'Generating Pie Charts', session=session
-    )
+
     
   })
   
@@ -159,31 +160,26 @@ shinyServer(function(input, output, session) {
     if (length(conc()) > 0 ) {
       
       dat <- conc()
-      print(dat)
-      print(input$sample)
-      print(input$neighborhood)
       dat <- dat[list.which(dat, sample %in% input$sample && 
                               neighborhood %in% input$neighborhood)]
-      print(dat)
-      # withProgress({
+
         count <- 1
         for (i in dat) {
           local({
+            withProgress({
             my_i <- i
             p_name <- paste0('hist-', my_i$sample,"-",my_i$neighborhood)
             p_name <- gsub(' ', '', p_name)
-            print(p_name)
             output[[p_name]] <- renderPlot({
               make_histogram(my_i$data, paste0(my_i$neighborhood,", ", my_i$sample, '\n(N=',length(my_i$data),")"))
             })
-            
+            }, message = 'Generating Histograms', session=session, value=count/length(dat)
+            )
           })
           # incProgress(count/length(dat), session = session)
-          print(count)
           count <- count + 1
         }
-#       },message = 'Generating Histograms', session=session
-#       )
+
     }
     
   })
