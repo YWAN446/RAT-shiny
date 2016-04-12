@@ -16,20 +16,32 @@ shinyUI(fluidPage(theme = "bootstrap.css",
   sidebarLayout(
     sidebarPanel(
       h3('Analysis Settings:'),
+      selectInput('surtype','Survey Type', selected="0", choices=c("All"=0,"Household"=1,"School"=2,"Community"=3)),
+      hr(),
+      h4('Order Results:'),
       selectizeInput('level1', 'Level 1', choices=c('Sample' = 'sample', 'Neighborhood' = 'neighborhood', 'Age' = 'age'), selected='sample'),
-      selectInput('level2', 'Level 2', choices='', selected=''),
-      selectInput('level3', 'Level 3', choices='', selected=''),
+      selectInput('level2', 'Level 2', choices=c(), selected=''),
+      selectInput('level3', 'Level 3', choices=c(), selected=''),
       
       
       tags$b(textOutput('plot_display')),
       # actionButton('make_pie', 'Make pies'),
-      checkboxGroupInput('sample', 'Sample Choices:', choices="", selected=""),
+      fluidRow(
+        column(6,
+               checkboxGroupInput('sample', 'Sample Choices:', choices="", selected="")
+               ),
+        column(6,
+               checkboxGroupInput('age', 'Age Choices:',choices="", selected="")
+               
+               )
+        
+      ),
+      
       checkboxGroupInput('neighborhood', 'Neighborhood Choices:',choices="", selected=""),
-      checkboxGroupInput('age', 'Age Choices:',choices="", selected=""),
       selectInput('samtype', 'Sample Type', choices = c("All"=0,c("Drain Water"=1, "Produce"=2, "Piped Water"=3, 
                                                                           "Ocean Water"=4, "Surface Water"=5, "Flood Water"=6,
                                                                           "Public Latrine Surfaces"=7, "Particulate"=8, "Bathing"=9))),
-      selectInput('surtype','Survey Type', selected="1", choices=c("All"=0,"Household"=1,"School"=2,"Community"=3)),
+
       selectInput('neighb', 'Neighborhood', choices=""),
       selectInput('ad_ch','Adults or Children',choices=c("All"=0,"Adults"=1,"Children"=2)),
       radioButtons('format', 'Document format', c('PDF', 'HTML', 'Word'),
@@ -55,7 +67,7 @@ shinyUI(fluidPage(theme = "bootstrap.css",
                            selectInput('raw_view', 'Select table to view:', 
                                        c('Household', 'Community', 'School', 'E. Coli'), selected='Household'),
                            dataTableOutput('raw_table')),
-                  tabPanel('Vizualization Settings',
+                  tabPanel('Visualization Settings',
                            helpText("General settings for how the data are displayed."),
                            h3('Pie Chart Size'),
                            sliderInput('pw',"Pie Width:", min=200, max=500, value=350, step=25),

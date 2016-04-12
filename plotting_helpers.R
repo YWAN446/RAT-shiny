@@ -1,4 +1,5 @@
-
+library(ggplot2)
+library(ggrepel)
 
 ordered_shinyCharts <- function(dat, columns=2, level1_type=NULL, level2_type=NULL,  
                                 sample_filter=NULL, neighborhood_filter=NULL, 

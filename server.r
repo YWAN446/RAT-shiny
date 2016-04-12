@@ -121,7 +121,7 @@ shinyServer(function(input, output, session) {
   })
   
   # generate the ggplot objects
-  observeEvent(input$level3, {
+  observeEvent(c(input$level3, input$surtype), {
     dat <- freq()
     dat <- dat[list.which(dat, sample %in% input$sample && 
                             neighborhood %in% input$neighborhood &&
@@ -135,7 +135,7 @@ shinyServer(function(input, output, session) {
           p_name <- paste0(my_i$sample,"-",my_i$neighborhood, '-', my_i$age)
           p_name <- gsub(' ', '', p_name)
           output[[p_name]] <- renderPlot({
-            create_pieChart(my_i$data, my_i$sample, '')
+            create_pieChart(my_i$data, my_i$sample, '') 
           })
         },message = 'Generating Pie Charts', session=session, value= count/length(dat)
         )
