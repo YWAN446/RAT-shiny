@@ -3,7 +3,7 @@
 ordered_shinyCharts <- function(dat, columns=2, level1_type=NULL, level2_type=NULL,  
                                 sample_filter=NULL, neighborhood_filter=NULL, age_filter=NULL, width=450, height=400, non_shiny=F) {
   
-  
+  # this will order the pie charts and people plots according to the levels specified
   # double check that the level types stated are correct and do not repeat
   correct_types <- c('sample', 'neighborhood', 'age')
   stated_types <- list(level1_type, level2_type)
@@ -42,7 +42,7 @@ ordered_shinyCharts <- function(dat, columns=2, level1_type=NULL, level2_type=NU
   }
   
   
-  
+  # if the filters are null, do everything. 
   if (is.null(level1_filter)) level1_filter <- unique(names(list.names(dat, eval(parse(text=stated_types[1])))))
   if (is.null(level2_filter)) level2_filter <- unique(names(list.names(dat, eval(parse(text=stated_types[2])))))
   if (is.null(level3_filter)) level3_filter <- unique(names(list.names(dat, eval(parse(text=stated_types[3])))))
@@ -130,7 +130,9 @@ ordered_shinyCharts <- function(dat, columns=2, level1_type=NULL, level2_type=NU
 ordered_shinyHists <- function(dat, columns=2, level1_type=NULL, 
                                 sample_filter=NULL, neighborhood_filter=NULL) {
   
-  
+  # this is the same as ordered_shinyCharts, but for histograms.  it will organize by
+  # the first level stated.  this only has one level since the histograms do not
+  # go down to age of respondent. 
   # double check that the level types stated are correct and do not repeat
   correct_types <- c('sample', 'neighborhood')
   stated_types <- list(level1_type)
@@ -168,7 +170,7 @@ ordered_shinyHists <- function(dat, columns=2, level1_type=NULL,
   }
   
   
-  
+  # if the filters are empty, we have to do something, so 
   if (is.null(level1_filter)) level1_filter <- unique(names(list.names(dat, eval(parse(text=stated_types[1])))))
   if (is.null(level2_filter)) level2_filter <- unique(names(list.names(dat, eval(parse(text=stated_types[2])))))
 
@@ -221,31 +223,19 @@ ordered_shinyHists <- function(dat, columns=2, level1_type=NULL,
   return(ordered_list)
 }
 make_histogram <- function(conc, title) {
+  # make a histogram with a specific path data
     hist(log10(as.numeric(conc)),breaks=seq(0,10,by=1),col="skyblue",ylim=c(0,1),freq=FALSE,yaxt="n",ylab="percent",
          main=title,
          cex.main=1.3,xlab=expression(paste("log10 ", italic("E. coli"), "concentration (CFU/100mL)")))
-   
+   # returns NULL
 }
 
 ## Graphing support -----------------------------------------------------
-plotElements <- # these are global settings that are applied to all plots generated
-  # make changes here to apply across the board (most of the time)
-  theme(
-    plot.title = element_text(face = "bold", size = 26),
-    panel.background = element_blank(),
-    # X axis settings
-    axis.text.x = element_text(size = 14),
-    axis.title.x = element_text(size = 16, face='bold'),
-    # Y axis settings
-    axis.text.y = element_text(size = 16),
-    axis.title.y = element_text(size = 16, face='bold')
-  ) + theme_bw() + theme(legend.text = element_text(size=16),
-                         legend.title = element_text(size=16))
-
-
 ggpie <- function (dat, group_by, value_column, title) {
   # found this function online to create pie charts using ggplot
   # pass the melted data set, group column (group_by) and value column (value_column)
+  # to give credit where credit is due:
+  # http://mathematicalcoffee.blogspot.com/2014/06/ggpie-pie-graphs-in-ggplot2.html
   
   plot <-
     ggplot(dat, aes_string(
