@@ -3,7 +3,7 @@ library(ggrepel)
 
 ordered_shinyCharts <- function(dat, columns=2, level1_type=NULL, level2_type=NULL,  
                                 sample_filter=NULL, neighborhood_filter=NULL, 
-                                age_filter=NULL, width=450, height=400, non_shiny=F, 
+                                age_filter=NULL, width=450, height=400, chart_prefix='pie-', non_shiny=F, 
                                 shinySession=NULL) {
   
   # this will order the pie charts and people plots according to the levels specified
@@ -72,7 +72,7 @@ ordered_shinyCharts <- function(dat, columns=2, level1_type=NULL, level2_type=NU
                                      eval(parse(text=stated_types[3])) %in% level3_filter)] # match anything in the level 3 filter
           
           # make plot names for the options that matched by combining sample + neighborhood + age
-          plot_names <- sapply(1:length(l2_sub), function(x) paste0(l2_sub[x]$path$sample, '-', l2_sub[x]$path$neighborhood, "-", l2_sub[x]$path$age))
+          plot_names <- sapply(1:length(l2_sub), function(x) paste0(chart_prefix, l2_sub[x]$path$sample, '-', l2_sub[x]$path$neighborhood, "-", l2_sub[x]$path$age))
           # there are spaces in the names, since we're using the for labels too, 
           # let's remove those for the actual plot names
           plot_names <- gsub(" ", "", plot_names)
@@ -104,7 +104,7 @@ ordered_shinyCharts <- function(dat, columns=2, level1_type=NULL, level2_type=NU
           count <- count + 1
         }
       }
-    }, message='Arranging Pie Charts')
+    }, message='Arranging Charts')
   }
   # #   
   
@@ -115,7 +115,7 @@ ordered_shinyCharts <- function(dat, columns=2, level1_type=NULL, level2_type=NU
       for (l2 in level2_filter) {
         ordered_list <- append(ordered_list, paste('Level 2 heading:',l2))
         l2_sub <- dat[list.which(dat, eval(parse(text=stated_types[1])) == l1 && eval(parse(text=stated_types[2])) == l2)]
-        plot_names <- sapply(1:length(l2_sub), function(x) paste0(l2_sub[x]$path$sample, '-', l2_sub[x]$path$neighborhood, "-", l2_sub[x]$path$age))
+        plot_names <- sapply(1:length(l2_sub), function(x) paste0(chart_prefix, l2_sub[x]$path$sample, '-', l2_sub[x]$path$neighborhood, "-", l2_sub[x]$path$age))
         plot_names <- gsub(" ", "", plot_names)
         num_plots <- length(l2_sub)
         num_rows <- ceiling(num_plots/columns)
