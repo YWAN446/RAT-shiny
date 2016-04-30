@@ -605,9 +605,18 @@ calculate_exposure <- function(behavior_data, concentration_data) {
 
 
 
+
+
+
+
+
+
+
+# DEPRECATED =========================================================================
+
 nest_samples <- function(dat, level1_type=NULL, level2_type=NULL, level3_type=NULL, 
-                          level1_filter=NULL, level2_filter=NULL, level3_filter=NULL, 
-                          FUN=NULL) {
+                         level1_filter=NULL, level2_filter=NULL, level3_filter=NULL, 
+                         FUN=NULL) {
   # Take a loosely structured list of frequency samples where each sample list contains list elements of 'sample', 'age', 'neighborhood'
   # and 'data'.  Default will return a nested list with the structure, sample -> neighborhood -> age
   # if level filters are not specified, it will default to all available options on each level
@@ -675,8 +684,8 @@ nest_samples <- function(dat, level1_type=NULL, level2_type=NULL, level3_type=NU
 }
 
 nest_apply <- function(dat, level1_type=NULL, level2_type=NULL, level3_type=NULL, 
-                          level1_filter=NULL, level2_filter=NULL, level3_filter=NULL, 
-                          FUN=NULL, nested_results=F) {
+                       level1_filter=NULL, level2_filter=NULL, level3_filter=NULL, 
+                       FUN=NULL, nested_results=F) {
   # Returns a one level list, after having reordered the data according to the levels
   # Take a loosely structured list of frequency samples where each sample list contains list elements of 'sample', 'age', 'neighborhood'
   # and 'data'.  Default will return a nested list with the structure, sample -> neighborhood -> age
@@ -741,15 +750,6 @@ nest_apply <- function(dat, level1_type=NULL, level2_type=NULL, level3_type=NULL
   }
   return(ordered_list)
 }
-
-
-
-
-
-
-
-# DEPRECATED =========================================================================
-
 calculate_householdFreq <- function(household_data, type='pie chart') {
   # calculate the appropriate factors for plotting pie charts
   # and people plots.  This is specific to the household 

@@ -90,7 +90,7 @@ ordered_shinyCharts <- function(dat, columns=2, level1_type=NULL, level2_type=NU
               # grab the plots
               row <- plot_names[(i + 0:(columns - 1))] 
               row <- row[!is.na(row)]
-              row_names <- sapply(l2_sub[i + 0:(columns - 1)], function(x) x[stated_types[[3]]])
+              row_names <- unlist(sapply(l2_sub[i + 0:(columns - 1)], function(x) x[stated_types[[3]]]))
               row_names <- row_names[!is.na(row_names) & !is.null(row_names)]
               # make each row element a column
               row <- sapply(1:length(row), function(a) paste0('column(',col_size,",align='center',h5('",row_names[a],"', align='center'), plotOutput('",row[a],"', height=", height,", width=", width,"))"))
