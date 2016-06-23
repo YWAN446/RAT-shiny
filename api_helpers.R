@@ -33,8 +33,18 @@ formhubGET <- function(api_url, api_token) {
   # API request response and content
   # ...
   
-  response <- GET(api_url, accept_json(), add_headers(Authorization = paste0('Token ',api_token)))
-  if (response$status_code != 200) {
+  # error handling request 
+  response <- tryCatch(
+    # first try to get the data
+    req <- GET(api_url, accept_json(), add_headers(Authorization = paste0('Token ',api_token))),
+    # If something goes wrong, return a null value
+    error= function(e) {print(e); return(NULL)}, 
+    # if all goes well, return the response we got
+    finally =  function() return(req)
+    )
+  
+  # if we got a response, it still may not be what we want. 200 means a successful response.
+  if (response$status_code != 200 & !is.null(response)) {
     # 200 indicates successful communication and authentication with the server
     stop(paste("Something went wrong.  Try checking the form names and credentials.\n
          api_url= ",api_url,"\n"
