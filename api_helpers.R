@@ -61,7 +61,7 @@ formhubGET_csv <- function(base_url, usr, pwd, form_name) {
   # when downloading a JSON from the api access point. 
   # function returns the equivalent of downloading a csv from the UI.
   
-  response <- GET(paste0(base_url,'/',usr, '/forms/',form_name, '/data.csv'),
+  response <- GET(paste0(base_url,usr, '/forms/',form_name, '/data.csv'),
                   authenticate(usr, pwd)
                   )
   if (response$status_code == 404) { # this is when the form doesn't have any data

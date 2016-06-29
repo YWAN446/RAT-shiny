@@ -371,7 +371,7 @@ calculate_freq <- function(..., type='pie chart', survey_type=NULL) {
                       ) # end of switch
                  ),
                path=
-                 list(sample = 'Public Latrine Surfaces',
+                 list(sample = 'Public Latrine',
                       age = 'Adults',
                       neighborhood = paste('Neighborhood',i),
                       data = switch(survey_type, 
@@ -390,7 +390,7 @@ calculate_freq <- function(..., type='pie chart', survey_type=NULL) {
                       ) # end of switch
                  ),
                path=
-                 list(sample = 'Public Latrine Surfaces',
+                 list(sample = 'Public Latrine',
                       age = 'Children',
                       neighborhood = paste('Neighborhood',i),
                       data = switch(survey_type, 
@@ -453,177 +453,10 @@ create_freqTbl <- function(freq_vector, sample_type) {
 }
 
 
-# People Plotting
-calculate_pplPlotData <- function(freq, conc, nburn=1000, niter=10000, thin=1, cutpoint=c(0, 5, 10), shinySession=NULL) {
-  # function to caclulate the percent of population 
-  # exposed for all pathways given.  performs Bayesian 
-  # analysis on behavior and environmental data first
-  # then calculates the final statistics for plotting
-  
-  # run the Bayesian analyses
-  freq <- bayesian_behavior_estimates(freq, nburn, niter, thin, cutpoint, shinySession=shinySession)
-  conc <- bayesian_environmental_estimates(conc, nburn, niter, thin, shinySession=shinySession)
-  
-  
-  # based on the original ps_plot section of the shiny server,
-  # it seems they are based on the behavoir data
-  # need to find the number of neighborhoods
-  # and samples
-  neighborhoods <- unique(names(list.names(freq, neighborhood))) # unique neighborhood values
-  samples <- unique(names(list.names(freq, sample))) # unique sample values
-  age <- unique(names(list.names(freq, age)))
-  
-  for (smp in samples) {
-    for (nb in neighborhoods) {
-      # filter the concentration data to just this neighborhood and sample
-      sub.conc <- conc[[list.which(conc, neighborhood == nb && sample == smp)]]
-      
-      # calculate exposure for adults and children using the behavior data
-      for (a in age) {
-        # filter frequency to just the age we want 
-        sub.freq <- freq[[list.which(freq, sample == smp && neighborhood == nb && age == a)]]
-        
-        # calculate the exposure
-        exposed <- calculate_exposure(sub.freq, sub.conc)
-        
-        # update the object at this position
-        freq[[list.which(freq, sample == smp && neighborhood == nb && age == a)]] <- exposed     
-      }
-    }
-  }
-  
-  # give back the updated behavior data object
-  return(freq)
-}
-
-bayesian_environmental_estimates <- function(conc, nburn=1000, niter=10000, thin=1, shinySession=NULL) {
-  # Run bayesian model on the environmental data collected.  this will be run for each 
-  # neighborhood, age, and sample combination.  Warning: Could take quite a while. 
-  # Future development: Way of backgrounding this?
-  calcul <- paste(nburn,niter,thin,sep="|")
-  
-  # environmental samples
-  tomonitor <- c("mu","sigma")
-  withProgress({
-    for (k in 1:length(conc)){
-      log_ec<-log10(as.numeric(conc[[k]]$data))
-      env_data<-list(lnconc=log_ec,N=length(log_ec))
-      
-      modelpos <- jags.model(file="./model/env_model.jags",data=env_data,n.chains=3);
-      update(modelpos,n.burn=nburn);
-      env_mcmcpos <- coda.samples(modelpos,tomonitor,n.iter=niter,thin=thin);
-      #Bayesian estimators of mu and sigma
-      mu <-summary(env_mcmcpos)$statistics[1,1]
-      sigma <-summary(env_mcmcpos)$statistics[2,1]
-      
-      conc[[k]] <- append(conc[[k]], list('mu' = mu, 'sigma' = sigma))
-      incProgress(k/length(conc), session=shinySession)
-    }
-  }, message='Bayesian Environmental Analysis', session=shinySession, value=0)
-
-  return(conc)
-}
-
-bayesian_behavior_estimates <- function(freq, nburn=1000, niter=10000, thin=1, cutpoint=c(0, 5, 10), shinySession=NULL) {
-  # Run bayesian model on the behavior data collected.  this will be run for each 
-  # neighborhood, age, and sample combination.  Warning: Could take quite a while. 
-  # Future development: Way of backgrounding this?
-  
-  bemonitor <- c("p","r")
-  calcul <- paste(nburn,niter,thin,sep="|")
-  withProgress({
-    # Look at each sample combination taken
-    for (k in 1:length(freq)) {
-      print(k)
-      # set up the data for analysis to be passed to jags
-      freq_be0=freq[[k]]$data
-      freq_be<-freq_be0[which(freq_be0>=0)]
-      #initial values
-      init_be<-as.numeric(rep(0,length(freq_be)))
-      init_be[which(freq_be==1)]<-1
-      init_be[which(freq_be==2)]<-2
-      init_be[which(freq_be==3)]<-3
-      
-      init_freq_be<-as.numeric(rep(NA,length(freq_be)))
-      init_freq_be[which(freq_be==1)]<-2
-      init_freq_be[which(freq_be==2)]<-7
-      init_freq_be[which(freq_be==3)]<-12
-      
-      be_data<-list(select=freq_be,N=length(freq_be),cut=cutpoint)
-      init<-list(freq=init_freq_be,r=1,p=0.2)
-      
-      # Jags model runs
-      modelpos <- jags.model(file="./model/be_model.jags",data=be_data,n.chains=3,inits=init)
-      update(modelpos,n.burn=nburn)
-      cat('Coda Samples\n\n')
-      be_mcmcpos <- coda.samples(modelpos, bemonitor, n.iter=niter, thin=thin)
-      
-      # Extract results
-      # Bayesian estimators of p and r
-      p <-summary(be_mcmcpos)$statistics[1,1]
-      r <-summary(be_mcmcpos)$statistics[2,1]
-      
-      freq[[k]] <- append(freq[[k]], list('p' = p, 'r' = r))
-      
-      incProgress(k/length(freq), session=shinySession)
-    }
-    
-  }, message='Bayesian Behavior Analysis', session=shinySession, value=0)
- 
-  return(freq)
-}
-
-calculate_exposure <- function(behavior_data, concentration_data) {
-  # used for people plot generation.  this is for a single pathway
-  # and assumes the data are already subset to the appropriate level
-  e <- rep(NA, 1000)
-  f <- rep(NA, 1000)
-  risk <- rep(NA, 1000)
-  
-  # values applied based on sample and age
-  intake<-array(c(0.0006,1,10.43,0.0154,0.037,0.0006,0.034,NA,0.0499,
-                  0.01,0.5,4.14,0.2042,0.2042,0.01,0.034,NA,0.09975),c(9,2)) #need to input this information!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  rownames(intake) <- c('Drain Water', 'Produce', 'Municipal and Piped Water', 'Ocean Water', 'Surface Water', 
-                        'Flood Water', 'Public Latrine Surfaces', 'Particulate', 'Bathing')
-  colnames(intake) <- c("Adults", "Children")
-  
-  # simulate some numbers
-  for (m in 1:1000){
-    # is it necessary for this to be in a loop?
-    e[m] <- rnorm(1, concentration_data$mu, concentration_data$sigma)
-    f[m] <- rnbinom(1, size= behavior_data$r, prob= behavior_data$p)
-    risk[m] <- f[m]* (10^e[m]) * intake[behavior_data$sample, behavior_data$age]
-  }
-  
-  non0 <- function(mc){
-    tmp <- mc; tmp[!(tmp>0)] <- NA
-    return(tmp)
-  }
-  
-  n <-(1-length(which(f==0))/1000)*100;
-  dose <-log10(mean(non0(risk),na.rm=TRUE))
-  # add the percent exposure and dose information to the behavior data
-  behavior_data <- append(behavior_data, list('n' = n, 'dose' = dose))
-  
-  # give the updated object back
-  return(behavior_data)
-  
-}
-
-
-
-
-
-
-
-
-
-
-# DEPRECATED =========================================================================
 
 nest_samples <- function(dat, level1_type=NULL, level2_type=NULL, level3_type=NULL, 
-                         level1_filter=NULL, level2_filter=NULL, level3_filter=NULL, 
-                         FUN=NULL) {
+                          level1_filter=NULL, level2_filter=NULL, level3_filter=NULL, 
+                          FUN=NULL) {
   # Take a loosely structured list of frequency samples where each sample list contains list elements of 'sample', 'age', 'neighborhood'
   # and 'data'.  Default will return a nested list with the structure, sample -> neighborhood -> age
   # if level filters are not specified, it will default to all available options on each level
@@ -691,8 +524,8 @@ nest_samples <- function(dat, level1_type=NULL, level2_type=NULL, level3_type=NU
 }
 
 nest_apply <- function(dat, level1_type=NULL, level2_type=NULL, level3_type=NULL, 
-                       level1_filter=NULL, level2_filter=NULL, level3_filter=NULL, 
-                       FUN=NULL, nested_results=F) {
+                          level1_filter=NULL, level2_filter=NULL, level3_filter=NULL, 
+                          FUN=NULL, nested_results=F) {
   # Returns a one level list, after having reordered the data according to the levels
   # Take a loosely structured list of frequency samples where each sample list contains list elements of 'sample', 'age', 'neighborhood'
   # and 'data'.  Default will return a nested list with the structure, sample -> neighborhood -> age
@@ -757,6 +590,15 @@ nest_apply <- function(dat, level1_type=NULL, level2_type=NULL, level3_type=NULL
   }
   return(ordered_list)
 }
+
+
+
+
+
+
+
+# DEPRECATED =========================================================================
+
 calculate_householdFreq <- function(household_data, type='pie chart') {
   # calculate the appropriate factors for plotting pie charts
   # and people plots.  This is specific to the household 
