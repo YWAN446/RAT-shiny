@@ -7,13 +7,65 @@ output:
   pdf_document: default
   toc: yes
 ---
+```{r,echo=FALSE}
+library(knitr)
+```
 
-This is a test version of **SaniPath** tool report. This report can be download as 'HTML', 'PDF', and 'MS word' documents.
-For any infomration and questions, please contact [Yuke Wang](yuke.wang@emory.edu).
+**Methods**
+
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Etiam elit ex, dignissim nec mattis ut, pellentesque at tortor. Aenean tincidunt auctor elementum. Curabitur lectus sapien, finibus quis erat at, pretium egestas risus. Etiam odio neque, dignissim non ante a, tincidunt gravida magna. Phasellus lorem dui, vehicula non facilisis vel, hendrerit at mi. Phasellus congue lectus augue, eget aliquet nibh vestibulum nec. Praesent efficitur ut ipsum vel pretium. Praesent nibh nulla, congue sed accumsan quis, molestie non nibh.
+
+Nunc augue dui, ultrices in volutpat in, sollicitudin et dui. Maecenas tincidunt quam eget eros commodo, quis vehicula risus ornare. Mauris elit magna, varius sed ex sed, faucibus volutpat lacus. In sit amet tempus enim. In ut lacinia nunc. Sed metus libero, convallis at scelerisque vel, posuere sed libero. Aliquam eu ligula eget quam porta convallis quis at felis. Morbi auctor consectetur lorem, a interdum elit bibendum ut. Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+
+**Map of Survey Area**
+
+```{r, echo=FALSE}
+cat('----------------------------------------------------------------\n
+- Map of neighborhoods\n
+-\n
+-\n
+-\n
+-\n
+-\n
+-\n
+-\n
+-\n
+-\n
+-\n
+----------------------------------------------------------------')
+
+
+```
+
+**Tables of Collected Results**
+
+```{r, echo=FALSE}
+# path_results <- matrix(sample(200,2*9),nrow=2, ncol=9)
+# rownames(path_results) <- c("Neighborhood 1", "Neighborhood 2")
+# colnames(path_results) <- paste("Sample",1:9)
+# kable(path_results)
+
+survey_results <- cbind(as.vector(table(community_data()$neighbor)), # community data
+                        as.vector(table(school_data()$neighbor)), # school data
+                        as.vector(table(household_data()$neighbor))
+)
+
+
+colnames(survey_results) <- c("Community", "School", "Household")
+rownames(survey_results) <- paste('Neighborhood',1:nrow(survey_results))
+kable(survey_results)
+
+participant_results <- matrix(sample(200,2*3),nrow=2, ncol=3)
+colnames(participant_results) <- c("Community", "School", "Household")
+rownames(participant_results) <- c("Neighborhood 1", "Neighborhood 2")
+kable(participant_results)
+```
+
+
 
 Pie charts:
 
-```{r, fig.width=14, fig.height=3, echo=FALSE}
+#```{r, fig.width=14, fig.height=3, echo=FALSE}
   be_data<-be_data()
   freq<-frq()
   n.neighb=ifelse(input$neighb==0, length(unique(as.numeric(be_data$neighbor))),1)
