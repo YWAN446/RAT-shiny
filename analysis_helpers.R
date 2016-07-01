@@ -3,6 +3,8 @@
 ## file.
 library(ggplot2)
 library(rlist)
+library(plyr)
+library(reshape2)
 
 # MERGING --------------------------------------------------------------------
 create_ecData <- function(collection_data, lab_data) {
@@ -665,6 +667,57 @@ calculate_exposure <- function(behavior_data, concentration_data) {
   
 }
 
+# REPORT ============================================================
+report_summaryResults <- function() {}
+
+report_pathwayTable <- function(ps.freq) {
+  # create a 2x2 table arranging pathways by dose and frequency
+  
+  # calculate an exposure score
+  # E = log10( (10 ^ dose) * n/100)
+  calc_exposure_score <- function(list_obj, freq_thresh = 50) {
+    E = log10( (10 ^ list_obj$dose) * list_obj$n/100)
+    f = (list_obj$n >= freq_thresh)
+    return(data.frame(t(c('E' = E, 'freq' = f))))
+  }
+  
+  # calculate the dose and frequency score for each pathway
+  pathway_results <- data.frame()
+  for (i in ps.freq) {
+    pathway_results <- rbind.fill(pathway_results, calc_exposure_score(i))
+  }
+  
+  
+  pathway_results$E[pathway_results$E == Inf] <- NA
+  dose_threshold <- mean(pathway_results$E, na.rm=T)
+  # create a data frame with binary high dose/high frequency variables for table arrangement
+  pathway_results$high_dose <- as.numeric(
+                                            pathway_results$E > 10 |
+                                            pathway_results$E >= dose_threshold | 
+                                            is.na(pathway_results$E))
+  
+  # add the pathway names
+  pathway_results$pathway <- unlist(lapply(ps.freq, function(a) paste0(a$sample, ", ", a$neighborhood, ", ", a$age)))
+  
+  # reshape the data
+  result_matrix <- matrix("", nrow=2, ncol=2)
+  rownames(result_matrix) <- c("High Dose", "Low Dose")
+  colnames(result_matrix) <- c('High Frequency', 'Low Frequency')
+  
+  for (i in 1:nrow(pathway_results)) {
+    # false (0) now needs to be 2 to indicate the row or column
+    score <- pathway_results[i, c('high_dose', 'freq')]
+    score[score == 0] <- 2
+    
+    score <- unlist(score)
+    
+    # now insert the pathway into that spot
+    result_matrix[score[1], score[2]] <- paste(result_matrix[score[1], score[2]], pathway_results[i, 'pathway'], "\n")
+  }
+  
+  return(result_matrix)
+  
+}
 
 
 
