@@ -504,7 +504,25 @@ bayesian_environmental_estimates <- function(conc, nburn=1000, niter=10000, thin
   
   # environmental samples
   tomonitor <- c("mu","sigma")
-  withProgress({
+  if (!is.null(shinySession)) {
+    withProgress({
+      for (k in 1:length(conc)){
+        log_ec<-log10(as.numeric(conc[[k]]$data))
+        env_data<-list(lnconc=log_ec,N=length(log_ec))
+        
+        modelpos <- jags.model(file="./model/env_model.jags",data=env_data,n.chains=3);
+        update(modelpos,n.burn=nburn);
+        env_mcmcpos <- coda.samples(modelpos,tomonitor,n.iter=niter,thin=thin);
+        #Bayesian estimators of mu and sigma
+        mu <-summary(env_mcmcpos)$statistics[1,1]
+        sigma <-summary(env_mcmcpos)$statistics[2,1]
+        
+        conc[[k]] <- append(conc[[k]], list('mu' = mu, 'sigma' = sigma))
+        incProgress(k/length(conc), session=shinySession)
+      }
+    }, message='Bayesian Environmental Analysis', session=shinySession, value=0)
+  }
+  else {
     for (k in 1:length(conc)){
       log_ec<-log10(as.numeric(conc[[k]]$data))
       env_data<-list(lnconc=log_ec,N=length(log_ec))
@@ -517,9 +535,10 @@ bayesian_environmental_estimates <- function(conc, nburn=1000, niter=10000, thin
       sigma <-summary(env_mcmcpos)$statistics[2,1]
       
       conc[[k]] <- append(conc[[k]], list('mu' = mu, 'sigma' = sigma))
-      incProgress(k/length(conc), session=shinySession)
+      
     }
-  }, message='Bayesian Environmental Analysis', session=shinySession, value=0)
+  }
+  
 
   return(conc)
 }
@@ -531,8 +550,47 @@ bayesian_behavior_estimates <- function(freq, nburn=1000, niter=10000, thin=1, c
   
   bemonitor <- c("p","r")
   calcul <- paste(nburn,niter,thin,sep="|")
-  withProgress({
-    # Look at each sample combination taken
+  if (!is.null(shinySession)) {
+    withProgress({
+      # Look at each sample combination taken
+      for (k in 1:length(freq)) {
+        print(k)
+        # set up the data for analysis to be passed to jags
+        freq_be0=freq[[k]]$data
+        freq_be<-freq_be0[which(freq_be0>=0)]
+        #initial values
+        init_be<-as.numeric(rep(0,length(freq_be)))
+        init_be[which(freq_be==1)]<-1
+        init_be[which(freq_be==2)]<-2
+        init_be[which(freq_be==3)]<-3
+        
+        init_freq_be<-as.numeric(rep(NA,length(freq_be)))
+        init_freq_be[which(freq_be==1)]<-2
+        init_freq_be[which(freq_be==2)]<-7
+        init_freq_be[which(freq_be==3)]<-12
+        
+        be_data<-list(select=freq_be,N=length(freq_be),cut=cutpoint)
+        init<-list(freq=init_freq_be,r=1,p=0.2)
+        
+        # Jags model runs
+        modelpos <- jags.model(file="./model/be_model.jags",data=be_data,n.chains=3,inits=init)
+        update(modelpos,n.burn=nburn)
+        cat('Coda Samples\n\n')
+        be_mcmcpos <- coda.samples(modelpos, bemonitor, n.iter=niter, thin=thin)
+        
+        # Extract results
+        # Bayesian estimators of p and r
+        p <-summary(be_mcmcpos)$statistics[1,1]
+        r <-summary(be_mcmcpos)$statistics[2,1]
+        
+        freq[[k]] <- append(freq[[k]], list('p' = p, 'r' = r))
+        
+        incProgress(k/length(freq), session=shinySession)
+      }
+      
+    }, message='Bayesian Behavior Analysis', session=shinySession, value=0)
+  }
+  else {
     for (k in 1:length(freq)) {
       print(k)
       # set up the data for analysis to be passed to jags
@@ -565,11 +623,8 @@ bayesian_behavior_estimates <- function(freq, nburn=1000, niter=10000, thin=1, c
       
       freq[[k]] <- append(freq[[k]], list('p' = p, 'r' = r))
       
-      incProgress(k/length(freq), session=shinySession)
     }
-    
-  }, message='Bayesian Behavior Analysis', session=shinySession, value=0)
- 
+  }
   return(freq)
 }
 
