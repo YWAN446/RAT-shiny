@@ -38,12 +38,12 @@ shinyUI(fluidPage(theme = "bootstrap.css",
       ),
       
       checkboxGroupInput('neighborhood', 'Neighborhood Choices:',choices="", selected=""),
-      selectInput('samtype', 'Sample Type', choices = c("All"=0,c("Drain Water"=1, "Produce"=2, "Piped Water"=3, 
-                                                                          "Ocean Water"=4, "Surface Water"=5, "Flood Water"=6,
-                                                                          "Public Latrine Surfaces"=7, "Particulate"=8, "Bathing"=9))),
-
-      selectInput('neighb', 'Neighborhood', choices=""),
-      selectInput('ad_ch','Adults or Children',choices=c("All"=0,"Adults"=1,"Children"=2)),
+#       selectInput('samtype', 'Sample Type', choices = c("All"=0,c("Drain Water"=1, "Produce"=2, "Piped Water"=3, 
+#                                                                           "Ocean Water"=4, "Surface Water"=5, "Flood Water"=6,
+#                                                                           "Public Latrine Surfaces"=7, "Particulate"=8, "Bathing"=9))),
+# 
+#       selectInput('neighb', 'Neighborhood', choices=""),
+#       selectInput('ad_ch','Adults or Children',choices=c("All"=0,"Adults"=1,"Children"=2)),
       radioButtons('format', 'Document format', c('PDF', 'HTML', 'Word'),
                    inline = TRUE),
       downloadButton('downloadReport'),

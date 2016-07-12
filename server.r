@@ -12,6 +12,8 @@ apiToken <- '8d0336d37ef28df590574f1cd4531f142e31ca02'
 usr <- 'sp'
 pwd <- '2007beagle'
 
+interventions <- read.csv('interventions.csv')
+
 # download the list of forms before Shiny starts
 forms <- getAPI_forms(baseURL, apiUrl, usr, pwd, apiToken)
 

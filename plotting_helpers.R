@@ -1,5 +1,6 @@
 library(ggplot2)
 library(ggrepel)
+library(RgoogleMaps)
 
 ordered_shinyCharts <- function(dat, columns=2, level1_type=NULL, level2_type=NULL,  
                                 sample_filter=NULL, neighborhood_filter=NULL, 
@@ -254,6 +255,7 @@ ggpie <- function (dat, group_by, value_column, title, nudgex=.5) {
     guides(fill = guide_legend(override.aes = list(colour = NA))) + # removes black borders from legend
     coord_polar(theta = 'y') + theme_bw()  +
     theme(
+      plot.title=element_text(face='bold'),
       axis.ticks = element_blank(),
       axis.text.y = element_blank(),
       axis.text.x = element_blank(),
@@ -307,10 +309,56 @@ create_pieChart <- function(freq, sample_type, title_label) {
   
   # first let's regroup the data into a table that can be used
   # for plotting.  it will have 4 columns, neighborhood, age, answer, Freq
-
+  
   tbl <- create_freqTbl(freq, sample_type)
-  p <- ggpie(tbl, 'answer', 'Freq', title_label, nudgex=.22)
+  p <- suppressWarnings(ggpie(tbl, 'answer', 'Freq', title_label, nudgex=.22))
   
   
   return(p)
 }
+
+create_surveyMap <- function(household_data, school_data, community_data, collection_data) {
+
+  lat = as.numeric(c(household_data$X_hh_gps_latitude, school_data$X_ch_gps_latitude, 
+          community_data$X_com_gps_latitude, collection_data$X_ev_lat_lon_latitude))
+  lon = as.numeric(c(household_data$X_hh_gps_longitude, school_data$X_ch_gps_longitude, 
+          community_data$X_com_gps_longitude, collection_data$X_ev_lat_lon_longitude))
+  neighbs = c(household_data$neighbor, school_data$neighbor, 
+              community_data$neighbor, collection_data$neighbor)
+  colors = 'blue'
+  
+  points <- cbind.data.frame('lat'=lat, 'long'=lon, 'neigh'=neighbs, 'col'=colors)
+  points$label <- c(rep('HH',nrow(household_data)), rep('SCH', nrow(school_data)),
+                    rep('COM', nrow(community_data)), rep("COL", nrow(collection_data)))
+  
+  points <- points[!(is.na(points$lat) | is.na(points$long)),]
+ 
+  
+  points$marker <- apply(points, 1, function(a) paste0("&markers=color:",a['col'],"|label:",a['label'],"|",a['lat'],",",a['long']))
+  
+  points <- points[!duplicated(points$marker),]
+  
+  center = c(mean(points$lat), mean(points$long))
+  zoom <- min(MaxZoom(range(points$lat), range(points$long))) + 3
+  
+  
+  Map <- GetMap(center=center, zoom=zoom,destfile = "temp/Map.png");
+  # png(filename='temp/Map.png', width=640, height= 480)
+  PlotOnStaticMap(Map, lat = points$lat, 
+                         lon = points$long, 
+                         destfile = "temp/Map.png", cex=3,pch=20,                       
+                         col=points$col, add=F)
+  # dev.off()
+  
+}
+
+
+
+
+
+
+
+
+
+
+
