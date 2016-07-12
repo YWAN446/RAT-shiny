@@ -373,7 +373,7 @@ calculate_freq <- function(..., type='pie chart', survey_type=NULL) {
                       ) # end of switch
                  ),
                path=
-                 list(sample = 'Public Latrine Surfaces',
+                 list(sample = 'Public Latrine',
                       age = 'Adults',
                       neighborhood = paste('Neighborhood',i),
                       data = switch(survey_type, 
@@ -392,7 +392,7 @@ calculate_freq <- function(..., type='pie chart', survey_type=NULL) {
                       ) # end of switch
                  ),
                path=
-                 list(sample = 'Public Latrine Surfaces',
+                 list(sample = 'Public Latrine',
                       age = 'Children',
                       neighborhood = paste('Neighborhood',i),
                       data = switch(survey_type, 
@@ -453,7 +453,6 @@ create_freqTbl <- function(freq_vector, sample_type) {
   tbl$labels = paste(tbl$answer, "\n", paste0(round(tbl$Freq / sum(tbl$Freq) * 100, 1),"%")) 
   return(tbl)
 }
-
 
 # People Plotting
 calculate_pplPlotData <- function(freq, conc, nburn=1000, niter=10000, thin=1, cutpoint=c(0, 5, 10), shinySession=NULL) {
@@ -666,12 +665,5 @@ calculate_exposure <- function(behavior_data, concentration_data) {
   return(behavior_data)
   
 }
-
-
-
-
-
-
-
 
 

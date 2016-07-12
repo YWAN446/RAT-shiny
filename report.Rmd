@@ -65,9 +65,6 @@ Significant findings.  Lorem ipsum dolor sit amet, consectetur adipiscing elit. 
 Praesent erat tortor, ullamcorper id ante pellentesque, imperdiet sodales felis. Ut nec molestie enim. Aenean elementum, sem vel hendrerit volutpat, augue erat gravida tellus, a dapibus felis enim sed neque. Etiam dolor ex, malesuada non elit nec, consectetur efficitur metus. Integer ultrices arcu lacinia, ultrices orci id, maximus mi. Pellentesque vel est non mauris congue mattis ut eu nisi. Integer venenatis metus risus, ac auctor elit pellentesque vel.
 
 
-
-
-
 ```{r, echo=FALSE, results='asis', message=FALSE}
 fig <- 2
 tab <- 2

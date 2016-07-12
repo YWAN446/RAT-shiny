@@ -33,8 +33,18 @@ formhubGET <- function(api_url, api_token) {
   # API request response and content
   # ...
   
-  response <- GET(api_url, accept_json(), add_headers(Authorization = paste0('Token ',api_token)))
-  if (response$status_code != 200) {
+  # error handling request 
+  response <- tryCatch(
+    # first try to get the data
+    req <- GET(api_url, accept_json(), add_headers(Authorization = paste0('Token ',api_token))),
+    # If something goes wrong, return a null value
+    error= function(e) {print(e); return(NULL)}, 
+    # if all goes well, return the response we got
+    finally =  function() return(req)
+    )
+  
+  # if we got a response, it still may not be what we want. 200 means a successful response.
+  if (response$status_code != 200 & !is.null(response)) {
     # 200 indicates successful communication and authentication with the server
     stop(paste("Something went wrong.  Try checking the form names and credentials.\n
          api_url= ",api_url,"\n"
@@ -51,7 +61,7 @@ formhubGET_csv <- function(base_url, usr, pwd, form_name) {
   # when downloading a JSON from the api access point. 
   # function returns the equivalent of downloading a csv from the UI.
   
-  response <- GET(paste0(base_url,'/',usr, '/forms/',form_name, '/data.csv'),
+  response <- GET(paste0(base_url,usr, '/forms/',form_name, '/data.csv'),
                   authenticate(usr, pwd)
                   )
   if (response$status_code == 404) { # this is when the form doesn't have any data
