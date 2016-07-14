@@ -439,10 +439,9 @@ calculate_freq <- function(..., type='pie chart', survey_type=NULL) {
 create_freqTbl <- function(freq_vector, sample_type) {
   # convert the answers from the frequency calculation funcitons into 
   # a table for plotting
-  labels <- unlist(ifelse(sample_type=='Municipal and Piped Water', 
-                          list(c("everyday","4-6/wk","1-3/mo","never","don't know")),
-                          list(c(">10/mo","6-10/mo","1-5/mo","never","don't know"))
-  )
+  labels <- unlist(ifelse(sample_type=='Municipal and Piped Water', list(c("everyday","4-6/wk","1-3/wk","never","don't know")),
+                          ifelse(sample_type=="Produce" | sample_type=="Public Latrine Surfaces",list(c(">10/mo","6-10/mo","1-5/mo","never","don't know")),
+                          list(c(">10/mo","6-10/mo","1-5/mo","never","don't know"))))
   )
   colors <- c('#00FF00', '#99FF00', '#FF6600', '#FF0000', '#333333')
   
@@ -485,7 +484,7 @@ calculate_pplPlotData <- function(freq, conc, nburn=1000, niter=10000, thin=1, c
         sub.freq <- freq[[list.which(freq, sample == smp && neighborhood == nb && age == a)]]
         
         # calculate the exposure
-        exposed <- calculate_exposure(sub.freq, sub.conc)
+        exposed <- calculate_exposure(sub.freq, sub.conc, smp)
         
         # update the object at this position
         freq[[list.which(freq, sample == smp && neighborhood == nb && age == a)]] <- exposed     
@@ -629,7 +628,7 @@ bayesian_behavior_estimates <- function(freq, nburn=1000, niter=10000, thin=1, c
   return(freq)
 }
 
-calculate_exposure <- function(behavior_data, concentration_data) {
+calculate_exposure <- function(behavior_data, concentration_data, smp) {
   # used for people plot generation.  this is for a single pathway
   # and assumes the data are already subset to the appropriate level
   e <- rep(NA, 1000)
@@ -647,7 +646,13 @@ calculate_exposure <- function(behavior_data, concentration_data) {
   for (m in 1:1000){
     # is it necessary for this to be in a loop?
     e[m] <- rnorm(1, concentration_data$mu, concentration_data$sigma)
-    f[m] <- rnbinom(1, size= behavior_data$r, prob= behavior_data$p)
+    if (smp %in% c(2,7)) {
+      f[m] <- round(rnbinom(1, size= behavior_data$r, prob= behavior_data$p)/7*30)
+    } else if (smp==3) {
+      f[m] <- min(round(rnbinom(1, size= behavior_data$r, prob= behavior_data$p)/7*30),30)
+    } else {
+      f[m] <- rnbinom(1, size= behavior_data$r, prob= behavior_data$p)
+    }
     risk[m] <- f[m]* (10^e[m]) * intake[behavior_data$sample, behavior_data$age]
   }
   
