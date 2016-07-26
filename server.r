@@ -68,15 +68,15 @@ shinyServer(function(input, output, session) {
   })
   
   conc <- reactive({
-    conc <- create_concData(ec_data())
-    print(conc)
+    create_concData(ec_data())
+    
   })
 
 #   
 #   # PIE CHART PLOTTING INFO ----------------------------------------------------------------
   freq <- reactive({
     types <- c('combined', 'household', 'school', 'community')
-    freq <- calculate_freq(household_data(), school_data(), community_data(), survey_type= types[as.numeric(input$surtype)+1])
+    calculate_freq(household_data(), school_data(), community_data(), survey_type= types[as.numeric(input$surtype)+1])
   })
 #   
   observeEvent(input$level1, {
@@ -103,6 +103,7 @@ shinyServer(function(input, output, session) {
   
   # BUILD THE UI FOR THE PIE CHARTS ---------------------------------------------------------
   # this will lay out the plots in the appropriate order
+
   pie_chart_order <- reactive({
     ordered_shinyCharts(freq(), columns= input$num_columns, level1_type = input$level1, level2_type = input$level2,
                         sample_filter=input$sample, neighborhood_filter = input$neighborhood, age_filter = input$age,
@@ -114,9 +115,8 @@ shinyServer(function(input, output, session) {
     pie_chart_order()
     do.call(tagList, pie_chart_order())
   })
-  
   # generate the ggplot objects
-  observeEvent(c(input$level3, input$surtype), {
+  observe({
     dat <- freq()
     dat <- dat[list.which(dat, sample %in% input$sample && 
                             neighborhood %in% input$neighborhood &&
@@ -129,18 +129,20 @@ shinyServer(function(input, output, session) {
           my_i <- i
           p_name <- paste0(my_i$sample,"-",my_i$neighborhood, '-', my_i$age)
           p_name <- gsub(' ', '', p_name)
+          print(p_name)
           output[[p_name]] <- renderPlot({
             create_pieChart(my_i$data, my_i$sample, '') 
           })
         },message = 'Generating Pie Charts', session=session, value= count/length(dat)
         )
         })
-        # incProgress(count/length(dat), session = session)
         count <- count + 1
       }
 
     
   })
+  
+
   
   hist_order <- reactive({
     ordered_shinyHists(conc(), input$num_columns, level1_type = input$level1, sample_filter = input$sample, neighborhood_filter = input$neighborhood)
@@ -151,7 +153,7 @@ shinyServer(function(input, output, session) {
     do.call(tagList, hist_order())
   })
   
-  observeEvent(input$level2, {
+  observe({
     if (length(conc()) > 0 ) {
       
       dat <- conc()
@@ -183,22 +185,13 @@ shinyServer(function(input, output, session) {
     print('bayesian calculations')
     types <- c('combined', 'household', 'school', 'community')
     freq <- calculate_freq(household_data(), school_data(), community_data(), type='ppl plot', survey_type= types[as.numeric(input$surtype)+1])
-    calculate_pplPlotData(freq, conc(), shinySession=session) # letting the defaults lazy load 
+    calculate_pplPlotData(freq[1], conc(), shinySession=session) # letting the defaults lazy load 
     
     })
 
 
   
-  ## Tables for raw printing ------------------------------------------------------------------------------------------------------------
-  output$raw_table <- renderDataTable({
-    switch(input$raw_view,
-           'Household' = household_data(),
-           'Community' = community_data(),
-           'School' = school_data(),
-           'E. Coli' = ec_data()
-           )
-  })
-  
+
 
   ppl_plot_order <- reactive({
     ordered_shinyCharts(ps.freq(), columns= input$num_columns, level1_type = input$level1, level2_type = input$level2,
@@ -213,8 +206,8 @@ shinyServer(function(input, output, session) {
   })
   
   # generate the people plots
-  observeEvent(c(input$level3, input$surtype), {
-    print('triggered')
+  observe({
+    print('triggered---------------------------------------------------------')
     dat <- ps.freq()
     dat <- dat[list.which(dat, sample %in% input$sample && 
                             neighborhood %in% input$neighborhood &&
@@ -237,7 +230,17 @@ shinyServer(function(input, output, session) {
       count <- count + 1
     }
     
-    
+  })
+  
+  
+  ## Tables for raw printing ------------------------------------------------------------------------------------------------------------
+  output$raw_table <- renderDataTable({
+    switch(input$raw_view,
+           'Household' = household_data(),
+           'Community' = community_data(),
+           'School' = school_data(),
+           'E. Coli' = ec_data()
+    )
   })
   
   output$downloadReport <- downloadHandler(
