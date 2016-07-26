@@ -100,10 +100,14 @@ getAPI_forms <- function(base_url, api_url, usr, pwd, api_token) {
   # $community_a
   # 'http://formhub.cgsw.org/api/v1/data/sp/92'
   
+  cat('Get forms available.\n')
   response <- formhubGET(api_url, api_token)
   
   forms <- cbind.data.frame('form_name'=names(content(response)), 'api_link'=unlist(content(response)))
+  
+  cat('Download form submission counts\n')
   for (f in 1:nrow(forms)) {
+    cat(forms[f,'form_name'],'\n')
     forms[f, 'submission_count'] <- formhubGET_formCount(base_url, usr, pwd, form_name = forms$form_name[f])
   }
   forms$menu_option <- paste(forms$form_name, paste0("(",forms$submission_count,")"))
