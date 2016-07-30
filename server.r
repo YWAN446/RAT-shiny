@@ -112,7 +112,9 @@ shinyServer(function(input, output, session) {
   
   # this will actually render them for the UI
   output$pie_charts <- renderUI({
-    pie_chart_order()
+    cat("Pie chart order:\n")
+    print(pie_chart_order())
+    # pie_chart_order()
     do.call(tagList, pie_chart_order())
   })
   # generate the ggplot objects
@@ -127,11 +129,11 @@ shinyServer(function(input, output, session) {
         local({
           withProgress({
           my_i <- i
-          p_name <- paste0(my_i$sample,"-",my_i$neighborhood, '-', my_i$age)
+          p_name <- paste0("pie-",my_i$sample,"-",my_i$neighborhood, '-', my_i$age)
           p_name <- gsub(' ', '', p_name)
           print(p_name)
           output[[p_name]] <- renderPlot({
-            create_pieChart(my_i$data, my_i$sample, '') 
+            create_pieChart(my_i$data, my_i$sample, '')
           })
         },message = 'Generating Pie Charts', session=session, value= count/length(dat)
         )

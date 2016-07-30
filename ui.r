@@ -20,8 +20,8 @@ shinyUI(fluidPage(theme = "bootstrap.css",
       hr(),
       h4('Order Results:'),
       selectizeInput('level1', 'Level 1', choices=c('Sample' = 'sample', 'Neighborhood' = 'neighborhood', 'Age' = 'age'), selected='sample'),
-      selectInput('level2', 'Level 2', choices=c(), selected=''),
-      selectInput('level3', 'Level 3', choices=c(), selected=''),
+      selectInput('level2', 'Level 2', choices=c('Neighborhood' = 'neighborhood', 'Age' = 'age'), selected='neighborhood'),
+      selectInput('level3', 'Level 3', choices=c('Age' = 'age'), selected='age'),
       
       
       tags$b(textOutput('plot_display')),
