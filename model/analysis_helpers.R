@@ -83,10 +83,10 @@ create_ecData <- function(collection_data, lab_data) {
   ec_data$dil3[swap4 & swap6 & swap7]<-ec_data$ec_dil1[swap4 & swap6 & swap7]
   
   #check whether threre is a dilution jumping.
-  dil_jump1_1<-all.equal(ec_data$dil1/ec_data$dil2,10)
-  dil_jump1_2<-all.equal(ec_data$dil1/ec_data$dil2,100)
-  dil_jump2_1<-all.equal(ec_data$dil2/ec_data$dil3,10)
-  dil_jump2_2<-all.equal(ec_data$dil2/ec_data$dil3,100)
+  dil_jump1_1<-abs(ec_data$dil1/ec_data$dil2-10)<0.0001
+  dil_jump1_2<-abs(ec_data$dil1/ec_data$dil2-100)<0.0001
+  dil_jump2_1<-abs(ec_data$dil2/ec_data$dil3-10)<0.0001
+  dil_jump2_2<-abs(ec_data$dil2/ec_data$dil3-100)<0.0001
   
   #two dilution cases (1:10 dilution jump and 1:100 dilution jump)
   condition1=which((ec_data$count1==999 | ec_data$count1==998) & (ec_data$count2==999 | ec_data$count2==998) & no_dilution3)
