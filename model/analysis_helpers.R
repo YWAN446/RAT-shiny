@@ -17,26 +17,112 @@ create_ecData <- function(collection_data, lab_data) {
   ec_data$ec_denom[which(ec_data$sample_type==8)]=2
   ec_data$ec_denom[is.na(ec_data$sample_type)]=NA
   
-  ec_data$count1[ec_data$ec_dil1>=ec_data$ec_dil2]<-ec_data$ec_ecnt1[ec_data$ec_dil1>=ec_data$ec_dil2]
-  ec_data$count2[ec_data$ec_dil1>=ec_data$ec_dil2]<-ec_data$ec_ecnt2[ec_data$ec_dil1>=ec_data$ec_dil2]
-  ec_data$dil1[ec_data$ec_dil1>=ec_data$ec_dil2]<-ec_data$ec_dil1[ec_data$ec_dil1>=ec_data$ec_dil2]
-  ec_data$dil2[ec_data$ec_dil1>=ec_data$ec_dil2]<-ec_data$ec_dil2[ec_data$ec_dil1>=ec_data$ec_dil2]
+  ec_data$ec_dil3<-as.numeric(as.character(ec_data$ec_dil3))
+  swap1<-(ec_data$ec_dil1>=ec_data$ec_dil2 & is.na(ec_data$ec_dil3))
+  swap2<-(ec_data$ec_dil1<ec_data$ec_dil2 & is.na(ec_data$ec_dil3))
+  swap3<-(ec_data$ec_dil1>=ec_data$ec_dil2 & !is.na(ec_data$ec_dil3))
+  swap4<-(ec_data$ec_dil1<ec_data$ec_dil2 & !is.na(ec_data$ec_dil3))
+  swap5<-(ec_data$ec_dil2>=ec_data$ec_dil3 & !is.na(ec_data$ec_dil3))
+  swap6<-(ec_data$ec_dil2<ec_data$ec_dil3 & !is.na(ec_data$ec_dil3))
+  swap7<-(ec_data$ec_dil3>=ec_data$ec_dil1 & !is.na(ec_data$ec_dil3))
+  swap8<-(ec_data$ec_dil3<ec_data$ec_dil1 & !is.na(ec_data$ec_dil3))
   
-  ec_data$count2[ec_data$ec_dil1<ec_data$ec_dil2]<-ec_data$ec_ecnt1[ec_data$ec_dil1<ec_data$ec_dil2]
-  ec_data$count1[ec_data$ec_dil1<ec_data$ec_dil2]<-ec_data$ec_ecnt2[ec_data$ec_dil1<ec_data$ec_dil2]
-  ec_data$dil2[ec_data$ec_dil1<ec_data$ec_dil2]<-ec_data$ec_dil1[ec_data$ec_dil1<ec_data$ec_dil2]
-  ec_data$dil1[ec_data$ec_dil1<ec_data$ec_dil2]<-ec_data$ec_dil2[ec_data$ec_dil1<ec_data$ec_dil2]
+  dilution3<-!is.na(ec_data$ec_dil3)
+  no_dilution3<-is.na(ec_data$ec_dil3)
   
+  ec_data$count1[swap1]<-ec_data$ec_ecnt1[swap1]
+  ec_data$count2[swap1]<-ec_data$ec_ecnt2[swap1]
+  ec_data$dil1[swap1]<-ec_data$ec_dil1[swap1]
+  ec_data$dil2[swap1]<-ec_data$ec_dil2[swap1]
   
-  condition1=which((ec_data$count1==999 | ec_data$count1==998) & (ec_data$count2==999 | ec_data$count2==998))
-  condition2=which((ec_data$count1==999 | ec_data$count1==998) & ec_data$count2>=10 & ec_data$count2<=200)
-  condition3=which((ec_data$count1==999 | ec_data$count1==998) & ec_data$count2>=1 & ec_data$count2<=9)
-  condition4=which(ec_data$count1>=10 & ec_data$count1<=200 & ec_data$count2>=10 & ec_data$count2<=200)
-  condition5=which(ec_data$count1>=10 & ec_data$count1<=200 & ec_data$count2>=1 & ec_data$count2<=9)
-  condition6=which(ec_data$count1>=10 & ec_data$count1<=200 & ec_data$count2==0)
-  condition7=which(ec_data$count1>=1 & ec_data$count1<=9 & ec_data$count2>=1 & ec_data$count2<=9)
-  condition8=which(ec_data$count1>=1 & ec_data$count1<=9 & ec_data$count2==0)
-  condition9=which(ec_data$count1==0 & ec_data$count2==0)
+  ec_data$count2[swap2]<-ec_data$ec_ecnt1[swap2]
+  ec_data$count1[swap2]<-ec_data$ec_ecnt2[swap2]
+  ec_data$dil2[swap2]<-ec_data$ec_dil1[swap2]
+  ec_data$dil1[swap2]<-ec_data$ec_dil2[swap2]
+  
+  ec_data$count1[swap3 & swap5 & swap8]<-ec_data$ec_ecnt1[swap3 & swap5 & swap8]
+  ec_data$count2[swap3 & swap5 & swap8]<-ec_data$ec_ecnt2[swap3 & swap5 & swap8]
+  ec_data$count3[swap3 & swap5 & swap8]<-ec_data$ec_ecnt3[swap3 & swap5 & swap8]
+  ec_data$dil1[swap3 & swap5 & swap8]<-ec_data$ec_dil1[swap3 & swap5 & swap8]
+  ec_data$dil2[swap3 & swap5 & swap8]<-ec_data$ec_dil2[swap3 & swap5 & swap8]
+  ec_data$dil3[swap3 & swap5 & swap8]<-ec_data$ec_dil3[swap3 & swap5 & swap8]
+  
+  ec_data$count1[swap3 & swap6 & swap7]<-ec_data$ec_ecnt3[swap3 & swap6 & swap7]
+  ec_data$count2[swap3 & swap6 & swap7]<-ec_data$ec_ecnt1[swap3 & swap6 & swap7]
+  ec_data$count3[swap3 & swap6 & swap7]<-ec_data$ec_ecnt2[swap3 & swap6 & swap7]
+  ec_data$dil1[swap3 & swap6 & swap7]<-ec_data$ec_dil3[swap3 & swap6 & swap7]
+  ec_data$dil2[swap3 & swap6 & swap7]<-ec_data$ec_dil1[swap3 & swap6 & swap7]
+  ec_data$dil3[swap3 & swap6 & swap7]<-ec_data$ec_dil2[swap3 & swap6 & swap7]
+  
+  ec_data$count1[swap4 & swap5 & swap7]<-ec_data$ec_ecnt2[swap4 & swap5 & swap7]
+  ec_data$count2[swap4 & swap5 & swap7]<-ec_data$ec_ecnt3[swap4 & swap5 & swap7]
+  ec_data$count3[swap4 & swap5 & swap7]<-ec_data$ec_ecnt1[swap4 & swap5 & swap7]
+  ec_data$dil1[swap4 & swap5 & swap7]<-ec_data$ec_dil2[swap4 & swap5 & swap7]
+  ec_data$dil2[swap4 & swap5 & swap7]<-ec_data$ec_dil3[swap4 & swap5 & swap7]
+  ec_data$dil3[swap4 & swap5 & swap7]<-ec_data$ec_dil1[swap4 & swap5 & swap7]
+  
+  ec_data$count1[swap3 & swap6 & swap8]<-ec_data$ec_ecnt1[swap3 & swap6 & swap8]
+  ec_data$count2[swap3 & swap6 & swap8]<-ec_data$ec_ecnt3[swap3 & swap6 & swap8]
+  ec_data$count3[swap3 & swap6 & swap8]<-ec_data$ec_ecnt2[swap3 & swap6 & swap8]
+  ec_data$dil1[swap3 & swap6 & swap8]<-ec_data$ec_dil1[swap3 & swap6 & swap8]
+  ec_data$dil2[swap3 & swap6 & swap8]<-ec_data$ec_dil3[swap3 & swap6 & swap8]
+  ec_data$dil3[swap3 & swap6 & swap8]<-ec_data$ec_dil2[swap3 & swap6 & swap8]
+  
+  ec_data$count1[swap4 & swap5 & swap8]<-ec_data$ec_ecnt2[swap4 & swap5 & swap8]
+  ec_data$count2[swap4 & swap5 & swap8]<-ec_data$ec_ecnt1[swap4 & swap5 & swap8]
+  ec_data$count3[swap4 & swap5 & swap8]<-ec_data$ec_ecnt3[swap4 & swap5 & swap8]
+  ec_data$dil1[swap4 & swap5 & swap8]<-ec_data$ec_dil2[swap4 & swap5 & swap8]
+  ec_data$dil2[swap4 & swap5 & swap8]<-ec_data$ec_dil1[swap4 & swap5 & swap8]
+  ec_data$dil3[swap4 & swap5 & swap8]<-ec_data$ec_dil3[swap4 & swap5 & swap8]
+  
+  ec_data$count1[swap4 & swap6 & swap7]<-ec_data$ec_ecnt3[swap4 & swap6 & swap7]
+  ec_data$count2[swap4 & swap6 & swap7]<-ec_data$ec_ecnt2[swap4 & swap6 & swap7]
+  ec_data$count3[swap4 & swap6 & swap7]<-ec_data$ec_ecnt1[swap4 & swap6 & swap7]
+  ec_data$dil1[swap4 & swap6 & swap7]<-ec_data$ec_dil3[swap4 & swap6 & swap7]
+  ec_data$dil2[swap4 & swap6 & swap7]<-ec_data$ec_dil2[swap4 & swap6 & swap7]
+  ec_data$dil3[swap4 & swap6 & swap7]<-ec_data$ec_dil1[swap4 & swap6 & swap7]
+  
+  #check whether threre is a dilution jumping.
+  dil_jump1_1<-all.equal(ec_data$dil1/ec_data$dil2,10)
+  dil_jump1_2<-all.equal(ec_data$dil1/ec_data$dil2,100)
+  dil_jump2_1<-all.equal(ec_data$dil2/ec_data$dil3,10)
+  dil_jump2_2<-all.equal(ec_data$dil2/ec_data$dil3,100)
+  
+  #two dilution cases (1:10 dilution jump and 1:100 dilution jump)
+  condition1=which((ec_data$count1==999 | ec_data$count1==998) & (ec_data$count2==999 | ec_data$count2==998) & no_dilution3)
+  condition2=which((ec_data$count1==999 | ec_data$count1==998) & ec_data$count2>=10 & ec_data$count2<=200 & no_dilution3)
+  condition3=which((ec_data$count1==999 | ec_data$count1==998) & ec_data$count2>=1 & ec_data$count2<=9 & no_dilution3)
+  condition4=which(ec_data$count1>=10 & ec_data$count1<=200 & ec_data$count2>=10 & ec_data$count2<=200 & no_dilution3 & dil_jump1_1)
+  condition5=which(ec_data$count1>=10 & ec_data$count1<=200 & ec_data$count2>=1 & ec_data$count2<=9 & no_dilution3)
+  condition6=which(ec_data$count1>=10 & ec_data$count1<=200 & ec_data$count2==0 & no_dilution3)
+  condition7=which(ec_data$count1>=1 & ec_data$count1<=9 & ec_data$count2>=1 & ec_data$count2<=9 & no_dilution3 & dil_jump1_1)
+  condition8=which(ec_data$count1>=1 & ec_data$count1<=9 & ec_data$count2==0 & no_dilution3)
+  condition9=which(ec_data$count1==0 & ec_data$count2==0 & no_dilution3)
+  condition10=which((ec_data$count1==999 | ec_data$count1==998) & ec_data$count2==0 & no_dilution3 & dil_jump1_2)
+  
+  #three dilution cases (1:10 dilution jump and 1:100 dilution jump)
+  condition11=which((ec_data$count1==999 | ec_data$count1==998) & (ec_data$count2==999 | ec_data$count2==998) & (ec_data$count3==999 | ec_data$count3==998) & dilution3)
+  condition12=which((ec_data$count1==999 | ec_data$count1==998) & (ec_data$count2==999 | ec_data$count2==998) & ec_data$count3>=10 & ec_data$count3<=200 & dilution3)
+  condition13=which((ec_data$count1==999 | ec_data$count1==998) & (ec_data$count2==999 | ec_data$count2==998) & ec_data$count3>=1 & ec_data$count3<=9 & dilution3)
+  condition14=which((ec_data$count1==999 | ec_data$count1==998) & (ec_data$count2==999 | ec_data$count2==998) & ec_data$count3==0 & dilution3 & dil_jump2_2)
+  condition15=which((ec_data$count1==999 | ec_data$count1==998) & ec_data$count2>=10 & ec_data$count2<=200 & ec_data$count3>=10 & ec_data$count3<=200 & dilution3)
+  condition16=which((ec_data$count1==999 | ec_data$count1==998) & ec_data$count2>=10 & ec_data$count2<=200 & ec_data$count3>=1 & ec_data$count3<=9 & dilution3)
+  condition17=which((ec_data$count1==999 | ec_data$count1==998) & ec_data$count2>=10 & ec_data$count2<=200 & ec_data$count3==0 & dilution3)
+  condition18=which((ec_data$count1==999 | ec_data$count1==998) & ec_data$count2>=1 & ec_data$count2<=9 & ec_data$count3>=1 & ec_data$count3<=9 & dilution3 & dil_jump2_1)
+  condition19=which((ec_data$count1==999 | ec_data$count1==998) & ec_data$count2>=1 & ec_data$count2<=9 & ec_data$count3>=1 & ec_data$count3<=9 & dilution3 & dil_jump2_2)
+  condition20=which((ec_data$count1==999 | ec_data$count1==998) & ec_data$count2>=1 & ec_data$count2<=9 & ec_data$count3==0 & dilution3)
+  condition21=which((ec_data$count1==999 | ec_data$count1==998) & ec_data$count2==0 & ec_data$count3==0 & dilution3 & dil_jump1_2)
+  condition22=which(ec_data$count1>=10 & ec_data$count1<=200 & ec_data$count2>=10 & ec_data$count2<=200 & ec_data$count3>=10 & ec_data$count3<=200 & dilution3 & dil_jump1_1 & dil_jump2_1)
+  condition23=which(ec_data$count1>=10 & ec_data$count1<=200 & ec_data$count2>=10 & ec_data$count2<=200 & ec_data$count3>=1 & ec_data$count3<=9 & dilution3 & dil_jump1_1 & dil_jump2_1)
+  condition24=which(ec_data$count1>=10 & ec_data$count1<=200 & ec_data$count2>=10 & ec_data$count2<=200 & ec_data$count3>=1 & ec_data$count3<=9 & dilution3 & dil_jump1_2 & dil_jump2_2)
+  condition25=which(ec_data$count1>=10 & ec_data$count1<=200 & ec_data$count2>=10 & ec_data$count2<=200 & ec_data$count3==0 & dilution3)
+  condition26=which(ec_data$count1>=10 & ec_data$count1<=200 & ec_data$count2>=1 & ec_data$count2<=9 & ec_data$count3>=1 & ec_data$count3<=9 & dilution3)
+  condition27=which(ec_data$count1>=10 & ec_data$count1<=200 & ec_data$count2>=1 & ec_data$count2<=9 & ec_data$count3==0 & dilution3)
+  condition28=which(ec_data$count1>=10 & ec_data$count1<=200 & ec_data$count2==0 & ec_data$count3==0 & dilution3)
+  condition29=which(ec_data$count1>=1 & ec_data$count1<=9 & ec_data$count2>=1 & ec_data$count2<=9 & ec_data$count3==0 & dilution3 & dil_jump1_1)
+  condition30=which(ec_data$count1>=1 & ec_data$count1<=9 & ec_data$count2>=1 & ec_data$count2<=9 & ec_data$count3==0 & dilution3 & dil_jump1_2)
+  condition31=which(ec_data$count1>=1 & ec_data$count1<=9 & ec_data$count2==0 & ec_data$count3==0 & dilution3)
+  condition32=which(ec_data$count1==0 & ec_data$count2==0 & ec_data$count3==0 & dilution3)
   
   ec_con<-c()
   ec_con[condition1]=200/ec_data$dil2[condition1]*ec_data$ec_denom[condition1]
@@ -47,7 +133,33 @@ create_ecData <- function(collection_data, lab_data) {
   ec_con[condition6]=ec_data$count1[condition6]/ec_data$dil1[condition6]*ec_data$ec_denom[condition6]
   ec_con[condition7]=(ec_data$count1[condition7]+ec_data$count2[condition7])/(ec_data$dil1[condition7]+ec_data$dil2[condition7])*ec_data$ec_denom[condition7]
   ec_con[condition8]=ec_data$count1[condition8]/ec_data$dil1[condition8]*ec_data$ec_denom[condition8]
-  ec_con[condition9]=0.5/(ec_data$dil1[condition9]+ec_data$dil2[condition9])*ec_data$ec_denom[condition9]
+  #since jumping dilution
+  #ec_con[condition9]=0.5/(ec_data$dil1[condition9]+ec_data$dil2[condition9])*ec_data$ec_denom[condition9]
+  ec_con[condition9]=0.5/ec_data$dil1[condition9]*ec_data$ec_denom[condition9]
+  ec_con[condition10]=200/ec_data$dil1[condition10]
+  
+  ec_con[condition11]=200/ec_data$dil3[condition11]*ec_data$ec_denom[condition11]
+  ec_con[condition12]=ec_data$count3[condition12]/ec_data$dil3[condition12]*ec_data$ec_denom[condition12]
+  ec_con[condition13]=ec_data$count3[condition13]/ec_data$dil3[condition13]*ec_data$ec_denom[condition13]
+  ec_con[condition14]=200/ec_data$dil2[condition14]*ec_data$ec_denom[condition14]
+  ec_con[condition15]=(ec_data$count2[condition15]+ec_data$count3[condition15])/(ec_data$dil2[condition15]+ec_data$dil3[condition15])*ec_data$ec_denom[condition15]
+  ec_con[condition16]=ec_data$count2[condition16]/ec_data$dil2[condition16]*ec_data$ec_denom[condition16]
+  ec_con[condition17]=ec_data$count2[condition17]/ec_data$dil2[condition17]*ec_data$ec_denom[condition17]
+  ec_con[condition18]=ec_data$count3[condition18]/ec_data$dil3[condition18]*ec_data$ec_denom[condition18]
+  ec_con[condition19]=ec_data$count2[condition19]/ec_data$dil2[condition19]*ec_data$ec_denom[condition19]
+  ec_con[condition20]=ec_data$count2[condition20]/ec_data$dil2[condition20]*ec_data$ec_denom[condition20]
+  ec_con[condition21]=200/ec_data$dil1[condition21]*ec_data$ec_denom[condition21]
+  ec_con[condition22]=(ec_data$count1[condition22]+ec_data$count2[condition22]+ec_data$count3[condition22])/(ec_data$dil1[condition22]+ec_data$dil2[condition22]+ec_data$dil3[condition22])*ec_data$ec_denom[condition22]
+  ec_con[condition23]=(ec_data$count1[condition23]+ec_data$count2[condition23])/(ec_data$dil1[condition23]+ec_data$dil2[condition23])*ec_data$ec_denom[condition23]
+  ec_con[condition24]=ec_data$count2[condition24]/ec_data$dil2[condition24]*ec_data$ec_denom[condition24]
+  ec_con[condition25]=(ec_data$count1[condition25]+ec_data$count2[condition25])/(ec_data$dil1[condition25]+ec_data$dil2[condition25])*ec_data$ec_denom[condition25]
+  ec_con[condition26]=ec_data$count1[condition26]/ec_data$dil1[condition26]*ec_data$ec_denom[condition26]
+  ec_con[condition27]=ec_data$count1[condition27]/ec_data$dil1[condition27]*ec_data$ec_denom[condition27]
+  ec_con[condition28]=ec_data$count1[condition28]/ec_data$dil1[condition28]*ec_data$ec_denom[condition28]
+  ec_con[condition29]=(ec_data$count1[condition29]+ec_data$count2[condition29])/(ec_data$dil1[condition29]+ec_data$dil2[condition29])*ec_data$ec_denom[condition29]
+  ec_con[condition30]=ec_data$count2[condition30]/ec_data$dil2[condition30]*ec_data$ec_denom[condition30]
+  ec_con[condition31]=ec_data$count1[condition31]/ec_data$dil1[condition31]*ec_data$ec_denom[condition31]
+  ec_con[condition32]=0.5/ec_data$dil1[condition32]*ec_data$ec_denom[condition32]
   ec_data$ec_conc<-ec_con
   
   ec_data$neighbor <- as.factor(ec_data$neighbor)
