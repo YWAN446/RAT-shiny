@@ -54,7 +54,26 @@ formhubGET <- function(api_url, api_token) {
   return(response)
 }
 
-
+formhubCheck_user <- function(base_url, usr) {
+  # Check to see if a user exists, if they do, a profile will be 
+  # displayed at the url/+ username location, even if they don't 
+  # have any shared forms. This probably isn't the most secure thing
+  # in the world...
+  
+  req <- GET(paste0(baseURL, usr), accept_json(),
+             authenticate(usr, pwd, 'basic')
+            )
+  
+  if (req$status_code == 200) {
+    return(T)
+  }
+  else {
+    return(F)
+  }
+  
+  
+  
+}
 
 formhubGET_csv <- function(base_url, usr, pwd, form_name) {
   # This is a work around for the moment because of data type conversion issues
@@ -143,30 +162,4 @@ filterAPI_forms <- function(filter, forms_list) {
   
   
   return(list('menu_items' = filtered_forms, 'forms' = forms_list))
-}
-
-## DEPRECATED ---------------------------------------------------------------
-# this isn't working properly right now
-getAPI_data <- function(form_url, api_token) {
-  # This will take a specific form link that is returned from
-  # getAPI_forms() and download that data. It will return a
-  # dataframe as though we had imported it as a csv (to make
-  # integration with existing code as easy as possible).
-  #
-  # Ex.
-  # > getAPI_data('http://formhub.cgsw.org/api/v1/data/sp/93', api_token)
-  # col1 col2 col3 ...
-  # a    b    c
-  
-  # download the data
-  response <- formhubGET(form_url, api_token)
-  
-  # convert the json response to a dataframe
-  results <- fromJSON(content(response, 'text'))
-  
-  # these columns are coming in as nested lists and seem to be causing
-  # problems at the moment.  we'll drop them unless they're absolutely necessary
-  results <- results[,-c(grep('_tags', names(results)), grep('_attachments', names(results)),grep('_geolocation', names(results)))]
-  
-  return(results)
 }
