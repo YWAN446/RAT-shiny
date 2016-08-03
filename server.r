@@ -37,17 +37,17 @@ shinyServer(function(input, output, session) {
     updateSelectizeInput(session, 'com_file', choices=filterAPI_forms('community', forms)$menu_items, selected='community_d')
     
   })
-#   # Download the data ----------------------------------------------------------------
+  #   # Download the data ----------------------------------------------------------------
   school_data <- eventReactive(input$col_file, {
     withProgress(
-    formhubGET_csv(baseURL, usr, pwd, input$sch_file),
-    message = 'Downloading School Data', value = 100)
+      formhubGET_csv(baseURL, usr, pwd, input$sch_file),
+      message = 'Downloading School Data', value = 100)
   })
   
   community_data <- eventReactive(input$com_file, {
     formhubGET_csv(baseURL, usr, pwd, input$com_file)
   })
-
+  
   
   household_data <- eventReactive(input$hh_file, { # household data, keeping name for consistency
     formhubGET_csv(baseURL, usr, pwd, input$hh_file)
@@ -57,7 +57,7 @@ shinyServer(function(input, output, session) {
     formhubGET_csv(baseURL, usr, pwd, input$col_file)
   })
   
-
+  
   lab_data <- eventReactive(input$lab_file, {
     formhubGET_csv(baseURL, usr, pwd, input$lab_file)
   })
@@ -70,14 +70,14 @@ shinyServer(function(input, output, session) {
     create_concData(ec_data())
     
   })
-
-#   
-#   # PIE CHART PLOTTING INFO ----------------------------------------------------------------
+  
+  #   
+  #   # PIE CHART PLOTTING INFO ----------------------------------------------------------------
   freq <- reactive({
     types <- c('combined', 'household', 'school', 'community')
     calculate_freq(household_data(), school_data(), community_data(), survey_type= types[as.numeric(input$surtype)+1])
   })
-#   
+  #   
   observeEvent(input$level1, {
     opts2 <- options[options != input$level1]
     updateSelectInput(session, inputId = 'level2', label='Level 2', choices= opts2, selected=opts2[1])
@@ -102,7 +102,7 @@ shinyServer(function(input, output, session) {
   
   # BUILD THE UI FOR THE PIE CHARTS ---------------------------------------------------------
   # this will lay out the plots in the appropriate order
-
+  
   pie_chart_order <- reactive({
     ordered_shinyCharts(freq(), columns= input$num_columns, level1_type = input$level1, level2_type = input$level2,
                         sample_filter=input$sample, neighborhood_filter = input$neighborhood, age_filter = input$age,
@@ -122,11 +122,11 @@ shinyServer(function(input, output, session) {
     dat <- dat[list.which(dat, sample %in% input$sample && 
                             neighborhood %in% input$neighborhood &&
                             age %in% input$age)]
-
-      count <- 1
-      for (i in dat) {
-        local({
-          withProgress({
+    
+    count <- 1
+    for (i in dat) {
+      local({
+        withProgress({
           my_i <- i
           p_name <- paste0("pie-",my_i$sample,"-",my_i$neighborhood, '-', my_i$age)
           p_name <- gsub(' ', '', p_name)
@@ -136,102 +136,102 @@ shinyServer(function(input, output, session) {
           })
         },message = 'Generating Pie Charts', session=session, value= count/length(dat)
         )
-        })
-        count <- count + 1
-      }
-
+      })
+      count <- count + 1
+    }
+    
     
   })
   
-
   
-#   hist_order <- reactive({
-#     ordered_shinyHists(conc(), input$num_columns, level1_type = input$level1, sample_filter = input$sample, neighborhood_filter = input$neighborhood)
-#   })
-#   
-#   output$histograms <- renderUI({
-#     hist_order()
-#     do.call(tagList, hist_order())
-#   })
-#   
-#   observe({
-#     if (length(conc()) > 0 ) {
-#       
-#       dat <- conc()
-#       dat <- dat[list.which(dat, sample %in% input$sample && 
-#                               neighborhood %in% input$neighborhood)]
-# 
-#         count <- 1
-#         for (i in dat) {
-#           local({
-#             withProgress({
-#             my_i <- i
-#             p_name <- paste0('hist-', my_i$sample,"-",my_i$neighborhood)
-#             p_name <- gsub(' ', '', p_name)
-#             output[[p_name]] <- renderPlot({
-#               make_histogram(my_i$data, paste0(my_i$neighborhood,", ", my_i$sample, '\n(N=',length(my_i$data),")"))
-#             })
-#             }, message = 'Generating Histograms', session=session, value=count/length(dat)
-#             )
-#           })
-#           # incProgress(count/length(dat), session = session)
-#           count <- count + 1
-#         }
-# 
-#     }
-#     
-#   })
-#   
-#   ps.freq <- reactive({
-#     print('bayesian calculations')
-#     types <- c('combined', 'household', 'school', 'community')
-#     freq <- calculate_freq(household_data(), school_data(), community_data(), type='ppl plot', survey_type= types[as.numeric(input$surtype)+1])
-#     calculate_pplPlotData(freq[1], conc(), shinySession=session) # letting the defaults lazy load 
-#     
-#     })
-# 
-# 
-#   
-# 
-# 
-#   ppl_plot_order <- reactive({
-#     ordered_shinyCharts(ps.freq(), columns= input$num_columns, level1_type = input$level1, level2_type = input$level2,
-#                         sample_filter=input$sample, neighborhood_filter = input$neighborhood, age_filter = input$age,
-#                         height = input$ph, width = input$pw, shinySession=session, chart_prefix = 'ppl-')
-#   })
-#   
-#   # this will actually render them for the UI
-#   output$ppl_plots <- renderUI({
-#     ppl_plot_order()
-#     do.call(tagList, ppl_plot_order())
-#   })
-#   
-#   # generate the people plots
-#   observe({
-#     print('triggered---------------------------------------------------------')
-#     dat <- ps.freq()
-#     dat <- dat[list.which(dat, sample %in% input$sample && 
-#                             neighborhood %in% input$neighborhood &&
-#                             age %in% input$age)]
-#     
-#     count <- 1
-#     for (i in dat) {
-#       local({
-#         withProgress({
-#           my_i <- i
-#           p_name <- paste0('ppl-',my_i$sample,"-",my_i$neighborhood, '-', my_i$age)
-#           p_name <- gsub(' ', '', p_name)
-#           output[[p_name]] <- renderPlot({
-#             PS_Plot(paste0(my_i$neighborhood,", ", my_i$sample, ', ', my_i$age), my_i$n, my_i$dose) 
-#           })
-#         }, message = 'Generating People Plots', session=session, value= count/length(dat)
-#         )
-#       })
-#       # incProgress(count/length(dat), session = session)
-#       count <- count + 1
-#     }
-#     
-#   })
+  
+  #   hist_order <- reactive({
+  #     ordered_shinyHists(conc(), input$num_columns, level1_type = input$level1, sample_filter = input$sample, neighborhood_filter = input$neighborhood)
+  #   })
+  #   
+  #   output$histograms <- renderUI({
+  #     hist_order()
+  #     do.call(tagList, hist_order())
+  #   })
+  #   
+  #   observe({
+  #     if (length(conc()) > 0 ) {
+  #       
+  #       dat <- conc()
+  #       dat <- dat[list.which(dat, sample %in% input$sample && 
+  #                               neighborhood %in% input$neighborhood)]
+  # 
+  #         count <- 1
+  #         for (i in dat) {
+  #           local({
+  #             withProgress({
+  #             my_i <- i
+  #             p_name <- paste0('hist-', my_i$sample,"-",my_i$neighborhood)
+  #             p_name <- gsub(' ', '', p_name)
+  #             output[[p_name]] <- renderPlot({
+  #               make_histogram(my_i$data, paste0(my_i$neighborhood,", ", my_i$sample, '\n(N=',length(my_i$data),")"))
+  #             })
+  #             }, message = 'Generating Histograms', session=session, value=count/length(dat)
+  #             )
+  #           })
+  #           # incProgress(count/length(dat), session = session)
+  #           count <- count + 1
+  #         }
+  # 
+  #     }
+  #     
+  #   })
+  #   
+  #   ps.freq <- reactive({
+  #     print('bayesian calculations')
+  #     types <- c('combined', 'household', 'school', 'community')
+  #     freq <- calculate_freq(household_data(), school_data(), community_data(), type='ppl plot', survey_type= types[as.numeric(input$surtype)+1])
+  #     calculate_pplPlotData(freq[1], conc(), shinySession=session) # letting the defaults lazy load 
+  #     
+  #     })
+  # 
+  # 
+  #   
+  # 
+  # 
+  #   ppl_plot_order <- reactive({
+  #     ordered_shinyCharts(ps.freq(), columns= input$num_columns, level1_type = input$level1, level2_type = input$level2,
+  #                         sample_filter=input$sample, neighborhood_filter = input$neighborhood, age_filter = input$age,
+  #                         height = input$ph, width = input$pw, shinySession=session, chart_prefix = 'ppl-')
+  #   })
+  #   
+  #   # this will actually render them for the UI
+  #   output$ppl_plots <- renderUI({
+  #     ppl_plot_order()
+  #     do.call(tagList, ppl_plot_order())
+  #   })
+  #   
+  #   # generate the people plots
+  #   observe({
+  #     print('triggered---------------------------------------------------------')
+  #     dat <- ps.freq()
+  #     dat <- dat[list.which(dat, sample %in% input$sample && 
+  #                             neighborhood %in% input$neighborhood &&
+  #                             age %in% input$age)]
+  #     
+  #     count <- 1
+  #     for (i in dat) {
+  #       local({
+  #         withProgress({
+  #           my_i <- i
+  #           p_name <- paste0('ppl-',my_i$sample,"-",my_i$neighborhood, '-', my_i$age)
+  #           p_name <- gsub(' ', '', p_name)
+  #           output[[p_name]] <- renderPlot({
+  #             PS_Plot(paste0(my_i$neighborhood,", ", my_i$sample, ', ', my_i$age), my_i$n, my_i$dose) 
+  #           })
+  #         }, message = 'Generating People Plots', session=session, value= count/length(dat)
+  #         )
+  #       })
+  #       # incProgress(count/length(dat), session = session)
+  #       count <- count + 1
+  #     }
+  #     
+  #   })
   
   
   ## Tables for raw printing ------------------------------------------------------------------------------------------------------------
