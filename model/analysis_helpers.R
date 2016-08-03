@@ -5,6 +5,8 @@ library(ggplot2)
 library(rlist)
 library(plyr)
 library(reshape2)
+library(rjags)
+
 
 # MERGING --------------------------------------------------------------------
 create_ecData <- function(collection_data, lab_data) {
