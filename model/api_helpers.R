@@ -60,8 +60,8 @@ formhubCheck_user <- function(base_url, usr) {
   # have any shared forms. This probably isn't the most secure thing
   # in the world...
   
-  req <- GET(paste0(baseURL, usr), accept_json(),
-             authenticate(usr, pwd, 'basic')
+  req <- GET(paste0(base_url, usr), accept_json()
+             # authenticate(usr, pwd, 'basic')
             )
   
   if (req$status_code == 200) {

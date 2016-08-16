@@ -1,4 +1,5 @@
-tab_formhubSettings <- tabPanel(
+tab_formhubSettings <- 
+  tabPanel(
   "Formhub Settings",
   h3('Forms:'),
   selectizeInput(

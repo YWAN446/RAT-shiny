@@ -1,1 +1,3 @@
-tab_histogram <- tabPanel("Histogram", uiOutput('histograms'))
+tab_histogram <- 
+  tabPanel("Histogram", uiOutput('histograms'))
+  

@@ -1,5 +1,5 @@
 
-analysis_sidebar <- sidebarPanel(
+analysis_sidebar <- fluidRow(
     h3('Analysis Settings:'),
     selectInput('surtype','Survey Type', selected="0", choices=c("All"=0,"Household"=1,"School"=2,"Community"=3)),
     hr(),

@@ -7,7 +7,6 @@ library(shiny)
 interventions <- read.csv('interventions.csv')
 
 # download the list of forms before Shiny starts
-forms <- getAPI_forms(baseURL, apiUrl, usr, pwd, apiToken)
 
 sampleTypes <- c("Drain Water"=1, "Produce"=2, "Piped Water"=3, 
                  "Ocean Water"=4, "Surface Water"=5, "Flood Water"=6,
@@ -23,50 +22,109 @@ shinyServer(function(input, output, session) {
     stopApp()
   })
   
+  # Login observers
+  USER <- reactiveValues(Logged = Logged)
+  
+  observe({ 
+    if (USER$Logged == FALSE) {
+      if (!is.null(input$Login)) {
+        if (input$Login > 0) {
+          Username <- isolate(input$userName)
+          Password <- isolate(input$passwd)
+          check <- formhubCheck_user(baseURL, Username)
+          print(check)
+          if (check == T) {
+            USER$Logged <- TRUE
+          }
+        } 
+      }
+    }    
+  })
+  observe({
+    if (USER$Logged == FALSE) {
+      
+      output$page <- renderUI({
+        bootstrapPage(div(id = "login",
+                          wellPanel(textInput("userName", "Username"),
+                                    passwordInput("passwd", "Password"),
+                                    br(),actionButton("Login", "Log in"))),
+                      tags$style(type="text/css", "#login {font-size:10px;   text-align: left;position:absolute;top: 40%;left: 50%;margin-top: -100px;margin-left: -150px;}")
+        )
+      })
+    }
+    if (USER$Logged == TRUE) 
+    {
+      output$page <- renderUI({
+        main_ui
+      })
+      print(ui)
+    }
+  })
+  
+  usr <- reactive({isolate(input$userName)})
+  pwd <- reactive({isolate(input$passwd)})
+  
+  forms <- reactive({
+    if (USER$Logged == T) {
+      
+      getAPI_forms(baseURL, apiUrl, usr(), pwd(), apiToken)
+    }
+    else {
+      validate(need(USER$Logged == T, 'Not logged in'))
+    }
+
+    })
+  
+  
+  
   # Update the form options ---------------------------------------------------------
   observe(autoDestroy = T, {
     # URL and API token are currently defined in the API Helpers script.
     # This returns a list of available forms based on the user token
     # provided.
-    
-    # update the options
-    updateSelectizeInput(session, 'col_file', choices=filterAPI_forms('collection', forms)$menu_items, selected='sp_sample_collection_form_1_c')
-    updateSelectizeInput(session, 'lab_file', choices=filterAPI_forms('lab', forms)$menu_items, selected='sp_sample_lab_form_1_i')
-    updateSelectizeInput(session, 'hh_file', choices=filterAPI_forms('household', forms)$menu_items, selected='sp_household_form_2_01b')
-    updateSelectizeInput(session, 'sch_file', choices=filterAPI_forms('school', forms)$menu_items, selected='school_d')
-    updateSelectizeInput(session, 'com_file', choices=filterAPI_forms('community', forms)$menu_items, selected='community_d')
-    
+    if (USER$Logged == T) {
+      # update the options
+      updateSelectizeInput(session, 'col_file', choices=filterAPI_forms('collection', forms())$menu_items, selected='sp_sample_collection_form_1_c')
+      updateSelectizeInput(session, 'lab_file', choices=filterAPI_forms('lab', forms())$menu_items, selected='sp_sample_lab_form_1_i')
+      updateSelectizeInput(session, 'hh_file', choices=filterAPI_forms('household', forms())$menu_items, selected='sp_household_form_2_01b')
+      updateSelectizeInput(session, 'sch_file', choices=filterAPI_forms('school', forms())$menu_items, selected='school_d')
+      updateSelectizeInput(session, 'com_file', choices=filterAPI_forms('community', forms())$menu_items, selected='community_d')
+      
+    }
+
   })
 #   # Download the data ----------------------------------------------------------------
   school_data <- eventReactive(input$col_file, {
     withProgress(
-    formhubGET_csv(baseURL, usr, pwd, input$sch_file),
+    formhubGET_csv(baseURL, usr(), pwd(), input$sch_file),
     message = 'Downloading School Data', value = 100)
   })
   
   community_data <- eventReactive(input$com_file, {
-    formhubGET_csv(baseURL, usr, pwd, input$com_file)
+    formhubGET_csv(baseURL, usr(), pwd(), input$com_file)
   })
 
   
   household_data <- eventReactive(input$hh_file, { # household data, keeping name for consistency
-    formhubGET_csv(baseURL, usr, pwd, input$hh_file)
+    formhubGET_csv(baseURL, usr(), pwd(), input$hh_file)
   })
   
   collection_data <- eventReactive(input$col_file, {
-    formhubGET_csv(baseURL, usr, pwd, input$col_file)
+    formhubGET_csv(baseURL, usr(), pwd(), input$col_file)
   })
   
 
   lab_data <- eventReactive(input$lab_file, {
-    formhubGET_csv(baseURL, usr, pwd, input$lab_file)
+    formhubGET_csv(baseURL, usr(), pwd(), input$lab_file)
   })
   
-  ec_data <- reactive({
+  ec_data <- eventReactive(lab_data(), {
+    print(head(collection_data()))
+    print(head(lab_data()))
     create_ecData(collection_data(), lab_data())
   })
   
-  conc <- reactive({
+  conc <- eventReactive(ec_data(), {
     create_concData(ec_data())
     
   })
