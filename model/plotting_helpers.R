@@ -319,12 +319,12 @@ create_pieChart <- function(freq, sample_type, title_label) {
 
 create_surveyMap <- function(household_data, school_data, community_data, collection_data) {
 
-  lat = as.numeric(c(household_data$X_hh_gps_latitude, school_data$X_ch_gps_latitude, 
-          community_data$X_com_gps_latitude, collection_data$X_ev_lat_lon_latitude))
-  lon = as.numeric(c(household_data$X_hh_gps_longitude, school_data$X_ch_gps_longitude, 
-          community_data$X_com_gps_longitude, collection_data$X_ev_lat_lon_longitude))
-  neighbs = c(household_data$neighbor, school_data$neighbor, 
-              community_data$neighbor, collection_data$neighbor)
+  lat = as.numeric(c(household_data$h_gps_device_lat, school_data$s_gps_device_lat, 
+          community_data$c_gps_device_lat, collection_data$col_gps_device_lat))
+  lon = as.numeric(c(household_data$h_gps_device_lon, school_data$s_gps_device_lon, 
+          community_data$c_gps_device_lon, collection_data$col_gps_device_lon))
+  neighbs = c(household_data$h_neighborhood, school_data$s_neighborhood, 
+              community_data$c_neighborhood, collection_data$col_neighborhood)
   colors = 'blue'
   
   points <- cbind.data.frame('lat'=lat, 'long'=lon, 'neigh'=neighbs, 'col'=colors)
