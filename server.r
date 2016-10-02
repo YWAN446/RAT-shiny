@@ -22,6 +22,8 @@ shinyServer(function(input, output, session) {
   
   # Login observers
   USER <- reactiveValues(Logged = Logged)
+  # Download value to update form data
+  download <- reactiveValues(triggered = T)
   
   observe({ 
     if (USER$Logged == FALSE) {
@@ -29,16 +31,22 @@ shinyServer(function(input, output, session) {
         if (input$Login > 0) {
           Username <- isolate(input$userName)
           Password <- isolate(input$passwd)
-          check <- formhubCheck_user(baseURL, Username)
+          check <- formhubCheck_user(baseURL, Username, Password, test_form)
           print(check)
           if (check == T) {
             USER$Logged <- TRUE
             
           }
+          else {
+            output$login_status <- renderText("Invalid credentials! Please check the username and password.")
+          }
         } 
       }
     }    
   })
+  
+  # Render the login page and then render the main_ui if login is successful
+  # need to add error message if login fails
   observe({
     if (USER$Logged == FALSE) {
       
@@ -46,7 +54,7 @@ shinyServer(function(input, output, session) {
         bootstrapPage(div(id = "login",
                           wellPanel(textInput("userName", "Username"),
                                     passwordInput("passwd", "Password"),
-                                    br(),actionButton("Login", "Log in"))),
+                                    br(),actionButton("Login", "Log in")), textOutput('login_status')),
                       tags$style(type="text/css", "#login {font-size:10px;   text-align: left;position:absolute;top: 40%;left: 50%;margin-top: -100px;margin-left: -150px;}")
         )
       })
@@ -78,62 +86,81 @@ shinyServer(function(input, output, session) {
 #   
 #   # Update the form options ---------------------------------------------------------
 #   observe(autoDestroy = T, {
-#     # URL and API token are currently defined in the API Helpers script.
-#     # This returns a list of available forms based on the user token
-#     # provided.
+#     # Update the form options based on the defaults specified in global.R if
+#     # login is successful
 #     if (USER$Logged == T) {
 #       # update the options
-#       updateSelectizeInput(session, 'col_file', choices=filterAPI_forms('collection', forms())$menu_items, selected='sp_sample_collection_form_1_c')
-#       updateSelectizeInput(session, 'lab_file', choices=filterAPI_forms('lab', forms())$menu_items, selected='sp_sample_lab_form_1_i')
-#       updateSelectizeInput(session, 'hh_file', choices=filterAPI_forms('household', forms())$menu_items, selected='sp_household_form_2_01b')
-#       updateSelectizeInput(session, 'sch_file', choices=filterAPI_forms('school', forms())$menu_items, selected='school_d')
-#       updateSelectizeInput(session, 'com_file', choices=filterAPI_forms('community', forms())$menu_items, selected='community_d')
+#       updateSelectizeInput(session, 'col_file', selected=collection_form)
+#       updateSelectizeInput(session, 'lab_file', selected=lab_form)
+#       updateSelectizeInput(session, 'hh_file', selected=household_form)
+#       updateSelectizeInput(session, 'sch_file', selected=school_form)
+#       updateSelectizeInput(session, 'com_file', selected=community_form)
 #       
 #     }
 # 
 #   })
   
 #   # Download the data ----------------------------------------------------------------
-  school_data <- reactive({
+  school_data <- eventReactive(list(download$triggered, input$update_forms), {
     withProgress(
-    formhubGET_csv(baseURL, usr(), pwd(), school_form),
-    message = 'Downloading School Data', value = 100)
+    formhubGET_csv(baseURL, usr(), pwd(), input$sch_file),
+    message = 'Downloading Data', value = 20)
   })
   
-  community_data <- reactive({
-    formhubGET_csv(baseURL, usr(), pwd(), community_form)
+  community_data <- eventReactive(input$com_file, {
+    withProgress(
+      formhubGET_csv(baseURL, usr(), pwd(), input$com_file),
+      message = 'Downloading Data', value = 40)
   })
 
   
-  household_data <- reactive({ # household data, keeping name for consistency
-    formhubGET_csv(baseURL, usr(), pwd(), input$hh_file)
+  household_data <- eventReactive(input$hh_file, { # household data, keeping name for consistency
+    print(isolate(input$hh_file))
+    withProgress(
+      formhubGET_csv(baseURL, usr(), pwd(), input$hh_file),
+      message = 'Downloading Data', value = 60)
   })
   
   collection_data <- eventReactive(input$col_file, {
-    formhubGET_csv(baseURL, usr(), pwd(), input$col_file)
+    withProgress(
+      formhubGET_csv(baseURL, usr(), pwd(), input$col_file),
+      message = 'Downloading Data', value = 80)
   })
   
 
   lab_data <- eventReactive(input$lab_file, {
-    formhubGET_csv(baseURL, usr(), pwd(), input$lab_file)
+    withProgress(
+      formhubGET_csv(baseURL, usr(), pwd(), input$lab_file),
+      message = 'Downloading Data', value = 100)
   })
   
   ec_data <- eventReactive(lab_data(), {
-    print(head(collection_data()))
-    print(head(lab_data()))
-    create_ecData(collection_data(), lab_data())
+    withProgress(
+      create_ecData(collection_data(), lab_data()),
+      message = 'Calculating Concentration Data', value = 50)
   })
   
   conc <- eventReactive(ec_data(), {
-    create_concData(ec_data())
+    withProgress(
+      create_concData(ec_data()),
+      message = 'Calculating Concentration Data', value = 100)
     
   })
 
-  
-# PIE CHART PLOTTING INFO ----------------------------------------------------------------
-  freq <- eventReactive(USER$Logged, {
+#   
+#   # PIE CHART PLOTTING INFO ----------------------------------------------------------------
+  freq <- reactive({
     types <- c('combined', 'household', 'school', 'community')
     calculate_freq(household_data(), school_data(), community_data(), survey_type= types[as.numeric(input$surtype)+1])
+  })
+#   
+  observeEvent(input$level1, {
+    opts2 <- options[options != input$level1]
+    updateSelectInput(session, inputId = 'level2', label='Level 2', choices= opts2, selected=opts2[1])
+  })
+  observeEvent(c(input$level1, input$level2), {
+    opts3 <- options[!(options %in% c(input$level2, input$level1))]
+    updateSelectInput(session, inputId = 'level3', label='Level 3', choices= opts3)
   })
   
   observe(autoDestroy = T, {
@@ -147,15 +174,6 @@ shinyServer(function(input, output, session) {
     updateCheckboxGroupInput(session, 'age', choices= age, selected= age)
     
     
-  })
-  
-  observeEvent(input$level1, {
-    opts2 <- options[options != input$level1]
-    updateSelectInput(session, inputId = 'level2', label='Level 2', choices= opts2, selected=opts2[1])
-  })
-  observeEvent(c(input$level1, input$level2), {
-    opts3 <- options[!(options %in% c(input$level2, input$level1))]
-    updateSelectInput(session, inputId = 'level3', label='Level 3', choices= opts3)
   })
   
   # BUILD THE UI FOR THE PIE CHARTS ---------------------------------------------------------

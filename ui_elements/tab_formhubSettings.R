@@ -2,6 +2,7 @@ tab_formhubSettings <-
   tabPanel(
   "Formhub Settings",
   h3('Forms:'),
+  helpText("Manually override the forms by typing the form name in the corresponding location.  Then press 'Update Forms' to refresh the available data."),
   selectizeInput(
     'col_file',
     'Collection Data',
@@ -41,5 +42,6 @@ tab_formhubSettings <-
     choices = 'community_d',
     selected = 'community_d',
     options= list(create=T)
-  )
+  ),
+  actionButton("update_forms", "Update Forms", icon=icon('refresh'))
 )
