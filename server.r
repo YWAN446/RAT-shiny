@@ -6,8 +6,6 @@ library(shiny)
 # intervention list for later
 interventions <- read.csv('interventions.csv')
 
-# download the list of forms before Shiny starts
-
 sampleTypes <- c("Drain Water"=1, "Produce"=2, "Piped Water"=3, 
                  "Ocean Water"=4, "Surface Water"=5, "Flood Water"=6,
                  "Public Latrine Surfaces"=7, "Particulate"=8, "Bathing"=9)
@@ -35,6 +33,7 @@ shinyServer(function(input, output, session) {
           print(check)
           if (check == T) {
             USER$Logged <- TRUE
+            
           }
         } 
       }
@@ -64,48 +63,49 @@ shinyServer(function(input, output, session) {
   usr <- reactive({isolate(input$userName)})
   pwd <- reactive({isolate(input$passwd)})
   
-  forms <- reactive({
-    if (USER$Logged == T) {
-      
-      getAPI_forms(baseURL, apiUrl, usr(), pwd(), apiToken)
-    }
-    else {
-      validate(need(USER$Logged == T, 'Not logged in'))
-    }
-
-    })
+#   forms <- reactive({
+#     if (USER$Logged == T) {
+#       
+#       getAPI_forms(baseURL, apiUrl, usr(), pwd(), apiToken)
+#     }
+#     else {
+#       validate(need(USER$Logged == T, 'Not logged in'))
+#     }
+# 
+#     })
+#   
+#   
+#   
+#   # Update the form options ---------------------------------------------------------
+#   observe(autoDestroy = T, {
+#     # URL and API token are currently defined in the API Helpers script.
+#     # This returns a list of available forms based on the user token
+#     # provided.
+#     if (USER$Logged == T) {
+#       # update the options
+#       updateSelectizeInput(session, 'col_file', choices=filterAPI_forms('collection', forms())$menu_items, selected='sp_sample_collection_form_1_c')
+#       updateSelectizeInput(session, 'lab_file', choices=filterAPI_forms('lab', forms())$menu_items, selected='sp_sample_lab_form_1_i')
+#       updateSelectizeInput(session, 'hh_file', choices=filterAPI_forms('household', forms())$menu_items, selected='sp_household_form_2_01b')
+#       updateSelectizeInput(session, 'sch_file', choices=filterAPI_forms('school', forms())$menu_items, selected='school_d')
+#       updateSelectizeInput(session, 'com_file', choices=filterAPI_forms('community', forms())$menu_items, selected='community_d')
+#       
+#     }
+# 
+#   })
   
-  
-  
-  # Update the form options ---------------------------------------------------------
-  observe(autoDestroy = T, {
-    # URL and API token are currently defined in the API Helpers script.
-    # This returns a list of available forms based on the user token
-    # provided.
-    if (USER$Logged == T) {
-      # update the options
-      updateSelectizeInput(session, 'col_file', choices=filterAPI_forms('collection', forms())$menu_items, selected='sp_sample_collection_form_1_c')
-      updateSelectizeInput(session, 'lab_file', choices=filterAPI_forms('lab', forms())$menu_items, selected='sp_sample_lab_form_1_i')
-      updateSelectizeInput(session, 'hh_file', choices=filterAPI_forms('household', forms())$menu_items, selected='sp_household_form_2_01b')
-      updateSelectizeInput(session, 'sch_file', choices=filterAPI_forms('school', forms())$menu_items, selected='school_d')
-      updateSelectizeInput(session, 'com_file', choices=filterAPI_forms('community', forms())$menu_items, selected='community_d')
-      
-    }
-
-  })
 #   # Download the data ----------------------------------------------------------------
-  school_data <- eventReactive(input$col_file, {
+  school_data <- reactive({
     withProgress(
-    formhubGET_csv(baseURL, usr(), pwd(), input$sch_file),
+    formhubGET_csv(baseURL, usr(), pwd(), school_form),
     message = 'Downloading School Data', value = 100)
   })
   
-  community_data <- eventReactive(input$com_file, {
-    formhubGET_csv(baseURL, usr(), pwd(), input$com_file)
+  community_data <- reactive({
+    formhubGET_csv(baseURL, usr(), pwd(), community_form)
   })
 
   
-  household_data <- eventReactive(input$hh_file, { # household data, keeping name for consistency
+  household_data <- reactive({ # household data, keeping name for consistency
     formhubGET_csv(baseURL, usr(), pwd(), input$hh_file)
   })
   
@@ -129,20 +129,11 @@ shinyServer(function(input, output, session) {
     
   })
 
-#   
-#   # PIE CHART PLOTTING INFO ----------------------------------------------------------------
-  freq <- reactive({
+  
+# PIE CHART PLOTTING INFO ----------------------------------------------------------------
+  freq <- eventReactive(USER$Logged, {
     types <- c('combined', 'household', 'school', 'community')
     calculate_freq(household_data(), school_data(), community_data(), survey_type= types[as.numeric(input$surtype)+1])
-  })
-#   
-  observeEvent(input$level1, {
-    opts2 <- options[options != input$level1]
-    updateSelectInput(session, inputId = 'level2', label='Level 2', choices= opts2, selected=opts2[1])
-  })
-  observeEvent(c(input$level1, input$level2), {
-    opts3 <- options[!(options %in% c(input$level2, input$level1))]
-    updateSelectInput(session, inputId = 'level3', label='Level 3', choices= opts3)
   })
   
   observe(autoDestroy = T, {
@@ -156,6 +147,15 @@ shinyServer(function(input, output, session) {
     updateCheckboxGroupInput(session, 'age', choices= age, selected= age)
     
     
+  })
+  
+  observeEvent(input$level1, {
+    opts2 <- options[options != input$level1]
+    updateSelectInput(session, inputId = 'level2', label='Level 2', choices= opts2, selected=opts2[1])
+  })
+  observeEvent(c(input$level1, input$level2), {
+    opts3 <- options[!(options %in% c(input$level2, input$level1))]
+    updateSelectInput(session, inputId = 'level3', label='Level 3', choices= opts3)
   })
   
   # BUILD THE UI FOR THE PIE CHARTS ---------------------------------------------------------

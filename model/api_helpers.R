@@ -54,14 +54,16 @@ formhubGET <- function(api_url, api_token) {
   return(response)
 }
 
-formhubCheck_user <- function(base_url, usr) {
+formhubCheck_user <- function(base_url, usr, pwd, test_form) {
   # Check to see if a user exists, if they do, a profile will be 
   # displayed at the url/+ username location, even if they don't 
   # have any shared forms. This probably isn't the most secure thing
   # in the world...
+  # test_form specifies what form to use to test if the user
+  # actually has some data to use. 
   
-  req <- GET(paste0(base_url, usr), accept_json()
-             # authenticate(usr, pwd, 'basic')
+  req <- GET(paste0(base_url, usr, "/forms/",test_form,"/data.csv"), accept_json(),
+             authenticate(usr, pwd, 'basic')
             )
   
   if (req$status_code == 200) {
