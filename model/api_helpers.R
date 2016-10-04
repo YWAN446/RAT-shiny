@@ -85,12 +85,10 @@ formhubGET_csv <- function(base_url, usr, pwd, form_name) {
   response <- GET(paste0(base_url,usr, '/forms/',form_name, '/data.csv'),
                   authenticate(usr, pwd)
                   )
-  if (response$status_code == 404) { # this is when the form doesn't have any data
-    # 200 indicates successful communication and authentication with the server
-    warning(paste(form_name, "does not have any data uploaded yet!"))
-  }
-  else if (response$status_code != 200) { # check to see if we hit some other error
-    stop(content(response)) 
+ if (response$status_code != 200) { # check to see if we hit some other error
+   print("Either the form name is wrong or there is no data available.")
+    return(data.frame())
+    
   }
   else { # response will be a successful 200
     return(content(response, as='parsed', type='text/csv'))
