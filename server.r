@@ -151,6 +151,11 @@ shinyServer(function(input, output, session) {
       
     }
 
+  #   # Download the data ----------------------------------------------------------------
+  school_data <- eventReactive(input$col_file, {
+    withProgress(
+      formhubGET_csv(baseURL, usr, pwd, input$sch_file),
+      message = 'Downloading School Data', value = 100)
   })
   
   community_data <- eventReactive(input$update_forms, {
@@ -167,7 +172,7 @@ shinyServer(function(input, output, session) {
       
     }
   })
-
+  
   
   household_data <- eventReactive(input$update_forms,  { 
     if (is.null(input$hh_csv)) {
@@ -217,6 +222,9 @@ shinyServer(function(input, output, session) {
         message= 'Overriding lab form with csv upload', value=100)
       
     }
+
+  lab_data <- eventReactive(input$lab_file, {
+    formhubGET_csv(baseURL, usr, pwd, input$lab_file)
   })
   
   ec_data <- eventReactive(lab_data(), {
@@ -252,16 +260,16 @@ shinyServer(function(input, output, session) {
   
   
   
-  
-  # PIE CHART PLOTTING INFO ----------------------------------------------------------------
-  freq <- eventReactive(list(download$triggered, input$update_forms), {
+
+  #   # PIE CHART PLOTTING INFO ----------------------------------------------------------------
+  freq <- reactive({
     types <- c('combined', 'household', 'school', 'community')
     if (USER$Logged == T) {
       calculate_freq(household_data(), school_data(), community_data(), survey_type= types[as.numeric(input$surtype)+1])
       
     }
   })
-#   
+  #   
   observeEvent(input$level1, {
     opts2 <- options[options != input$level1]
     updateSelectInput(session, inputId = 'level2', label='Level 2', choices= opts2, selected=opts2[1])
@@ -288,7 +296,7 @@ shinyServer(function(input, output, session) {
   
   # BUILD THE UI FOR THE PIE CHARTS ---------------------------------------------------------
   # this will lay out the plots in the appropriate order
-
+  
   pie_chart_order <- reactive({
     ordered_shinyCharts(freq(), columns= input$num_columns, level1_type = input$level1, level2_type = input$level2,
                         sample_filter=input$sample, neighborhood_filter = input$neighborhood, age_filter = input$age,
@@ -308,11 +316,11 @@ shinyServer(function(input, output, session) {
     dat <- dat[list.which(dat, sample %in% input$sample && 
                             neighborhood %in% input$neighborhood &&
                             age %in% input$age)]
-
-      count <- 1
-      for (i in dat) {
-        local({
-          withProgress({
+    
+    count <- 1
+    for (i in dat) {
+      local({
+        withProgress({
           my_i <- i
           p_name <- paste0("pie-",my_i$sample,"-",my_i$neighborhood, '-', my_i$age)
           p_name <- gsub(' ', '', p_name)
@@ -322,10 +330,10 @@ shinyServer(function(input, output, session) {
           })
         },message = 'Generating Pie Charts', session=session, value= count/length(dat)
         )
-        })
-        count <- count + 1
-      }
-
+      })
+      count <- count + 1
+    }
+    
     
   })
   
@@ -418,7 +426,7 @@ shinyServer(function(input, output, session) {
 #     }
 #     
 #   })
-  
+
   
   ## Tables for raw printing ------------------------------------------------------------------------------------------------------------
   output$raw_table <- renderDataTable({
