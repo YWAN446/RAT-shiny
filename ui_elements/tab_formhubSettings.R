@@ -69,6 +69,6 @@ tab_formhubSettings <-
   ),
   column(6,
          fileInput('lab_csv', 'CSV override:', accept='.csv')
-  ),
-  actionButton("update_forms", "Update Forms", icon=icon('refresh'))
+  )
+  # actionButton("update_forms", "Update Forms", icon=icon('refresh'))
 )

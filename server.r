@@ -137,36 +137,86 @@ shinyServer(function(input, output, session) {
   
 #   # Download the data ----------------------------------------------------------------
   school_data <- eventReactive(input$update_forms, {
-    withProgress(
-    formhubGET_csv(baseURL, usr(), pwd(), input$sch_file),
-    message = 'Downloading Data', value = 20)
+    if (is.null(input$sch_csv)) {
+      
+      withProgress(
+        formhubGET_csv(baseURL, usr(), pwd(), input$sch_file),
+        message = 'Downloading Data', value = 20)
+    }
+    else {
+      print('School csv override.')
+      withProgress(
+        read.csv(input$sch_csv$datapath, as.is=T),
+        message= 'Overriding school form with csv upload', value=20)
+      
+    }
+
   })
   
   community_data <- eventReactive(input$update_forms, {
-    print(input$com_file)
-    withProgress(
-      formhubGET_csv(baseURL, usr(), pwd(), input$com_file),
-      message = 'Downloading Data', value = 40)
+    if (is.null(input$com_csv)) {
+      withProgress(
+        formhubGET_csv(baseURL, usr(), pwd(), input$com_file),
+        message = 'Downloading Data', value = 40)
+    }
+    else {
+      print('Community csv override.')
+      withProgress(
+        read.csv(input$com_csv$datapath, as.is=T),
+        message= 'Overriding community form with csv upload', value=40)
+      
+    }
   })
 
   
   household_data <- eventReactive(input$update_forms,  { 
+    if (is.null(input$hh_csv)) {
       withProgress(
         formhubGET_csv(baseURL, usr(), pwd(), input$hh_file),
         message = 'Downloading Data', value = 60)
+    }
+    else {
+      print('Household csv override.')
+      withProgress(
+        read.csv(input$hh_csv$datapath, as.is=T),
+        message= 'Overriding household form with csv upload', value=60)
+      
+    }
+     
   })
   
-  collection_data <- eventReactive(list(isolate(input$col_file), input$update_forms), {
-    withProgress(
-      formhubGET_csv(baseURL, usr(), pwd(), input$col_file),
-      message = 'Downloading Data', value = 80)
+  collection_data <- eventReactive(input$update_forms, {
+    if (is.null(input$col_csv)) {
+      
+      withProgress(
+        formhubGET_csv(baseURL, usr(), pwd(), input$col_file),
+        message = 'Downloading Data', value = 80)
+    }
+    else {
+      print('Collection csv override.')
+      
+      withProgress(
+        read.csv(input$hh_csv$datapath, as.is=T),
+        message= 'Overriding collection form with csv upload', value=80)
+      
+    }
   })
   
 
-  lab_data <- eventReactive(list(isolate(input$lab_file), input$update_forms), {
-    withProgress(
-      formhubGET_csv(baseURL, usr(), pwd(), input$lab_file),
-      message = 'Downloading Data', value = 100)
+  lab_data <- eventReactive(input$update_forms, {
+    if (is.null(input$lab_csv)) {
+      withProgress(
+        formhubGET_csv(baseURL, usr(), pwd(), input$lab_file),
+        message = 'Downloading Data', value = 100)
+    }
+    else {
+      print('Lab csv override.')
+      
+      withProgress(
+        read.csv(input$hh_csv$datapath, as.is=T),
+        message= 'Overriding lab form with csv upload', value=100)
+      
+    }
   })
   
   ec_data <- eventReactive(lab_data(), {

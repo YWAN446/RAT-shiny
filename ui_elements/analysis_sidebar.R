@@ -1,7 +1,7 @@
 
 analysis_sidebar <- fluidRow(
     selectInput('surtype','Survey Type', selected="1", choices=c("All"=0,"Household"=1,"School"=2,"Community"=3)),
-    actionButton("update_forms", "Update Forms", icon=icon('refresh')),
+    actionButton("update_forms", "Refresh Data", icon=icon('refresh')),
     helpText("Press to download new data from Formhub or use uploaded CSVs to generate 
              analysis figures."),
     
