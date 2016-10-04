@@ -1,4 +1,5 @@
 library(shiny)
+source('global.R') # this is supposed to automatically be loaded, but it doesn't seem to be. 
 
 # see global.R for configuration files and settings 
 # **DO NOT COMMIT global.R to git since it contains passwords**
@@ -150,6 +151,7 @@ shinyServer(function(input, output, session) {
         message= 'Overriding school form with csv upload', value=20)
       
     }
+  })
 
   #   # Download the data ----------------------------------------------------------------
   school_data <- eventReactive(input$col_file, {
@@ -222,6 +224,7 @@ shinyServer(function(input, output, session) {
         message= 'Overriding lab form with csv upload', value=100)
       
     }
+  })
 
   lab_data <- eventReactive(input$lab_file, {
     formhubGET_csv(baseURL, usr, pwd, input$lab_file)
