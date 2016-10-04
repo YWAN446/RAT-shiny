@@ -153,14 +153,7 @@ shinyServer(function(input, output, session) {
     }
   })
 
-  #   # Download the data ----------------------------------------------------------------
-  school_data <- eventReactive(input$col_file, {
-    withProgress(
-      formhubGET_csv(baseURL, usr, pwd, input$sch_file),
-      message = 'Downloading School Data', value = 100)
-  })
-  
-  community_data <- eventReactive(input$update_forms, {
+   community_data <- eventReactive(input$update_forms, {
     if (is.null(input$com_csv)) {
       withProgress(
         formhubGET_csv(baseURL, usr(), pwd(), input$com_file),
