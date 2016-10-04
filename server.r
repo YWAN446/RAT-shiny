@@ -42,11 +42,9 @@ shinyServer(function(input, output, session) {
   })
   
   # Login observers
-  USER <- reactiveValues(Logged = Logged)
+  USER <- reactiveValues(Logged = FALSE)
   # Download value to update form data
-  download <- reactiveValues(triggered = NULL)
-  print(isolate(download$triggered))
-  
+
   # Observer to check the login credentials given
   observe({ 
     if (USER$Logged == FALSE) {
@@ -59,7 +57,6 @@ shinyServer(function(input, output, session) {
           print(check)
           if (check == T) {
             USER$Logged <- TRUE
-            download$triggered <- T
 
           }
           else {
@@ -219,9 +216,7 @@ shinyServer(function(input, output, session) {
     }
   })
 
-  lab_data <- eventReactive(input$lab_file, {
-    formhubGET_csv(baseURL, usr, pwd, input$lab_file)
-  })
+
   
   ec_data <- eventReactive(lab_data(), {
     withProgress(
@@ -333,8 +328,8 @@ shinyServer(function(input, output, session) {
     
   })
   
-# 
-#   
+
+  
 #   hist_order <- reactive({
 #     ordered_shinyHists(conc(), input$num_columns, level1_type = input$level1, sample_filter = input$sample, neighborhood_filter = input$neighborhood)
 #   })
