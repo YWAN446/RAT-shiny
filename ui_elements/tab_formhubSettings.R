@@ -2,46 +2,73 @@ tab_formhubSettings <-
   tabPanel(
   "Formhub Settings",
   h3('Forms:'),
-  helpText("Manually override the forms by typing the form name in the corresponding location.  Then press 'Update Forms' to refresh the available data."),
-  selectizeInput(
-    'col_file',
-    'Collection Data',
-    multiple = F,
-    choices = 'sp_sample_collection_form_1_c',
-    selected = 'sp_sample_collection_form_1_c',
-    options= list(create=T)
-  ),
+  helpText("Override the forms by typing the form name as it is entered in Formhub in the corresponding location to download.  Alternatively, specify a csv file for any form.  
+           If a CSV has been uploaded, it will override any form settings to download from Formhub.  Then press 'Update Forms' to refresh the available data."),
+  
+    column(6, 
+      selectizeInput(
+        'col_file',
+        'Collection Data',
+        multiple = F,
+        choices = collection_form,
+        selected = lab_form,
+        options= list(create=T)
+      )
+    ),
+    column(6, 
+     fileInput('col_csv', 'CSV override:', accept='.csv')
+    ),
+  column(6,
   selectizeInput(
     'lab_file',
     'Lab Data',
     multiple = F,
-    choices = 'sp_sample_lab_form_1_i',
-    selected = 'sp_sample_lab_form_1_i',
+    choices = lab_form,
+    selected = lab_form,
     options= list(create=T)
+  )
   ),
+  column(6,
+         fileInput('lab_csv', 'CSV override:', accept='.csv')
+         ),
+  column(6,
   selectizeInput(
     'hh_file',
     'Household Data',
     multiple = F,
-    choices = 'sp_household_form_2_01b',
-    selected = 'sp_household_form_2_01b',
+    choices = household_form,
+    selected = household_form,
     options= list(create=T)
+  )
   ),
+  column(6,
+         fileInput('hh_csv', 'CSV override:', accept='.csv')
+  ),
+  column(6,
   selectizeInput(
     'sch_file',
     'School Data',
     multiple = F,
-    choices = 'school_d',
-    selected = 'school_d',
+    choices = school_form,
+    selected = school_form,
     options= list(create=T)
+  )
   ),
+  column(6,
+         fileInput('sch_csv', 'CSV override:', accept='.csv')
+  ),
+  column(6, 
   selectizeInput(
     'com_file',
     'Community Data',
     multiple = F,
-    choices = 'community_d',
-    selected = 'community_d',
+    choices = community_form,
+    selected = community_form,
     options= list(create=T)
+  )
+  ),
+  column(6,
+         fileInput('lab_csv', 'CSV override:', accept='.csv')
   ),
   actionButton("update_forms", "Update Forms", icon=icon('refresh'))
 )

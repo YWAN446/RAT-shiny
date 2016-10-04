@@ -15,7 +15,7 @@ main_ui <-
       )
       )),
     h1(
-      "SaniPath", span("Exposure Assessment Tool", style = "font-weight: 300"),
+      span("SaniPath Exposure Assessment Tool", style = "font-weight: 300"),
       style = "font-family: 'Lobster', cursive;
       color: #fff; text-align: center;
       background-image: url('texturebg.png');
@@ -30,7 +30,7 @@ main_ui <-
       tabsetPanel(
         type = "tabs",
         tab_pieChart,
-        tab_histogram,
+        # tab_histogram,
         # tab_peoplePlot,
         tab_rawData,
         tab_visualizationSettings,

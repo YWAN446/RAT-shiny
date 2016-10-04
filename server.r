@@ -13,6 +13,26 @@ sampleTypes <- c("Drain Water"=1, "Produce"=2, "Piped Water"=3,
 options <- c('Sample' = 'sample', 'Neighborhood' = 'neighborhood', 'Age' = 'age')
 
 
+jscode <- '
+$(function() {
+  var $els = $("[data-proxy-click]");
+  $.each(
+    $els,
+    function(idx, el) {
+      var $el = $(el);
+      var $proxy = $("#" + $el.data("proxyClick"));
+      $el.keydown(function (e) {
+        if (e.keyCode == 13) {
+          $proxy.click();
+        }
+      });
+    }
+  );
+});
+'
+
+
+
 shinyServer(function(input, output, session) {
   
   # will stop shiny when the window closes
@@ -23,11 +43,14 @@ shinyServer(function(input, output, session) {
   # Login observers
   USER <- reactiveValues(Logged = Logged)
   # Download value to update form data
-  download <- reactiveValues(triggered = T)
+  download <- reactiveValues(triggered = NULL)
+  print(isolate(download$triggered))
   
+  # Observer to check the login credentials given
   observe({ 
     if (USER$Logged == FALSE) {
       if (!is.null(input$Login)) {
+        
         if (input$Login > 0) {
           Username <- isolate(input$userName)
           Password <- isolate(input$passwd)
@@ -35,11 +58,13 @@ shinyServer(function(input, output, session) {
           print(check)
           if (check == T) {
             USER$Logged <- TRUE
-            
+            download$triggered <- T
+
           }
           else {
             output$login_status <- renderText("Invalid credentials! Please check the username and password.")
           }
+
         } 
       }
     }    
@@ -51,9 +76,17 @@ shinyServer(function(input, output, session) {
     if (USER$Logged == FALSE) {
       
       output$page <- renderUI({
-        bootstrapPage(div(id = "login",
+        bootstrapPage(tags$head(tags$script(HTML(jscode))),
+                      
+                      
+                      
+                      div(id = "login",
+                          img(src="RGB-horiz.png", width=250),
                           wellPanel(textInput("userName", "Username"),
-                                    passwordInput("passwd", "Password"),
+                                    tagAppendAttributes(
+                                      passwordInput("passwd", "Password"),
+                                      `data-proxy-click` = "passwd"
+                                    ),
                                     br(),actionButton("Login", "Log in")), textOutput('login_status')),
                       tags$style(type="text/css", "#login {font-size:10px;   text-align: left;position:absolute;top: 40%;left: 50%;margin-top: -100px;margin-left: -150px;}")
         )
@@ -64,12 +97,17 @@ shinyServer(function(input, output, session) {
       output$page <- renderUI({
         main_ui
       })
-      print(ui)
+      updateSelectizeInput(session, 'col_file', selected=collection_form)
+      updateSelectizeInput(session, 'lab_file', selected=lab_form)
+      updateSelectizeInput(session, 'hh_file', selected=household_form)
+      updateSelectizeInput(session, 'sch_file', selected=school_form)
+      updateSelectizeInput(session, 'com_file', selected=community_form)
+
     }
   })
-  
   usr <- reactive({isolate(input$userName)})
   pwd <- reactive({isolate(input$passwd)})
+
   
 #   forms <- reactive({
 #     if (USER$Logged == T) {
@@ -84,51 +122,48 @@ shinyServer(function(input, output, session) {
 #   
 #   
 #   
-#   # Update the form options ---------------------------------------------------------
+  # Update the form options ---------------------------------------------------------
 #   observe(autoDestroy = T, {
 #     # Update the form options based on the defaults specified in global.R if
 #     # login is successful
 #     if (USER$Logged == T) {
 #       # update the options
-#       updateSelectizeInput(session, 'col_file', selected=collection_form)
-#       updateSelectizeInput(session, 'lab_file', selected=lab_form)
-#       updateSelectizeInput(session, 'hh_file', selected=household_form)
-#       updateSelectizeInput(session, 'sch_file', selected=school_form)
-#       updateSelectizeInput(session, 'com_file', selected=community_form)
+
+#       
 #       
 #     }
 # 
 #   })
   
 #   # Download the data ----------------------------------------------------------------
-  school_data <- eventReactive(list(download$triggered, input$update_forms), {
+  school_data <- eventReactive(input$update_forms, {
     withProgress(
     formhubGET_csv(baseURL, usr(), pwd(), input$sch_file),
     message = 'Downloading Data', value = 20)
   })
   
-  community_data <- eventReactive(input$com_file, {
+  community_data <- eventReactive(input$update_forms, {
+    print(input$com_file)
     withProgress(
       formhubGET_csv(baseURL, usr(), pwd(), input$com_file),
       message = 'Downloading Data', value = 40)
   })
 
   
-  household_data <- eventReactive(input$hh_file, { # household data, keeping name for consistency
-    print(isolate(input$hh_file))
-    withProgress(
-      formhubGET_csv(baseURL, usr(), pwd(), input$hh_file),
-      message = 'Downloading Data', value = 60)
+  household_data <- eventReactive(input$update_forms,  { 
+      withProgress(
+        formhubGET_csv(baseURL, usr(), pwd(), input$hh_file),
+        message = 'Downloading Data', value = 60)
   })
   
-  collection_data <- eventReactive(input$col_file, {
+  collection_data <- eventReactive(list(isolate(input$col_file), input$update_forms), {
     withProgress(
       formhubGET_csv(baseURL, usr(), pwd(), input$col_file),
       message = 'Downloading Data', value = 80)
   })
   
 
-  lab_data <- eventReactive(input$lab_file, {
+  lab_data <- eventReactive(list(isolate(input$lab_file), input$update_forms), {
     withProgress(
       formhubGET_csv(baseURL, usr(), pwd(), input$lab_file),
       message = 'Downloading Data', value = 100)
@@ -146,12 +181,35 @@ shinyServer(function(input, output, session) {
       message = 'Calculating Concentration Data', value = 100)
     
   })
-
+  
+# Raw Data Summary Dashboard 
+#   survey_submissions <- DT::renderDataTable({
+#     school <- as.data.frame(table(school_data()[,grep('neighbor', names(school_data()))]))
+#     school$Survey <- 'School'
+#     community <- as.data.frame(table(community_data()[,grep('neighbor', names(community_data()))]))
+#     community$Survey <- 'Community'
+#     household <- as.data.frame(table(household_data()[,grep('neighbor', names(household_data()))]))
+#     household$Survey <- 'Household'
+#     
+#     summary <- rbind.fill(school, community, household)
+#     summary <- dcast(summary, surv ~ Var1, value.var = 'Freq')
+#     summary
+#   })
 #   
-#   # PIE CHART PLOTTING INFO ----------------------------------------------------------------
-  freq <- reactive({
+#   sample_collection <- DT::renderDataTable({
+#     
+#   })
+  
+  
+  
+  
+  # PIE CHART PLOTTING INFO ----------------------------------------------------------------
+  freq <- eventReactive(list(download$triggered, input$update_forms), {
     types <- c('combined', 'household', 'school', 'community')
-    calculate_freq(household_data(), school_data(), community_data(), survey_type= types[as.numeric(input$surtype)+1])
+    if (USER$Logged == T) {
+      calculate_freq(household_data(), school_data(), community_data(), survey_type= types[as.numeric(input$surtype)+1])
+      
+    }
   })
 #   
   observeEvent(input$level1, {
@@ -163,16 +221,18 @@ shinyServer(function(input, output, session) {
     updateSelectInput(session, inputId = 'level3', label='Level 3', choices= opts3)
   })
   
-  observe(autoDestroy = T, {
-    freq()
-    age <- unique(names(list.names(freq(), age)))
-    neighborhood <- unique(names(list.names(freq(), neighborhood)))
-    sample <- unique(names(list.names(freq(), sample)))
-    
-    updateCheckboxGroupInput(session, 'sample',  choices= sample, selected=sample)
-    updateCheckboxGroupInput(session, 'neighborhood', choices= neighborhood, selected=neighborhood)
-    updateCheckboxGroupInput(session, 'age', choices= age, selected= age)
-    
+  observe({
+    if (USER$Logged == T) {
+      age <- unique(names(list.names(freq(), age)))
+      neighborhood <- unique(names(list.names(freq(), neighborhood)))
+      sample <- unique(names(list.names(freq(), sample)))
+      
+      updateCheckboxGroupInput(session, 'sample',  choices= sample, selected=sample)
+      updateCheckboxGroupInput(session, 'neighborhood', choices= neighborhood, selected=neighborhood)
+      updateCheckboxGroupInput(session, 'age', choices= age, selected= age)
+      
+    }
+
     
   })
   
@@ -219,8 +279,8 @@ shinyServer(function(input, output, session) {
     
   })
   
-
-  
+# 
+#   
 #   hist_order <- reactive({
 #     ordered_shinyHists(conc(), input$num_columns, level1_type = input$level1, sample_filter = input$sample, neighborhood_filter = input$neighborhood)
 #   })
