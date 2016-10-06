@@ -330,42 +330,42 @@ shinyServer(function(input, output, session) {
   
 
   
-#   hist_order <- reactive({
-#     ordered_shinyHists(conc(), input$num_columns, level1_type = input$level1, sample_filter = input$sample, neighborhood_filter = input$neighborhood)
-#   })
-#   
-#   output$histograms <- renderUI({
-#     hist_order()
-#     do.call(tagList, hist_order())
-#   })
-#   
-#   observe({
-#     if (length(conc()) > 0 ) {
-#       
-#       dat <- conc()
-#       dat <- dat[list.which(dat, sample %in% input$sample && 
-#                               neighborhood %in% input$neighborhood)]
-# 
-#         count <- 1
-#         for (i in dat) {
-#           local({
-#             withProgress({
-#             my_i <- i
-#             p_name <- paste0('hist-', my_i$sample,"-",my_i$neighborhood)
-#             p_name <- gsub(' ', '', p_name)
-#             output[[p_name]] <- renderPlot({
-#               make_histogram(my_i$data, paste0(my_i$neighborhood,", ", my_i$sample, '\n(N=',length(my_i$data),")"))
-#             })
-#             }, message = 'Generating Histograms', session=session, value=count/length(dat)
-#             )
-#           })
-#           # incProgress(count/length(dat), session = session)
-#           count <- count + 1
-#         }
-# 
-#     }
-#     
-#   })
+  hist_order <- reactive({
+    ordered_shinyHists(conc(), input$num_columns, level1_type = input$level1, sample_filter = input$sample, neighborhood_filter = input$neighborhood)
+  })
+  
+  output$histograms <- renderUI({
+    hist_order()
+    do.call(tagList, hist_order())
+  })
+  
+  observe({
+    if (length(conc()) > 0 ) {
+      
+      dat <- conc()
+      dat <- dat[list.which(dat, sample %in% input$sample && 
+                              neighborhood %in% input$neighborhood)]
+
+        count <- 1
+        for (i in dat) {
+          local({
+            withProgress({
+            my_i <- i
+            p_name <- paste0('hist-', my_i$sample,"-",my_i$neighborhood)
+            p_name <- gsub(' ', '', p_name)
+            output[[p_name]] <- renderPlot({
+              make_histogram(my_i$data, paste0(my_i$neighborhood,", ", my_i$sample, '\n(N=',length(my_i$data),")"))
+            })
+            }, message = 'Generating Histograms', session=session, value=count/length(dat)
+            )
+          })
+          # incProgress(count/length(dat), session = session)
+          count <- count + 1
+        }
+
+    }
+    
+  })
 #   
 #   ps.freq <- reactive({
 #     print('bayesian calculations')

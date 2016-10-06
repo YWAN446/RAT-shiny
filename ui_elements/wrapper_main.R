@@ -30,7 +30,7 @@ main_ui <-
       tabsetPanel(
         type = "tabs",
         tab_pieChart,
-        # tab_histogram,
+        tab_histogram,
         # tab_peoplePlot,
         tab_rawData,
         tab_visualizationSettings,
