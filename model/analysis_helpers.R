@@ -230,7 +230,8 @@ calculate_freq <- function(..., type='pie chart', survey_type=NULL) {
   #say what they are. since the surveys always follow a pattern for the question
   # headers, we can figure out what data we have using that. 
   dat <- list(...)
-  data_map <- c('household_data' = 'hh_', 'community_data' = 'com_', 'school_data' = 'sch_')
+  # this should be based on the columns within each export
+  data_map <- c('household_data' = 'h_', 'c_' = 'school', 'school_data' = 's_')
   
   # let's figure out what we have
   surveys_matched <- character()
@@ -245,10 +246,10 @@ calculate_freq <- function(..., type='pie chart', survey_type=NULL) {
    }
   
   # some error handling
-  if (!(length(surveys_matched) == 1 | length(surveys_matched) == 3)) {
-    stop(paste0('Something is wrong with the data. Either pass 1 or 3 data objects.\n',
-                'Matched objects: ', paste(surveys_matched, collapse=', ')))
-  }   
+#   if (!(length(surveys_matched) == 1 | length(surveys_matched) == 3)) {
+#     stop(paste0('Something is wrong with the data. Either pass 1 or 3 data objects.\n',
+#                 'Matched objects: ', paste(surveys_matched, collapse=', ')))
+#   }   
   if (!any(surveys_matched %in% names(data_map))) {
     stop(paste('Unable to determine survey type. Do the column headers have hh, sch, or com in the names?\n',
                'Matched objects:', paste(surveys_matched, collapse=', ')))
@@ -263,7 +264,20 @@ calculate_freq <- function(..., type='pie chart', survey_type=NULL) {
   freq <- list()
   # For each pathway, we're going to look at the neighborhoods and ages-------
   # drain 
-  for (i in 1:length(unique(household_data$h_neighborhood))) {
+  # determine what neighborhoods we're looking at
+  if (survey_type == 'school') {
+    neighborhoods <- unique(school_data$s_neighborhood)
+  }
+  else if (survey_type == 'community') {
+    neighborhoods <- unique(community_data$c_neighborhood)
+  }
+  else {
+    # if we're looking at combined or household data, we'll use the 
+    # household survey to determine what neighborhoods are available for analysis
+    neighborhoods <- unique(household_data$h_neighborhood)
+  } 
+  
+  for (i in neighborhoods) {
     sub = list(path=
                  list(sample = 'Drain Water',
                       age = 'Adults',
