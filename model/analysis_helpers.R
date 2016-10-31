@@ -11,6 +11,11 @@ library(rjags)
 # MERGING --------------------------------------------------------------------
 create_ecData <- function(collection_data, lab_data) {
   # merge and calculate e. coli data?
+  collection_data[,c("col_sample_type","col_id")] <- apply(collection_data[,c("col_sample_type","col_id")], 2, function(x) toupper(x))
+  lab_data[,c("lab_sample_type","lab_id")] <- apply(lab_data[,c("lab_sample_type","lab_id")], 2, function(x) toupper(x))
+  collection_data$col_id<-gsub(" ","",collection_data$col_id)
+  lab_data$lab_id<-gsub(" ","",lab_data$lab_id)
+  lab_data$lab_1_ecoli_reading
   
   ec_data<-merge(collection_data,lab_data,by.x=c("col_sample_type","col_id"),by.y=c("lab_sample_type","lab_id"))
   names(ec_data)[which(names(ec_data)=="col_sample_type")]<-"sample_type"
@@ -21,9 +26,28 @@ create_ecData <- function(collection_data, lab_data) {
   ec_data$ec_denom[which(ec_data$sample_type==8)]=2
   ec_data$ec_denom[is.na(ec_data$sample_type)]=NA
   
-  ec_data$ec_dil1<-as.numeric(as.character(ec_data$lab_1_dil_tested))
-  ec_data$ec_dil2<-as.numeric(as.character(ec_data$lab_2_dil_tested))
-  ec_data$ec_dil3<-as.numeric(as.character(ec_data$lab_3_dil_tested))
+  #ec_data$neighbor<-factor_to_numeric(ec_data$neighbor)
+  ec_data$sample_type<-as.numeric(ec_data$sample_type)  
+  ec_data$ec_dil1<-factor_to_numeric(ec_data$lab_1_dil_tested)
+  ec_data$ec_dil2<-factor_to_numeric(ec_data$lab_2_dil_tested)
+  ec_data$ec_dil3<-factor_to_numeric(ec_data$lab_3_dil_tested)
+  ec_data$lab_1_volume<-factor_to_numeric(ec_data$lab_1_volume)
+  ec_data$lab_2_volume<-factor_to_numeric(ec_data$lab_2_volume)
+  ec_data$lab_3_volume<-factor_to_numeric(ec_data$lab_3_volume)
+  ec_data$ec_dil1<-(10^ec_data$ec_dil1)/(10^7)*ec_data$lab_1_volume
+  ec_data$ec_dil2<-(10^ec_data$ec_dil2)/(10^7)*ec_data$lab_2_volume
+  ec_data$ec_dil3<-(10^ec_data$ec_dil3)/(10^7)*ec_data$lab_3_volume
+  ec_data$ec_ecnt1<-factor_to_numeric(ec_data$lab_1_ecoli)
+  ec_data$ec_ecnt2<-factor_to_numeric(ec_data$lab_2_ecoli)
+  ec_data$ec_ecnt3<-factor_to_numeric(ec_data$lab_3_ecoli)
+  
+  ec_data$ec_ecnt1[which(ec_data$lab_1_ecoli_reading==1)]<-999
+  ec_data$ec_ecnt1[which(ec_data$lab_1_ecoli_reading==2)]<-998
+  ec_data$ec_ecnt2[which(ec_data$lab_2_ecoli_reading==1)]<-999
+  ec_data$ec_ecnt2[which(ec_data$lab_2_ecoli_reading==2)]<-998
+  ec_data$ec_ecnt3[which(ec_data$lab_3_ecoli_reading==1)]<-999
+  ec_data$ec_ecnt3[which(ec_data$lab_3_ecoli_reading==2)]<-998
+  
   swap1<-(ec_data$ec_dil1>=ec_data$ec_dil2 & is.na(ec_data$ec_dil3))
   swap2<-(ec_data$ec_dil1<ec_data$ec_dil2 & is.na(ec_data$ec_dil3))
   swap3<-(ec_data$ec_dil1>=ec_data$ec_dil2 & !is.na(ec_data$ec_dil3))
@@ -35,10 +59,6 @@ create_ecData <- function(collection_data, lab_data) {
   
   dilution3<-!is.na(ec_data$ec_dil3)
   no_dilution3<-is.na(ec_data$ec_dil3)
-  
-  ec_data$ec_ecnt1<-ec_data$lab_1_ecoli
-  ec_data$ec_ecnt2<-ec_data$lab_2_ecoli
-  ec_data$ec_ecnt3<-ec_data$lab_3_ecoli
   
   ec_data$count1[swap1]<-ec_data$ec_ecnt1[swap1]
   ec_data$count2[swap1]<-ec_data$ec_ecnt2[swap1]
@@ -134,7 +154,7 @@ create_ecData <- function(collection_data, lab_data) {
   condition31=which(ec_data$count1>=1 & ec_data$count1<=9 & ec_data$count2==0 & ec_data$count3==0 & dilution3)
   condition32=which(ec_data$count1==0 & ec_data$count2==0 & ec_data$count3==0 & dilution3)
   
-  ec_con<-c()
+  ec_con<-rep(NA,length(ec_data$ec_ecnt1))
   ec_con[condition1]=200/ec_data$dil2[condition1]*ec_data$ec_denom[condition1]
   ec_con[condition2]=ec_data$count2[condition2]/ec_data$dil2[condition2]*ec_data$ec_denom[condition2]
   ec_con[condition3]=ec_data$count2[condition3]/ec_data$dil2[condition3]*ec_data$ec_denom[condition3]
@@ -171,7 +191,6 @@ create_ecData <- function(collection_data, lab_data) {
   ec_con[condition31]=ec_data$count1[condition31]/ec_data$dil1[condition31]*ec_data$ec_denom[condition31]
   ec_con[condition32]=0.5/ec_data$dil1[condition32]*ec_data$ec_denom[condition32]
   ec_data$ec_conc<-ec_con
-  
   ec_data$neighbor <- as.factor(ec_data$col_neighborhood)
   
   return(ec_data)
@@ -180,7 +199,7 @@ create_ecData <- function(collection_data, lab_data) {
 create_concData <- function(ec_data) {
   # Calculate concentration amounts?
   conc_names <- c("Drain Water", "Produce", "Municipal and Piped Water",'Ocean Water', 'Surface Water', "Flood Water", 
-                  "Public Latrine Surfaces", "Particulate", "Bathing")
+                  "Public Latrine", "Particulate", "Bathing")
   conc<-list()
   for (i in 1:length(unique(as.numeric(ec_data$neighbor)))){
     # sample type 1=drain water, 2=produce, 3=piped water, 4=ocean water, 5=surface water, 6=flood water, 7=Public Latrine Surfaces, 8=particulate, 9=bathing
@@ -605,31 +624,40 @@ calculate_pplPlotData <- function(freq, conc, nburn=1000, niter=10000, thin=1, c
   # it seems they are based on the behavoir data
   # need to find the number of neighborhoods
   # and samples
-  neighborhoods <- unique(names(list.names(freq, neighborhood))) # unique neighborhood values
-  samples <- unique(names(list.names(freq, sample))) # unique sample values
+  
+  neighborhoods <- c(unique(names(list.names(conc, neighborhood))), unique(names(list.names(freq, neighborhood)))) # unique neighborhood values
+  neighborhoods <- unique(neighborhoods[duplicated(neighborhoods)]) # if it's duplicated, then it will show up in both freq and conc
+  
+  # Bathing water can be assumed as 30, all others should be present to calculate 
+  samples <- c(unique(names(list.names(conc, sample))), unique(names(list.names(freq, sample)))) # unique sample values
+  samples <- unique(samples[duplicated(samples)])
+  
   age <- unique(names(list.names(freq, age)))
   
+  ps.freq <- list()
   for (smp in samples) {
+    print(smp)
     for (nb in neighborhoods) {
       # filter the concentration data to just this neighborhood and sample
       sub.conc <- conc[[list.which(conc, neighborhood == nb && sample == smp)]]
-      
+      print(nb)
       # calculate exposure for adults and children using the behavior data
       for (a in age) {
+        print(a)
         # filter frequency to just the age we want 
         sub.freq <- freq[[list.which(freq, sample == smp && neighborhood == nb && age == a)]]
         
-        # calculate the exposure
+        # calculate the exposure. Requires concentration, freq is optional
         exposed <- calculate_exposure(sub.freq, sub.conc, smp)
         
         # update the object at this position
-        freq[[list.which(freq, sample == smp && neighborhood == nb && age == a)]] <- exposed     
+        ps.freq <- append(ps.freq, list('path' = exposed))
       }
     }
   }
   
   # give back the updated behavior data object
-  return(freq)
+  return(ps.freq)
 }
 
 bayesian_environmental_estimates <- function(conc, nburn=1000, niter=10000, thin=1, shinySession=NULL) {
@@ -775,7 +803,7 @@ calculate_exposure <- function(behavior_data, concentration_data, smp) {
   intake<-array(c(0.0006,1,10.43,0.0154,0.037,0.0006,0.034,NA,0.0499,
                   0.01,0.5,4.14,0.2042,0.2042,0.01,0.034,NA,0.09975),c(9,2)) #need to input this information!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   rownames(intake) <- c('Drain Water', 'Produce', 'Municipal and Piped Water', 'Ocean Water', 'Surface Water', 
-                        'Flood Water', 'Public Latrine Surfaces', 'Particulate', 'Bathing')
+                        'Flood Water', 'Public Latrine', 'Particulate', 'Bathing')
   colnames(intake) <- c("Adults", "Children")
   
   # simulate some numbers
@@ -786,6 +814,8 @@ calculate_exposure <- function(behavior_data, concentration_data, smp) {
       f[m] <- round(rnbinom(1, size= behavior_data$r, prob= behavior_data$p)/7*30)
     } else if (smp==3) {
       f[m] <- min(round(rnbinom(1, size= behavior_data$r, prob= behavior_data$p)/7*30),30)
+    } else if (smp==9){
+      f[m] <- 30
     } else {
       f[m] <- rnbinom(1, size= behavior_data$r, prob= behavior_data$p)
     }
@@ -807,4 +837,7 @@ calculate_exposure <- function(behavior_data, concentration_data, smp) {
   
 }
 
-
+factor_to_numeric <- function(x) {
+  # convert factor or character data to numeric
+  return(as.numeric(as.character(x)))
+}

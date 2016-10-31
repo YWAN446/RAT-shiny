@@ -31,7 +31,7 @@ main_ui <-
         type = "tabs",
         tab_pieChart,
         tab_histogram,
-        # tab_peoplePlot,
+        tab_peoplePlot,
         tab_rawData,
         tab_visualizationSettings,
         tab_formhubSettings

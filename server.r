@@ -273,8 +273,8 @@ shinyServer(function(input, output, session) {
   observe({
     if (USER$Logged == T) {
       age <- unique(names(list.names(freq(), age)))
-      neighborhood <- unique(names(list.names(freq(), neighborhood)))
-      sample <- unique(names(list.names(freq(), sample)))
+      neighborhood <- unique(names(list.names(freq(), neighborhood))) 
+      sample <- unique(c(names(list.names(freq(), sample)), names(list.names(conc(), sample)))) # need to add 2 missing samples !!! 
       
       updateCheckboxGroupInput(session, 'sample',  choices= sample, selected=sample)
       updateCheckboxGroupInput(session, 'neighborhood', choices= neighborhood, selected=neighborhood)
@@ -366,57 +366,59 @@ shinyServer(function(input, output, session) {
     }
     
   })
-#   
-#   ps.freq <- reactive({
-#     print('bayesian calculations')
-#     types <- c('combined', 'household', 'school', 'community')
-#     freq <- calculate_freq(household_data(), school_data(), community_data(), type='ppl plot', survey_type= types[as.numeric(input$surtype)+1])
-#     calculate_pplPlotData(freq[1], conc(), shinySession=session) # letting the defaults lazy load 
-#     
-#     })
-# 
-# 
-#   
-# 
-# 
-#   ppl_plot_order <- reactive({
-#     ordered_shinyCharts(ps.freq(), columns= input$num_columns, level1_type = input$level1, level2_type = input$level2,
-#                         sample_filter=input$sample, neighborhood_filter = input$neighborhood, age_filter = input$age,
-#                         height = input$ph, width = input$pw, shinySession=session, chart_prefix = 'ppl-')
-#   })
-#   
-#   # this will actually render them for the UI
-#   output$ppl_plots <- renderUI({
-#     ppl_plot_order()
-#     do.call(tagList, ppl_plot_order())
-#   })
-#   
-#   # generate the people plots
-#   observe({
-#     print('triggered---------------------------------------------------------')
-#     dat <- ps.freq()
-#     dat <- dat[list.which(dat, sample %in% input$sample && 
-#                             neighborhood %in% input$neighborhood &&
-#                             age %in% input$age)]
-#     
-#     count <- 1
-#     for (i in dat) {
-#       local({
-#         withProgress({
-#           my_i <- i
-#           p_name <- paste0('ppl-',my_i$sample,"-",my_i$neighborhood, '-', my_i$age)
-#           p_name <- gsub(' ', '', p_name)
-#           output[[p_name]] <- renderPlot({
-#             PS_Plot(paste0(my_i$neighborhood,", ", my_i$sample, ', ', my_i$age), my_i$n, my_i$dose) 
-#           })
-#         }, message = 'Generating People Plots', session=session, value= count/length(dat)
-#         )
-#       })
-#       # incProgress(count/length(dat), session = session)
-#       count <- count + 1
-#     }
-#     
-#   })
+  
+  ps.freq <- reactive({
+    print('bayesian calculations')
+    
+    types <- c('combined', 'household', 'school', 'community')
+    freq <- calculate_freq(household_data(), school_data(), community_data(), type='ppl plot', survey_type= types[as.numeric(input$surtype)+1])
+    calculate_pplPlotData(freq, conc(), shinySession=session) # letting the defaults lazy load 
+    
+    })
+
+
+  
+
+
+  ppl_plot_order <- reactive({
+    ordered_shinyCharts(ps.freq(), columns= input$num_columns, level1_type = input$level1, level2_type = input$level2,
+                        sample_filter=input$sample, neighborhood_filter = input$neighborhood, age_filter = input$age,
+                        height = input$ph, width = input$pw, shinySession=session, chart_prefix = 'ppl-')
+  })
+  
+  # this will actually render them for the UI
+  output$ppl_plots <- renderUI({
+    ppl_plot_order()
+    do.call(tagList, ppl_plot_order())
+  })
+  
+  # generate the people plots
+  observe({
+    print('triggered---------------------------------------------------------')
+    dat <- ps.freq()
+    dat <- dat[list.which(dat, sample %in% input$sample && 
+                            neighborhood %in% input$neighborhood &&
+                            age %in% input$age)]
+    
+    count <- 1
+    for (i in dat) {
+      local({
+        withProgress({
+          my_i <- i
+          print(my_i)
+          p_name <- paste0('ppl-',my_i$sample,"-",my_i$neighborhood, '-', my_i$age)
+          p_name <- gsub(' ', '', p_name)
+          output[[p_name]] <- renderPlot({
+            PS_Plot(paste0(my_i$neighborhood,", ", my_i$sample, ', ', my_i$age), as.numeric(my_i$n), as.numeric(my_i$dose))
+          })
+        }, message = 'Generating People Plots', session=session, value= count/length(dat)
+        )
+      })
+      # incProgress(count/length(dat), session = session)
+      count <- count + 1
+    }
+    
+  })
 
   
   ## Tables for raw printing ------------------------------------------------------------------------------------------------------------

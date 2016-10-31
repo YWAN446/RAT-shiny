@@ -1,16 +1,16 @@
 ## Server Settings
 
-baseURL <- 'http://54.210.2.87/'
+baseURL <- 'https://tool.sanipath.org/'
 
 # Test form
-test_form <- 'sp_sample_collection_form_1_c'
+test_form <- 'Register_Enumerator'
 
 # Default forms
-collection_form <- 'sp_sample_collection_form_1_c'
-school_form <- 'school_d'
-community_form <- 'community_d'
-lab_form <- 'sp_sample_lab_form_1_i'
-household_form <- 'sp_household_form_2_01b'
+collection_form <- 'Training_Sample_d'
+school_form <- 'School_Current'
+community_form <- 'Community'
+lab_form <- 'Training_Lab_e'
+household_form <- 'Training_Household_d'
 
 ## Load the files we need
 source("model/PS_Plot.r")
