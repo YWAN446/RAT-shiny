@@ -1,5 +1,5 @@
 ## Analysis helpers for the SaniPath Analysis tool
-## these have been derived from the original server.R 
+## these have been derived from the original server.R
 ## file.
 library(ggplot2)
 library(rlist)
@@ -7,16 +7,27 @@ library(plyr)
 library(reshape2)
 library(rjags)
 
-
-# MERGING --------------------------------------------------------------------
+# master create_ecData
 create_ecData <- function(collection_data, lab_data) {
+  #logic to decide whether the function recieves IDEXX data or MF data;
+  #return(create_ecData_Idexx(collection_data, lab_data)) or return(create_ecData_MF(collection_data, lab_data));
+  return(create_ecData_MF(collection_data, lab_data))
+}
+
+# IDEXX method to calculate the concentration-----------------------------
+create_ecData_Idexx <- function(){
+  #function to prepare the ec_data for IDEXX;
+}
+
+# MERGING and Membrane Filtration to calculate the concentration-----------------------------
+create_ecData_MF <- function(collection_data, lab_data) {
   # merge and calculate e. coli data?
   collection_data[,c("col_sample_type","col_id")] <- apply(collection_data[,c("col_sample_type","col_id")], 2, function(x) toupper(x))
   lab_data[,c("lab_sample_type","lab_id")] <- apply(lab_data[,c("lab_sample_type","lab_id")], 2, function(x) toupper(x))
   collection_data$col_id<-gsub(" ","",collection_data$col_id)
   lab_data$lab_id<-gsub(" ","",lab_data$lab_id)
   lab_data$lab_1_ecoli_reading
-  
+
   ec_data<-merge(collection_data,lab_data,by.x=c("col_sample_type","col_id"),by.y=c("lab_sample_type","lab_id"))
   names(ec_data)[which(names(ec_data)=="col_sample_type")]<-"sample_type"
   names(ec_data)[which(names(ec_data)=="col_id")]<-"sampleid"
@@ -25,9 +36,9 @@ create_ecData <- function(collection_data, lab_data) {
   ec_data$ec_denom[which(ec_data$sample_type==2)]=14
   ec_data$ec_denom[which(ec_data$sample_type==8)]=2
   ec_data$ec_denom[is.na(ec_data$sample_type)]=NA
-  
+
   #ec_data$neighbor<-factor_to_numeric(ec_data$neighbor)
-  ec_data$sample_type<-as.numeric(ec_data$sample_type)  
+  ec_data$sample_type<-as.numeric(ec_data$sample_type)
   ec_data$ec_dil1<-factor_to_numeric(ec_data$lab_1_dil_tested)
   ec_data$ec_dil2<-factor_to_numeric(ec_data$lab_2_dil_tested)
   ec_data$ec_dil3<-factor_to_numeric(ec_data$lab_3_dil_tested)
@@ -40,14 +51,14 @@ create_ecData <- function(collection_data, lab_data) {
   ec_data$ec_ecnt1<-factor_to_numeric(ec_data$lab_1_ecoli)
   ec_data$ec_ecnt2<-factor_to_numeric(ec_data$lab_2_ecoli)
   ec_data$ec_ecnt3<-factor_to_numeric(ec_data$lab_3_ecoli)
-  
+
   ec_data$ec_ecnt1[which(ec_data$lab_1_ecoli_reading==1)]<-999
   ec_data$ec_ecnt1[which(ec_data$lab_1_ecoli_reading==2)]<-998
   ec_data$ec_ecnt2[which(ec_data$lab_2_ecoli_reading==1)]<-999
   ec_data$ec_ecnt2[which(ec_data$lab_2_ecoli_reading==2)]<-998
   ec_data$ec_ecnt3[which(ec_data$lab_3_ecoli_reading==1)]<-999
   ec_data$ec_ecnt3[which(ec_data$lab_3_ecoli_reading==2)]<-998
-  
+
   swap1<-(ec_data$ec_dil1>=ec_data$ec_dil2 & is.na(ec_data$ec_dil3))
   swap2<-(ec_data$ec_dil1<ec_data$ec_dil2 & is.na(ec_data$ec_dil3))
   swap3<-(ec_data$ec_dil1>=ec_data$ec_dil2 & !is.na(ec_data$ec_dil3))
@@ -56,68 +67,68 @@ create_ecData <- function(collection_data, lab_data) {
   swap6<-(ec_data$ec_dil2<ec_data$ec_dil3 & !is.na(ec_data$ec_dil3))
   swap7<-(ec_data$ec_dil3>=ec_data$ec_dil1 & !is.na(ec_data$ec_dil3))
   swap8<-(ec_data$ec_dil3<ec_data$ec_dil1 & !is.na(ec_data$ec_dil3))
-  
+
   dilution3<-!is.na(ec_data$ec_dil3)
   no_dilution3<-is.na(ec_data$ec_dil3)
-  
+
   ec_data$count1[swap1]<-ec_data$ec_ecnt1[swap1]
   ec_data$count2[swap1]<-ec_data$ec_ecnt2[swap1]
   ec_data$dil1[swap1]<-ec_data$ec_dil1[swap1]
   ec_data$dil2[swap1]<-ec_data$ec_dil2[swap1]
-  
+
   ec_data$count2[swap2]<-ec_data$ec_ecnt1[swap2]
   ec_data$count1[swap2]<-ec_data$ec_ecnt2[swap2]
   ec_data$dil2[swap2]<-ec_data$ec_dil1[swap2]
   ec_data$dil1[swap2]<-ec_data$ec_dil2[swap2]
-  
+
   ec_data$count1[swap3 & swap5 & swap8]<-ec_data$ec_ecnt1[swap3 & swap5 & swap8]
   ec_data$count2[swap3 & swap5 & swap8]<-ec_data$ec_ecnt2[swap3 & swap5 & swap8]
   ec_data$count3[swap3 & swap5 & swap8]<-ec_data$ec_ecnt3[swap3 & swap5 & swap8]
   ec_data$dil1[swap3 & swap5 & swap8]<-ec_data$ec_dil1[swap3 & swap5 & swap8]
   ec_data$dil2[swap3 & swap5 & swap8]<-ec_data$ec_dil2[swap3 & swap5 & swap8]
   ec_data$dil3[swap3 & swap5 & swap8]<-ec_data$ec_dil3[swap3 & swap5 & swap8]
-  
+
   ec_data$count1[swap3 & swap6 & swap7]<-ec_data$ec_ecnt3[swap3 & swap6 & swap7]
   ec_data$count2[swap3 & swap6 & swap7]<-ec_data$ec_ecnt1[swap3 & swap6 & swap7]
   ec_data$count3[swap3 & swap6 & swap7]<-ec_data$ec_ecnt2[swap3 & swap6 & swap7]
   ec_data$dil1[swap3 & swap6 & swap7]<-ec_data$ec_dil3[swap3 & swap6 & swap7]
   ec_data$dil2[swap3 & swap6 & swap7]<-ec_data$ec_dil1[swap3 & swap6 & swap7]
   ec_data$dil3[swap3 & swap6 & swap7]<-ec_data$ec_dil2[swap3 & swap6 & swap7]
-  
+
   ec_data$count1[swap4 & swap5 & swap7]<-ec_data$ec_ecnt2[swap4 & swap5 & swap7]
   ec_data$count2[swap4 & swap5 & swap7]<-ec_data$ec_ecnt3[swap4 & swap5 & swap7]
   ec_data$count3[swap4 & swap5 & swap7]<-ec_data$ec_ecnt1[swap4 & swap5 & swap7]
   ec_data$dil1[swap4 & swap5 & swap7]<-ec_data$ec_dil2[swap4 & swap5 & swap7]
   ec_data$dil2[swap4 & swap5 & swap7]<-ec_data$ec_dil3[swap4 & swap5 & swap7]
   ec_data$dil3[swap4 & swap5 & swap7]<-ec_data$ec_dil1[swap4 & swap5 & swap7]
-  
+
   ec_data$count1[swap3 & swap6 & swap8]<-ec_data$ec_ecnt1[swap3 & swap6 & swap8]
   ec_data$count2[swap3 & swap6 & swap8]<-ec_data$ec_ecnt3[swap3 & swap6 & swap8]
   ec_data$count3[swap3 & swap6 & swap8]<-ec_data$ec_ecnt2[swap3 & swap6 & swap8]
   ec_data$dil1[swap3 & swap6 & swap8]<-ec_data$ec_dil1[swap3 & swap6 & swap8]
   ec_data$dil2[swap3 & swap6 & swap8]<-ec_data$ec_dil3[swap3 & swap6 & swap8]
   ec_data$dil3[swap3 & swap6 & swap8]<-ec_data$ec_dil2[swap3 & swap6 & swap8]
-  
+
   ec_data$count1[swap4 & swap5 & swap8]<-ec_data$ec_ecnt2[swap4 & swap5 & swap8]
   ec_data$count2[swap4 & swap5 & swap8]<-ec_data$ec_ecnt1[swap4 & swap5 & swap8]
   ec_data$count3[swap4 & swap5 & swap8]<-ec_data$ec_ecnt3[swap4 & swap5 & swap8]
   ec_data$dil1[swap4 & swap5 & swap8]<-ec_data$ec_dil2[swap4 & swap5 & swap8]
   ec_data$dil2[swap4 & swap5 & swap8]<-ec_data$ec_dil1[swap4 & swap5 & swap8]
   ec_data$dil3[swap4 & swap5 & swap8]<-ec_data$ec_dil3[swap4 & swap5 & swap8]
-  
+
   ec_data$count1[swap4 & swap6 & swap7]<-ec_data$ec_ecnt3[swap4 & swap6 & swap7]
   ec_data$count2[swap4 & swap6 & swap7]<-ec_data$ec_ecnt2[swap4 & swap6 & swap7]
   ec_data$count3[swap4 & swap6 & swap7]<-ec_data$ec_ecnt1[swap4 & swap6 & swap7]
   ec_data$dil1[swap4 & swap6 & swap7]<-ec_data$ec_dil3[swap4 & swap6 & swap7]
   ec_data$dil2[swap4 & swap6 & swap7]<-ec_data$ec_dil2[swap4 & swap6 & swap7]
   ec_data$dil3[swap4 & swap6 & swap7]<-ec_data$ec_dil1[swap4 & swap6 & swap7]
-  
+
   #check whether threre is a dilution jumping.
   dil_jump1_1<-abs(ec_data$dil1/ec_data$dil2-10)<0.0001
   dil_jump1_2<-abs(ec_data$dil1/ec_data$dil2-100)<0.0001
   dil_jump2_1<-abs(ec_data$dil2/ec_data$dil3-10)<0.0001
   dil_jump2_2<-abs(ec_data$dil2/ec_data$dil3-100)<0.0001
-  
+
   #two dilution cases (1:10 dilution jump and 1:100 dilution jump)
   condition1=which((ec_data$count1==999 | ec_data$count1==998) & (ec_data$count2==999 | ec_data$count2==998) & no_dilution3)
   condition2=which((ec_data$count1==999 | ec_data$count1==998) & ec_data$count2>=10 & ec_data$count2<=200 & no_dilution3)
@@ -129,7 +140,7 @@ create_ecData <- function(collection_data, lab_data) {
   condition8=which(ec_data$count1>=1 & ec_data$count1<=9 & ec_data$count2==0 & no_dilution3)
   condition9=which(ec_data$count1==0 & ec_data$count2==0 & no_dilution3)
   condition10=which((ec_data$count1==999 | ec_data$count1==998) & ec_data$count2==0 & no_dilution3 & dil_jump1_2)
-  
+
   #three dilution cases (1:10 dilution jump and 1:100 dilution jump)
   condition11=which((ec_data$count1==999 | ec_data$count1==998) & (ec_data$count2==999 | ec_data$count2==998) & (ec_data$count3==999 | ec_data$count3==998) & dilution3)
   condition12=which((ec_data$count1==999 | ec_data$count1==998) & (ec_data$count2==999 | ec_data$count2==998) & ec_data$count3>=10 & ec_data$count3<=200 & dilution3)
@@ -153,7 +164,7 @@ create_ecData <- function(collection_data, lab_data) {
   condition30=which(ec_data$count1>=1 & ec_data$count1<=9 & ec_data$count2>=1 & ec_data$count2<=9 & ec_data$count3==0 & dilution3 & dil_jump1_2)
   condition31=which(ec_data$count1>=1 & ec_data$count1<=9 & ec_data$count2==0 & ec_data$count3==0 & dilution3)
   condition32=which(ec_data$count1==0 & ec_data$count2==0 & ec_data$count3==0 & dilution3)
-  
+
   ec_con<-rep(NA,length(ec_data$ec_ecnt1))
   ec_con[condition1]=200/ec_data$dil2[condition1]*ec_data$ec_denom[condition1]
   ec_con[condition2]=ec_data$count2[condition2]/ec_data$dil2[condition2]*ec_data$ec_denom[condition2]
@@ -167,7 +178,7 @@ create_ecData <- function(collection_data, lab_data) {
   #ec_con[condition9]=0.5/(ec_data$dil1[condition9]+ec_data$dil2[condition9])*ec_data$ec_denom[condition9]
   ec_con[condition9]=0.5/ec_data$dil1[condition9]*ec_data$ec_denom[condition9]
   ec_con[condition10]=200/ec_data$dil1[condition10]
-  
+
   ec_con[condition11]=200/ec_data$dil3[condition11]*ec_data$ec_denom[condition11]
   ec_con[condition12]=ec_data$count3[condition12]/ec_data$dil3[condition12]*ec_data$ec_denom[condition12]
   ec_con[condition13]=ec_data$count3[condition13]/ec_data$dil3[condition13]*ec_data$ec_denom[condition13]
@@ -192,26 +203,26 @@ create_ecData <- function(collection_data, lab_data) {
   ec_con[condition32]=0.5/ec_data$dil1[condition32]*ec_data$ec_denom[condition32]
   ec_data$ec_conc<-ec_con
   ec_data$neighbor <- as.factor(ec_data$col_neighborhood)
-  
+
   return(ec_data)
 }
 
 create_concData <- function(ec_data) {
   # Calculate concentration amounts?
-  conc_names <- c("Drain Water", "Produce", "Municipal and Piped Water",'Ocean Water', 'Surface Water', "Flood Water", 
+  conc_names <- c("Drain Water", "Produce", "Municipal and Piped Water",'Ocean Water', 'Surface Water', "Flood Water",
                   "Public Latrine", "Particulate", "Bathing")
   conc<-list()
   for (i in 1:length(unique(as.numeric(ec_data$neighbor)))){
     # sample type 1=drain water, 2=produce, 3=piped water, 4=ocean water, 5=surface water, 6=flood water, 7=Public Latrine Surfaces, 8=particulate, 9=bathing
     for (j in 1:9){
-      conc <- append(conc, 
+      conc <- append(conc,
                         list(conc=list(sample = conc_names[j],
                                        neighborhood = paste("Neighborhood", i),
-                                       data = ec_data$ec_conc[which(ec_data$neighbor==sort(unique(ec_data$neighbor))[i] 
+                                       data = ec_data$ec_conc[which(ec_data$neighbor==sort(unique(ec_data$neighbor))[i]
                                                                                           & ec_data$sample_type==j)])
                         )
       )
-      
+
     }
   }
   return(conc)
@@ -226,8 +237,8 @@ calculate_freq <- function(..., type='pie chart', survey_type=NULL) {
   # sample, neighborhood, age, and data
   # The first three offer the identifying information of the path
   # in question.  The final, data, has the frequency counts. Specify
-  # the type of freqencies necessary by specifying type = 'ppl plot' 
-  # or 'pie chart'.  Default is pie chart. 
+  # the type of freqencies necessary by specifying type = 'ppl plot'
+  # or 'pie chart'.  Default is pie chart.
   #
   # Ex.
   # > calculate_freq(household_data, type= 'pie chart')
@@ -244,14 +255,14 @@ calculate_freq <- function(..., type='pie chart', survey_type=NULL) {
   # Or Ex.
   # > calculate_freq(hh, sch, comm)
 
-  
-  # this allows us to pass multiple data objects without having to explictly 
+
+  # this allows us to pass multiple data objects without having to explictly
   #say what they are. since the surveys always follow a pattern for the question
-  # headers, we can figure out what data we have using that. 
+  # headers, we can figure out what data we have using that.
   dat <- list(...)
   # this should be based on the columns within each export
   data_map <- c('household_data' = 'h_', 'c_' = 'school', 'school_data' = 's_')
-  
+
   # let's figure out what we have
   surveys_matched <- character()
   for (x in dat) { # look at each object that we passed in
@@ -263,26 +274,26 @@ calculate_freq <- function(..., type='pie chart', survey_type=NULL) {
       surveys_matched <- c(surveys_matched, names(data_map[match]))
     }
    }
-  
+
   # some error handling
 #   if (!(length(surveys_matched) == 1 | length(surveys_matched) == 3)) {
 #     stop(paste0('Something is wrong with the data. Either pass 1 or 3 data objects.\n',
 #                 'Matched objects: ', paste(surveys_matched, collapse=', ')))
-#   }   
+#   }
   if (!any(surveys_matched %in% names(data_map))) {
     stop(paste('Unable to determine survey type. Do the column headers have hh, sch, or com in the names?\n',
                'Matched objects:', paste(surveys_matched, collapse=', ')))
-    
+
   }
-  
+
   if (is.null(survey_type)) {
     survey_type <- ifelse(length(surveys_matched) == 3, 'combined', gsub('_data', '', surveys_matched))
   }
-  
+
 
   freq <- list()
   # For each pathway, we're going to look at the neighborhoods and ages-------
-  # drain 
+  # drain
   # determine what neighborhoods we're looking at
   if (survey_type == 'school') {
     neighborhoods <- unique(school_data$s_neighborhood)
@@ -291,11 +302,11 @@ calculate_freq <- function(..., type='pie chart', survey_type=NULL) {
     neighborhoods <- unique(community_data$c_neighborhood)
   }
   else {
-    # if we're looking at combined or household data, we'll use the 
+    # if we're looking at combined or household data, we'll use the
     # household survey to determine what neighborhoods are available for analysis
     neighborhoods <- unique(household_data$h_neighborhood)
-  } 
-  
+  }
+
   for (i in neighborhoods) {
     sub = list(path=
                  list(sample = 'Drain Water',
@@ -315,13 +326,13 @@ calculate_freq <- function(..., type='pie chart', survey_type=NULL) {
                                     'community' = as.numeric(c(rep(1,sum(community_data$c_d_a_3[which(community_data$c_neighborhood==i)])),rep(2,sum(community_data$c_d_a_2[which(community_data$c_neighborhood==i)])),
                                                                rep(3,sum(community_data$c_d_a_1[which(community_data$c_neighborhood==i)])),rep(4,sum(community_data$c_d_a_0[which(community_data$c_neighborhood==i)]))))
                       ) # end of switch
-                                    
+
                       ),
                path=
                  list(sample = 'Drain Water',
                       age = 'Children',
                       neighborhood = paste('Neighborhood',i),
-                      data = switch(survey_type, 
+                      data = switch(survey_type,
                                     'combined' = c(as.numeric(household_data$h_d_c[which(household_data$h_d_c!="n/a" & household_data$h_neighborhood==i)]),
                                                    as.numeric(c(rep(1,sum(school_data$s_d_c_3[which(school_data$s_neighborhood==i)])),rep(2,sum(school_data$s_d_c_2[which(school_data$s_neighborhood==i)])),
                                                                 rep(3,sum(school_data$s_d_c_1[which(school_data$s_neighborhood==i)])),rep(4,sum(school_data$s_d_c_0[which(school_data$s_neighborhood==i)])))),
@@ -340,7 +351,7 @@ calculate_freq <- function(..., type='pie chart', survey_type=NULL) {
                  list(sample = 'Produce',
                       age = 'Adults',
                       neighborhood = paste('Neighborhood',i),
-                      data = switch(survey_type, 
+                      data = switch(survey_type,
                                     'combined' = c(as.numeric(household_data$h_p_a[which(household_data$h_p_a!="n/a" & household_data$h_neighborhood==i)]),
                                                   as.numeric(c(rep(1,sum(school_data$s_p_a_3[which(school_data$s_neighborhood==i)])),rep(2,sum(school_data$s_p_a_2[which(school_data$s_neighborhood==i)])),
                                                                rep(3,sum(school_data$s_p_a_1[which(school_data$s_neighborhood==i)])),rep(4,sum(school_data$s_p_a_0[which(school_data$s_neighborhood==i)])),
@@ -359,7 +370,7 @@ calculate_freq <- function(..., type='pie chart', survey_type=NULL) {
                  list(sample = 'Produce',
                       age = 'Children',
                       neighborhood = paste('Neighborhood',i),
-                      data = switch(survey_type, 
+                      data = switch(survey_type,
                                     'combined' = c(as.numeric(household_data$h_p_c[which(household_data$h_p_c!="n/a" & household_data$h_neighborhood==i)]),
                                                    as.numeric(c(rep(1,sum(school_data$s_p_c_3[which(school_data$s_neighborhood==i)])),rep(2,sum(school_data$s_p_c_2[which(school_data$s_neighborhood==i)])),
                                                                 rep(3,sum(school_data$s_p_c_1[which(school_data$s_neighborhood==i)])),rep(4,sum(school_data$s_p_c_0[which(school_data$s_neighborhood==i)])))),
@@ -378,7 +389,7 @@ calculate_freq <- function(..., type='pie chart', survey_type=NULL) {
                  list(sample = 'Municipal and Piped Water',
                       age = 'Adults',
                       neighborhood = paste('Neighborhood',i),
-                      data = switch(survey_type, 
+                      data = switch(survey_type,
                                     'combined' = c(as.numeric(household_data$h_m_a[which(household_data$h_m_a!="n/a" & household_data$h_neighborhood==i)]),
                                                    as.numeric(c(rep(1,sum(school_data$s_m_a_3[which(school_data$s_neighborhood==i)])),rep(2,sum(school_data$s_m_a_2[which(school_data$s_neighborhood==i)])),
                                                                 rep(3,sum(school_data$s_m_a_1[which(school_data$s_neighborhood==i)])),rep(4,sum(school_data$s_m_a_0[which(school_data$s_neighborhood==i)])),
@@ -397,7 +408,7 @@ calculate_freq <- function(..., type='pie chart', survey_type=NULL) {
                  list(sample = 'Municipal and Piped Water',
                     age = 'Children',
                       neighborhood = paste('Neighborhood',i),
-                      data = switch(survey_type, 
+                      data = switch(survey_type,
                                     'combined' = c(as.numeric(household_data$h_m_c[which(household_data$h_m_c!="n/a" & household_data$h_neighborhood==i)]),
                                                    as.numeric(c(rep(1,sum(school_data$s_m_c_3[which(school_data$s_neighborhood==i)])),rep(2,sum(school_data$s_m_c_2[which(school_data$s_neighborhood==i)])),
                                                                 rep(3,sum(school_data$s_m_c_1[which(school_data$s_neighborhood==i)])),rep(4,sum(school_data$s_m_c_0[which(school_data$s_neighborhood==i)])))),
@@ -416,7 +427,7 @@ calculate_freq <- function(..., type='pie chart', survey_type=NULL) {
                  list(sample = 'Ocean Water',
                       age = 'Adults',
                       neighborhood = paste('Neighborhood',i),
-                      data = switch(survey_type, 
+                      data = switch(survey_type,
                                     'combined' = c(as.numeric(household_data$h_o_a[which(household_data$h_o_a!="n/a" & household_data$h_neighborhood==i)]),
                                                    as.numeric(c(rep(1,sum(school_data$s_o_a_3[which(school_data$s_neighborhood==i)])),rep(2,sum(school_data$s_o_a_2[which(school_data$s_neighborhood==i)])),
                                                                 rep(3,sum(school_data$s_o_a_1[which(school_data$s_neighborhood==i)])),rep(4,sum(school_data$s_o_a_0[which(school_data$s_neighborhood==i)])),
@@ -430,13 +441,13 @@ calculate_freq <- function(..., type='pie chart', survey_type=NULL) {
                                     'community' = as.numeric(c(rep(1,sum(community_data$c_o_a_3[which(community_data$c_neighborhood==i)])),rep(2,sum(community_data$c_o_a_2[which(community_data$c_neighborhood==i)])),
                                                                rep(3,sum(community_data$c_o_a_1[which(community_data$c_neighborhood==i)])),rep(4,sum(community_data$c_o_a_0[which(community_data$c_neighborhood==i)]))))
                       ) # end of switch
-                                    
+
                  ),
                path=
                  list(sample = 'Ocean Water',
                       age = 'Children',
                       neighborhood = paste('Neighborhood',i),
-                      data = switch(survey_type, 
+                      data = switch(survey_type,
                                     'combined' = c(as.numeric(household_data$h_o_c[which(household_data$h_o_c!="n/a" & household_data$h_neighborhood==i)]),
                                                    as.numeric(c(rep(1,sum(school_data$s_o_c_3[which(school_data$s_neighborhood==i)])),rep(2,sum(school_data$s_o_c_2[which(school_data$s_neighborhood==i)])),
                                                                 rep(3,sum(school_data$s_o_c_1[which(school_data$s_neighborhood==i)])),rep(4,sum(school_data$s_o_c_0[which(school_data$s_neighborhood==i)])))),
@@ -455,7 +466,7 @@ calculate_freq <- function(..., type='pie chart', survey_type=NULL) {
                  list(sample = 'Surface Water',
                       age = 'Adults',
                       neighborhood = paste('Neighborhood',i),
-                      data = switch(survey_type, 
+                      data = switch(survey_type,
                                     'combined' = c(as.numeric(household_data$h_s_a[which(household_data$h_s_a!="n/a" & household_data$h_neighborhood==i)]),
                                                   as.numeric(c(rep(1,sum(school_data$s_s_a_3[which(school_data$s_neighborhood==i)])),rep(2,sum(school_data$s_s_a_2[which(school_data$s_neighborhood==i)])),
                                                                rep(3,sum(school_data$s_s_a_1[which(school_data$s_neighborhood==i)])),rep(4,sum(school_data$s_s_a_0[which(school_data$s_neighborhood==i)])),
@@ -474,7 +485,7 @@ calculate_freq <- function(..., type='pie chart', survey_type=NULL) {
                  list(sample = 'Surface Water',
                       age = 'Children',
                       neighborhood = paste('Neighborhood',i),
-                      data = switch(survey_type, 
+                      data = switch(survey_type,
                                     'combined' = c(as.numeric(household_data$h_s_c[which(household_data$h_s_c!="n/a" & household_data$h_neighborhood==i)]),
                                                    as.numeric(c(rep(1,sum(school_data$s_s_c_3[which(school_data$s_neighborhood==i)])),rep(2,sum(school_data$s_s_c_2[which(school_data$s_neighborhood==i)])),
                                                                 rep(3,sum(school_data$s_s_c_1[which(school_data$s_neighborhood==i)])),rep(4,sum(school_data$s_s_c_0[which(school_data$s_neighborhood==i)])))),
@@ -493,7 +504,7 @@ calculate_freq <- function(..., type='pie chart', survey_type=NULL) {
                  list(sample = 'Flood Water',
                       age = 'Adults',
                       neighborhood = paste('Neighborhood',i),
-                      data = switch(survey_type, 
+                      data = switch(survey_type,
                                     'combined' = c(as.numeric(household_data$h_f_a[which(household_data$h_f_a!="n/a" & household_data$h_neighborhood==i)]),
                                                    as.numeric(c(rep(1,sum(school_data$s_f_a_3[which(school_data$s_neighborhood==i)])),rep(2,sum(school_data$s_f_a_2[which(school_data$s_neighborhood==i)])),
                                                                 rep(3,sum(school_data$s_f_a_1[which(school_data$s_neighborhood==i)])),rep(4,sum(school_data$s_f_a_0[which(school_data$s_neighborhood==i)])),
@@ -512,7 +523,7 @@ calculate_freq <- function(..., type='pie chart', survey_type=NULL) {
                  list(sample = 'Flood Water',
                       age = 'Children',
                       neighborhood = paste('Neighborhood',i),
-                      data = switch(survey_type, 
+                      data = switch(survey_type,
                                     'combined' = c(as.numeric(household_data$h_f_c[which(household_data$h_f_c!="n/a" & household_data$h_neighborhood==i)]),
                                                    as.numeric(c(rep(1,sum(school_data$s_f_c_3[which(school_data$s_neighborhood==i)])),rep(2,sum(school_data$s_f_c_2[which(school_data$s_neighborhood==i)])),
                                                                 rep(3,sum(school_data$s_f_c_1[which(school_data$s_neighborhood==i)])),rep(4,sum(school_data$s_f_c_0[which(school_data$s_neighborhood==i)])))),
@@ -531,7 +542,7 @@ calculate_freq <- function(..., type='pie chart', survey_type=NULL) {
                  list(sample = 'Public Latrine',
                       age = 'Adults',
                       neighborhood = paste('Neighborhood',i),
-                      data = switch(survey_type, 
+                      data = switch(survey_type,
                                     'combined' = c(as.numeric(household_data$h_l_a[which(household_data$h_l_a!="n/a" & household_data$h_neighborhood==i)]),
                                                    as.numeric(c(rep(1,sum(school_data$s_l_a_3[which(school_data$s_neighborhood==i)])),rep(2,sum(school_data$s_l_a_2[which(school_data$s_neighborhood==i)])),
                                                                 rep(3,sum(school_data$s_l_a_1[which(school_data$s_neighborhood==i)])),rep(4,sum(school_data$s_l_a_0[which(school_data$s_neighborhood==i)])),
@@ -550,7 +561,7 @@ calculate_freq <- function(..., type='pie chart', survey_type=NULL) {
                  list(sample = 'Public Latrine',
                       age = 'Children',
                       neighborhood = paste('Neighborhood',i),
-                      data = switch(survey_type, 
+                      data = switch(survey_type,
                                     'combined' = c(as.numeric(household_data$h_l_c[which(household_data$h_l_c!="n/a" & household_data$h_neighborhood==i)]),
                                                    as.numeric(c(rep(1,sum(school_data$s_l_c_3[which(school_data$s_neighborhood==i)])),rep(2,sum(school_data$s_l_c_2[which(school_data$s_neighborhood==i)])),
                                                                 rep(3,sum(school_data$s_l_c_1[which(school_data$s_neighborhood==i)])),rep(4,sum(school_data$s_l_c_0[which(school_data$s_neighborhood==i)])))),
@@ -565,14 +576,14 @@ calculate_freq <- function(..., type='pie chart', survey_type=NULL) {
                                                                 rep(5,sum(community_data$c_l_c_na[which(community_data$c_neighborhood==i)]))))
                       ) # end of switch
                  )
-               
+
     )
 
     freq <- append(freq, sub)
 
   }
-  
-  # lastly, make sure it's the right numbers. 
+
+  # lastly, make sure it's the right numbers.
   if (type == 'pie chart') {
     return(freq)
   }
@@ -592,48 +603,50 @@ calculate_freq <- function(..., type='pie chart', survey_type=NULL) {
 
 
 create_freqTbl <- function(freq_vector, sample_type) {
-  # convert the answers from the frequency calculation funcitons into 
+  # convert the answers from the frequency calculation funcitons into
   # a table for plotting
   labels <- unlist(ifelse(sample_type=='Municipal and Piped Water', list(c("everyday","4-6/wk","1-3/wk","never","don't know")),
                           ifelse(sample_type=="Produce" | sample_type=="Public Latrine Surfaces",list(c(">10/mo","6-10/mo","1-5/mo","never","don't know")),
                           list(c(">10/mo","6-10/mo","1-5/mo","never","don't know"))))
   )
-  colors <- c('#00FF00', '#99FF00', '#FF6600', '#FF0000', '#333333')
-  
+  #colors <- c('#00FF00', '#99FF00', '#FF6600', '#FF0000', '#333333')
+  colors <- c("#F8766D", "#A3A500", "#00BF7D", "#00B0F6", "#E76BF3")
+
   tbl <- as.data.frame(table('answer'= freq_vector))
-  tbl$color <- factor(colors[tbl$answer], levels=colors[tbl$answer])
-  tbl$answer <- labels[tbl$answer]
+  tbl$color <- colors[factor_to_numeric(tbl$answer)]
+  tbl$answer <- labels[factor_to_numeric(tbl$answer)]
+  tbl$Freq <- factor_to_numeric(tbl$Freq)
   tbl$breaks <- cumsum(tbl$Freq) - tbl$Freq / 2
-  tbl$labels = paste(tbl$answer, "\n", paste0(round(tbl$Freq / sum(tbl$Freq) * 100, 1),"%")) 
+  tbl$labels = paste(tbl$answer, "\n", paste0(round(tbl$Freq / sum(tbl$Freq) * 100, 1),"%"))
   return(tbl)
 }
 
 # People Plotting
 calculate_pplPlotData <- function(freq, conc, nburn=1000, niter=10000, thin=1, cutpoint=c(0, 5, 10), shinySession=NULL) {
-  # function to caclulate the percent of population 
-  # exposed for all pathways given.  performs Bayesian 
+  # function to caclulate the percent of population
+  # exposed for all pathways given.  performs Bayesian
   # analysis on behavior and environmental data first
   # then calculates the final statistics for plotting
-  
+
   # run the Bayesian analyses
   freq <- bayesian_behavior_estimates(freq, nburn, niter, thin, cutpoint, shinySession=shinySession)
   conc <- bayesian_environmental_estimates(conc, nburn, niter, thin, shinySession=shinySession)
-  
-  
+
+
   # based on the original ps_plot section of the shiny server,
   # it seems they are based on the behavoir data
   # need to find the number of neighborhoods
   # and samples
-  
+
   neighborhoods <- c(unique(names(list.names(conc, neighborhood))), unique(names(list.names(freq, neighborhood)))) # unique neighborhood values
   neighborhoods <- unique(neighborhoods[duplicated(neighborhoods)]) # if it's duplicated, then it will show up in both freq and conc
-  
-  # Bathing water can be assumed as 30, all others should be present to calculate 
+
+  # Bathing water can be assumed as 30, all others should be present to calculate
   samples <- c(unique(names(list.names(conc, sample))), unique(names(list.names(freq, sample)))) # unique sample values
   samples <- unique(samples[duplicated(samples)])
-  
+
   age <- unique(names(list.names(freq, age)))
-  
+
   ps.freq <- list()
   for (smp in samples) {
     print(smp)
@@ -644,28 +657,28 @@ calculate_pplPlotData <- function(freq, conc, nburn=1000, niter=10000, thin=1, c
       # calculate exposure for adults and children using the behavior data
       for (a in age) {
         print(a)
-        # filter frequency to just the age we want 
+        # filter frequency to just the age we want
         sub.freq <- freq[[list.which(freq, sample == smp && neighborhood == nb && age == a)]]
-        
+
         # calculate the exposure. Requires concentration, freq is optional
         exposed <- calculate_exposure(sub.freq, sub.conc, smp)
-        
+
         # update the object at this position
         ps.freq <- append(ps.freq, list('path' = exposed))
       }
     }
   }
-  
+
   # give back the updated behavior data object
   return(ps.freq)
 }
 
 bayesian_environmental_estimates <- function(conc, nburn=1000, niter=10000, thin=1, shinySession=NULL) {
-  # Run bayesian model on the environmental data collected.  this will be run for each 
-  # neighborhood, age, and sample combination.  Warning: Could take quite a while. 
+  # Run bayesian model on the environmental data collected.  this will be run for each
+  # neighborhood, age, and sample combination.  Warning: Could take quite a while.
   # Future development: Way of backgrounding this?
   calcul <- paste(nburn,niter,thin,sep="|")
-  
+
   # environmental samples
   tomonitor <- c("mu","sigma")
   if (!is.null(shinySession)) {
@@ -673,14 +686,14 @@ bayesian_environmental_estimates <- function(conc, nburn=1000, niter=10000, thin
       for (k in 1:length(conc)){
         log_ec<-log10(as.numeric(conc[[k]]$data))
         env_data<-list(lnconc=log_ec,N=length(log_ec))
-        
+
         modelpos <- jags.model(file="./model/env_model.jags",data=env_data,n.chains=3);
         update(modelpos,n.burn=nburn);
         env_mcmcpos <- coda.samples(modelpos,tomonitor,n.iter=niter,thin=thin);
         #Bayesian estimators of mu and sigma
         mu <-summary(env_mcmcpos)$statistics[1,1]
         sigma <-summary(env_mcmcpos)$statistics[2,1]
-        
+
         conc[[k]] <- append(conc[[k]], list('mu' = mu, 'sigma' = sigma))
         incProgress(k/length(conc), session=shinySession)
       }
@@ -690,28 +703,28 @@ bayesian_environmental_estimates <- function(conc, nburn=1000, niter=10000, thin
     for (k in 1:length(conc)){
       log_ec<-log10(as.numeric(conc[[k]]$data))
       env_data<-list(lnconc=log_ec,N=length(log_ec))
-      
+
       modelpos <- jags.model(file="./model/env_model.jags",data=env_data,n.chains=3);
       update(modelpos,n.burn=nburn);
       env_mcmcpos <- coda.samples(modelpos,tomonitor,n.iter=niter,thin=thin);
       #Bayesian estimators of mu and sigma
       mu <-summary(env_mcmcpos)$statistics[1,1]
       sigma <-summary(env_mcmcpos)$statistics[2,1]
-      
+
       conc[[k]] <- append(conc[[k]], list('mu' = mu, 'sigma' = sigma))
-      
+
     }
   }
-  
+
 
   return(conc)
 }
 
 bayesian_behavior_estimates <- function(freq, nburn=1000, niter=10000, thin=1, cutpoint=c(0, 5, 10), shinySession=NULL) {
-  # Run bayesian model on the behavior data collected.  this will be run for each 
-  # neighborhood, age, and sample combination.  Warning: Could take quite a while. 
+  # Run bayesian model on the behavior data collected.  this will be run for each
+  # neighborhood, age, and sample combination.  Warning: Could take quite a while.
   # Future development: Way of backgrounding this?
-  
+
   bemonitor <- c("p","r")
   calcul <- paste(nburn,niter,thin,sep="|")
   if (!is.null(shinySession)) {
@@ -727,31 +740,31 @@ bayesian_behavior_estimates <- function(freq, nburn=1000, niter=10000, thin=1, c
         init_be[which(freq_be==1)]<-1
         init_be[which(freq_be==2)]<-2
         init_be[which(freq_be==3)]<-3
-        
+
         init_freq_be<-as.numeric(rep(NA,length(freq_be)))
         init_freq_be[which(freq_be==1)]<-2
         init_freq_be[which(freq_be==2)]<-7
         init_freq_be[which(freq_be==3)]<-12
-        
+
         be_data<-list(select=freq_be,N=length(freq_be),cut=cutpoint)
         init<-list(freq=init_freq_be,r=1,p=0.2)
-        
+
         # Jags model runs
         modelpos <- jags.model(file="./model/be_model.jags",data=be_data,n.chains=3,inits=init)
         update(modelpos,n.burn=nburn)
         cat('Coda Samples\n\n')
         be_mcmcpos <- coda.samples(modelpos, bemonitor, n.iter=niter, thin=thin)
-        
+
         # Extract results
         # Bayesian estimators of p and r
         p <-summary(be_mcmcpos)$statistics[1,1]
         r <-summary(be_mcmcpos)$statistics[2,1]
-        
+
         freq[[k]] <- append(freq[[k]], list('p' = p, 'r' = r))
-        
+
         incProgress(k/length(freq), session=shinySession)
       }
-      
+
     }, message='Bayesian Behavior Analysis', session=shinySession, value=0)
   }
   else {
@@ -765,28 +778,28 @@ bayesian_behavior_estimates <- function(freq, nburn=1000, niter=10000, thin=1, c
       init_be[which(freq_be==1)]<-1
       init_be[which(freq_be==2)]<-2
       init_be[which(freq_be==3)]<-3
-      
+
       init_freq_be<-as.numeric(rep(NA,length(freq_be)))
       init_freq_be[which(freq_be==1)]<-2
       init_freq_be[which(freq_be==2)]<-7
       init_freq_be[which(freq_be==3)]<-12
-      
+
       be_data<-list(select=freq_be,N=length(freq_be),cut=cutpoint)
       init<-list(freq=init_freq_be,r=1,p=0.2)
-      
+
       # Jags model runs
       modelpos <- jags.model(file="./model/be_model.jags",data=be_data,n.chains=3,inits=init)
       update(modelpos,n.burn=nburn)
       cat('Coda Samples\n\n')
       be_mcmcpos <- coda.samples(modelpos, bemonitor, n.iter=niter, thin=thin)
-      
+
       # Extract results
       # Bayesian estimators of p and r
       p <-summary(be_mcmcpos)$statistics[1,1]
       r <-summary(be_mcmcpos)$statistics[2,1]
-      
+
       freq[[k]] <- append(freq[[k]], list('p' = p, 'r' = r))
-      
+
     }
   }
   return(freq)
@@ -798,14 +811,14 @@ calculate_exposure <- function(behavior_data, concentration_data, smp) {
   e <- rep(NA, 1000)
   f <- rep(NA, 1000)
   risk <- rep(NA, 1000)
-  
+
   # values applied based on sample and age
   intake<-array(c(0.0006,1,10.43,0.0154,0.037,0.0006,0.034,NA,0.0499,
                   0.01,0.5,4.14,0.2042,0.2042,0.01,0.034,NA,0.09975),c(9,2)) #need to input this information!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  rownames(intake) <- c('Drain Water', 'Produce', 'Municipal and Piped Water', 'Ocean Water', 'Surface Water', 
+  rownames(intake) <- c('Drain Water', 'Produce', 'Municipal and Piped Water', 'Ocean Water', 'Surface Water',
                         'Flood Water', 'Public Latrine', 'Particulate', 'Bathing')
   colnames(intake) <- c("Adults", "Children")
-  
+
   # simulate some numbers
   for (m in 1:1000){
     # is it necessary for this to be in a loop?
@@ -821,20 +834,20 @@ calculate_exposure <- function(behavior_data, concentration_data, smp) {
     }
     risk[m] <- f[m]* (10^e[m]) * intake[behavior_data$sample, behavior_data$age]
   }
-  
+
   non0 <- function(mc){
     tmp <- mc; tmp[!(tmp>0)] <- NA
     return(tmp)
   }
-  
+
   n <-(1-length(which(f==0))/1000)*100;
   dose <-log10(mean(non0(risk),na.rm=TRUE))
   # add the percent exposure and dose information to the behavior data
   behavior_data <- append(behavior_data, list('n' = n, 'dose' = dose))
-  
+
   # give the updated object back
   return(behavior_data)
-  
+
 }
 
 factor_to_numeric <- function(x) {

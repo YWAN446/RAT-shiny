@@ -30,11 +30,25 @@ community_data <- formhubGET_csv(baseURL, usr, pwd, 'Community')
 
 ec_data <- create_ecData(collection_data, lab_data)
 conc <- create_concData(ec_data)
+gen_hist(conc)
+
+path<-c("Drain Water", "Produce", "Piped Water", 
+        "Ocean Water", "Surface Water", "Flood Water",
+        "Public Latrine Surfaces", "Particulate", "Bathing",
+        "Ice", "Water Supply", "Bottled Water", "Well Water")
+
+age<-c("Adults","Children")
+neighborhood<-c("Chong Kaosou (Informal)","Kumruthemey (Informal)","Kumruthemey (Formal)","Steung Thumey (Formal)","Veal/Trapangses (Formal)")
+
+freq<-calculate_freq(household_data,survey_type = "household")
+
+i=1
+my_pie<-create_pieChart(freq[[i]]$data,freq[[i]]$sample,paste0(neighborhood[as.numeric(substring(freq[[i]]$neighborhood,14,14))],"\n",freq[[i]]$age," ",freq[[i]]$sample))
+print(my_pie)
 
 ps.freq <- calculate_freq(household_data, school_data, community_data, type='ppl plot', survey_type='combined')
 
 ps.freq <- calculate_pplPlotData(ps.freq, conc)
-
 
 report_r <- report_results(ps.freq)
 
