@@ -1,1 +1,5 @@
-ui.r
+library(shiny)
+
+shinyUI(
+  uiOutput('page')
+)
