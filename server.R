@@ -53,11 +53,10 @@ shinyServer(function(input, output, session) {
         if (input$Login > 0) {
           Username <- isolate(input$userName)
           Password <- isolate(input$passwd)
-          check <- formhubCheck_user(baseURL, Username, Password, test_form)
+          check <- kt_checkUser(baseURL, Username, Password)
           print(check)
           if (check == T) {
             USER$Logged <- TRUE
-
           }
           else {
             output$login_status <- renderText("Invalid credentials! Please check the username and password.")
@@ -95,12 +94,17 @@ shinyServer(function(input, output, session) {
       output$page <- renderUI({
         main_ui
       })
-      updateSelectizeInput(session, 'col_file', selected=collection_form)
-      updateSelectizeInput(session, 'lab_file', selected=lab_form)
-      updateSelectizeInput(session, 'hh_file', selected=household_form)
-      updateSelectizeInput(session, 'sch_file', selected=school_form)
-      updateSelectizeInput(session, 'com_file', selected=community_form)
-
+      forms <- kt_getForms(baseURL, input$userName, input$passwd)
+      print(forms)
+      map <- list(list('form' = 'col_file', 'filter' = 'Sample'),
+                  list('form' = 'lab_file', 'filter' = 'Lab'), 
+                  list('form' = 'hh_file', 'filter' = 'Household'),
+                  list('form' = 'sch_file', 'filter' = 'School'),
+                  list('form' = 'com_file', 'filter'= 'Community'))
+      lapply(map, function(x) {
+        opts <- filterAPI_forms(x$filter, forms)
+        updateSelectizeInput(session, x$form, choices=opts, selected=opts[1])
+      })
     }
   })
   usr <- reactive({isolate(input$userName)})
@@ -138,7 +142,7 @@ shinyServer(function(input, output, session) {
     if (is.null(input$sch_csv)) {
       
       withProgress(
-        formhubGET_csv(baseURL, usr(), pwd(), input$sch_file),
+        kt_getData(baseURL, usr(), pwd(), input$sch_file),
         message = 'Downloading Data', value = 20)
     }
     else {
@@ -153,7 +157,7 @@ shinyServer(function(input, output, session) {
    community_data <- eventReactive(input$update_forms, {
     if (is.null(input$com_csv)) {
       withProgress(
-        formhubGET_csv(baseURL, usr(), pwd(), input$com_file),
+        kt_getData(baseURL, usr(), pwd(), input$com_file),
         message = 'Downloading Data', value = 40)
     }
     else {
@@ -169,7 +173,7 @@ shinyServer(function(input, output, session) {
   household_data <- eventReactive(input$update_forms,  { 
     if (is.null(input$hh_csv)) {
       withProgress(
-        formhubGET_csv(baseURL, usr(), pwd(), input$hh_file),
+        kt_getData(baseURL, usr(), pwd(), input$hh_file),
         message = 'Downloading Data', value = 60)
     }
     else {
@@ -186,7 +190,7 @@ shinyServer(function(input, output, session) {
     if (is.null(input$col_csv)) {
       
       withProgress(
-        formhubGET_csv(baseURL, usr(), pwd(), input$col_file),
+        kt_getData(baseURL, usr(), pwd(), input$col_file),
         message = 'Downloading Data', value = 80)
     }
     else {
@@ -203,7 +207,7 @@ shinyServer(function(input, output, session) {
   lab_data <- eventReactive(input$update_forms, {
     if (is.null(input$lab_csv)) {
       withProgress(
-        formhubGET_csv(baseURL, usr(), pwd(), input$lab_file),
+        kt_getData(baseURL, usr(), pwd(), input$lab_file),
         message = 'Downloading Data', value = 100)
     }
     else {
@@ -367,60 +371,60 @@ shinyServer(function(input, output, session) {
     
   })
   
-  ps.freq <- reactive({
-    print('bayesian calculations')
-    
-    types <- c('combined', 'household', 'school', 'community')
-    freq <- calculate_freq(household_data(), school_data(), community_data(), type='ppl plot', survey_type= types[as.numeric(input$surtype)+1])
-    calculate_pplPlotData(freq, conc(), shinySession=session) # letting the defaults lazy load 
-    
-    })
-
-
-  
-
-
-  ppl_plot_order <- reactive({
-    ordered_shinyCharts(ps.freq(), columns= input$num_columns, level1_type = input$level1, level2_type = input$level2,
-                        sample_filter=input$sample, neighborhood_filter = input$neighborhood, age_filter = input$age,
-                        height = input$ph, width = input$pw, shinySession=session, chart_prefix = 'ppl-')
-  })
-  
-  # this will actually render them for the UI
-  output$ppl_plots <- renderUI({
-    ppl_plot_order()
-    do.call(tagList, ppl_plot_order())
-  })
-  
-  # generate the people plots
-  observe({
-    print('triggered---------------------------------------------------------')
-    dat <- ps.freq()
-    dat <- dat[list.which(dat, sample %in% input$sample && 
-                            neighborhood %in% input$neighborhood &&
-                            age %in% input$age)]
-    
-    count <- 1
-    for (i in dat) {
-      local({
-        withProgress({
-          my_i <- i
-          print(my_i)
-          p_name <- paste0('ppl-',my_i$sample,"-",my_i$neighborhood, '-', my_i$age)
-          p_name <- gsub(' ', '', p_name)
-          output[[p_name]] <- renderPlot({
-            PS_Plot(paste0(my_i$neighborhood,", ", my_i$sample, ', ', my_i$age), as.numeric(my_i$n), as.numeric(my_i$dose))
-          })
-        }, message = 'Generating People Plots', session=session, value= count/length(dat)
-        )
-      })
-      # incProgress(count/length(dat), session = session)
-      count <- count + 1
-    }
-    
-  })
-
-  
+  # ps.freq <- reactive({
+  #   print('bayesian calculations')
+  #   
+  #   types <- c('combined', 'household', 'school', 'community')
+  #   freq <- calculate_freq(household_data(), school_data(), community_data(), type='ppl plot', survey_type= types[as.numeric(input$surtype)+1])
+  #   calculate_pplPlotData(freq, conc(), shinySession=session) # letting the defaults lazy load 
+  #   
+  #   })
+  # 
+  # 
+  # 
+  # 
+  # 
+  # ppl_plot_order <- reactive({
+  #   ordered_shinyCharts(ps.freq(), columns= input$num_columns, level1_type = input$level1, level2_type = input$level2,
+  #                       sample_filter=input$sample, neighborhood_filter = input$neighborhood, age_filter = input$age,
+  #                       height = input$ph, width = input$pw, shinySession=session, chart_prefix = 'ppl-')
+  # })
+  # 
+  # # this will actually render them for the UI
+  # output$ppl_plots <- renderUI({
+  #   ppl_plot_order()
+  #   do.call(tagList, ppl_plot_order())
+  # })
+  # 
+  # # generate the people plots
+  # observe({
+  #   print('triggered---------------------------------------------------------')
+  #   dat <- ps.freq()
+  #   dat <- dat[list.which(dat, sample %in% input$sample && 
+  #                           neighborhood %in% input$neighborhood &&
+  #                           age %in% input$age)]
+  #   
+  #   count <- 1
+  #   for (i in dat) {
+  #     local({
+  #       withProgress({
+  #         my_i <- i
+  #         print(my_i)
+  #         p_name <- paste0('ppl-',my_i$sample,"-",my_i$neighborhood, '-', my_i$age)
+  #         p_name <- gsub(' ', '', p_name)
+  #         output[[p_name]] <- renderPlot({
+  #           PS_Plot(paste0(my_i$neighborhood,", ", my_i$sample, ', ', my_i$age), as.numeric(my_i$n), as.numeric(my_i$dose))
+  #         })
+  #       }, message = 'Generating People Plots', session=session, value= count/length(dat)
+  #       )
+  #     })
+  #     # incProgress(count/length(dat), session = session)
+  #     count <- count + 1
+  #   }
+  #   
+  # })
+  # 
+  # 
   ## Tables for raw printing ------------------------------------------------------------------------------------------------------------
   output$raw_table <- renderDataTable({
     switch(input$raw_view,

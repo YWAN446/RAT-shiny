@@ -250,7 +250,7 @@ calculate_freq <- function(..., type='pie chart', survey_type=NULL) {
   # headers, we can figure out what data we have using that. 
   dat <- list(...)
   # this should be based on the columns within each export
-  data_map <- c('household_data' = 'h_', 'c_' = 'school', 'school_data' = 's_')
+  data_map <- c('household_data' = '^h_', 'community_data' = '^c_', 'school_data' = '^s_')
   
   # let's figure out what we have
   surveys_matched <- character()

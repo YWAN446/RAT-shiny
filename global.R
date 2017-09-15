@@ -1,6 +1,6 @@
 ## Server Settings
 
-baseURL <- 'https://tool.sanipath.org/'
+baseURL <- 'https://rat.sanipath.org/'
 
 # Test form
 test_form <- 'Register_Enumerator'
