@@ -1,5 +1,4 @@
 library(httr)
-library(dplyr)
 library(jsonlite)
 
 ## API Helpers -------------------------------------------------------------
