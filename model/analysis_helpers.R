@@ -841,3 +841,4 @@ factor_to_numeric <- function(x) {
   # convert factor or character data to numeric
   return(as.numeric(as.character(x)))
 }
+
