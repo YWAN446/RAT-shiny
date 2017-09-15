@@ -38,7 +38,8 @@ PS_Plot<-function(main,num,ln_conc){
   
   img.red<-img_to_colorramp(img.red,colorramp)
   plot(1:2,type="n",xlim=c(0,3.68),ylim=c(0,7.27),xaxt="n",yaxt="n",xlab="",ylab="",
-       main=main, sub=paste("\nPercent Exposed =",n,"%","\nLog10 Dose=",signif(ln_conc,digits=3)),bty='n',cex.main=1.2)
+       #main=main, sub=paste("\nPercent Exposed =",n,"%","\nLog10 Dose=",signif(ln_conc,digits=3)),bty='n',cex.main=1.2)
+       main=paste("\nPercent Exposed =",n,"%","\nLog10 Dose=",signif(ln_conc,digits=3)),bty='n',cex.main=1.2)
   if (n<0 | n>100) print("Warning: Percent Exposed should between 0 and 100%!");
   if (n==0) {
     for (j in 0:99){

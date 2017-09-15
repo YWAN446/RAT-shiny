@@ -71,7 +71,7 @@ ordered_shinyCharts <- function(dat, columns=2, level1_type=NULL, level2_type=NU
           l2_sub <- dat[list.which(dat, eval(parse(text=stated_types[1])) == l1 && # level 1 filter
                                      eval(parse(text=stated_types[2])) == l2 && # level 2 filter
                                      eval(parse(text=stated_types[3])) %in% level3_filter)] # match anything in the level 3 filter
-
+          l2_sub <- l2_sub[unlist(lapply(l2_sub, function(x) length(x$data) > 0))]
           # make plot names for the options that matched by combining sample + neighborhood + age
           plot_names <- sapply(1:length(l2_sub), function(x) paste0(chart_prefix, l2_sub[x]$path$sample, '-', l2_sub[x]$path$neighborhood, "-", l2_sub[x]$path$age))
           # there are spaces in the names, since we're using the for labels too,
@@ -233,7 +233,7 @@ ordered_shinyHists <- function(dat, columns=2, level1_type=NULL,
 }
 make_histogram <- function(conc, title) {
   # make a histogram with a specific path data
-    hist(log10(as.numeric(conc)),breaks=seq(0,10,by=1),col="skyblue",ylim=c(0,1),freq=FALSE,yaxt="n",ylab="percent",
+    hist(log10(as.numeric(conc)),breaks=seq(-2,10,by=1),col="skyblue",ylim=c(0,1),freq=FALSE,yaxt="n",ylab="percent",
          main=title,
          cex.main=1.3,xlab=expression(paste("log10 ", italic("E. coli"), "concentration (CFU/100mL)")))
   axis(2,c("0%","20%","40%","60%","80%","100%"),at=seq(0,1,0.2))
