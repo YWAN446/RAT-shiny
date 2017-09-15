@@ -2,7 +2,6 @@ library(shiny)
 source('global.R') # this is supposed to automatically be loaded, but it doesn't seem to be. 
 
 # see global.R for configuration files and settings 
-# **DO NOT COMMIT global.R to git since it contains passwords**
 
 # intervention list for later
 interventions <- read.csv('interventions.csv')
@@ -193,7 +192,7 @@ shinyServer(function(input, output, session) {
       print('Collection csv override.')
       
       withProgress(
-        read.csv(input$hh_csv$datapath, as.is=T),
+        read.csv(input$col_csv$datapath, as.is=T),
         message= 'Overriding collection form with csv upload', value=80)
       
     }
@@ -210,7 +209,7 @@ shinyServer(function(input, output, session) {
       print('Lab csv override.')
       
       withProgress(
-        read.csv(input$hh_csv$datapath, as.is=T),
+        read.csv(input$lab_csv$datapath, as.is=T),
         message= 'Overriding lab form with csv upload', value=100)
       
     }
@@ -371,9 +370,11 @@ shinyServer(function(input, output, session) {
     print('bayesian calculations')
     
     types <- c('combined', 'household', 'school', 'community')
-    freq <- calculate_freq(household_data(), school_data(), community_data(), type='ppl plot', survey_type= types[as.numeric(input$surtype)+1])
-    calculate_pplPlotData(freq, conc(), shinySession=session) # letting the defaults lazy load 
-    
+    if (USER$Logged == T) {
+      
+      freq <- calculate_freq(household_data(), school_data(), community_data(), type='ppl plot', survey_type= types[as.numeric(input$surtype)+1])
+      calculate_pplPlotData(freq, conc(), shinySession=session) # letting the defaults lazy load 
+    }
     })
 
 

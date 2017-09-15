@@ -201,15 +201,15 @@ create_concData <- function(ec_data) {
   conc_names <- c("Drain Water", "Produce", "Municipal and Piped Water",'Ocean Water', 'Surface Water', "Flood Water", 
                   "Public Latrine", "Particulate", "Bathing")
   conc<-list()
-  for (i in 1:length(unique(as.numeric(ec_data$neighbor)))){
+  for (i in 1:length(unique(factor_to_numeric(ec_data$neighbor)))){
     # sample type 1=drain water, 2=produce, 3=piped water, 4=ocean water, 5=surface water, 6=flood water, 7=Public Latrine Surfaces, 8=particulate, 9=bathing
     for (j in 1:9){
       conc <- append(conc, 
-                        list(conc=list(sample = conc_names[j],
-                                       neighborhood = paste("Neighborhood", i),
-                                       data = ec_data$ec_conc[which(ec_data$neighbor==sort(unique(ec_data$neighbor))[i] 
-                                                                                          & ec_data$sample_type==j)])
-                        )
+                     list(conc=list(sample = conc_names[j],
+                                    neighborhood = paste("Neighborhood", sort(unique(factor_to_numeric(ec_data$neighbor)))[i]),
+                                    data = ec_data$ec_conc[which(ec_data$neighbor==sort(unique(factor_to_numeric(ec_data$neighbor)))[i] 
+                                                                 & ec_data$sample_type==j)])
+                     )
       )
       
     }
@@ -567,8 +567,35 @@ calculate_freq <- function(..., type='pie chart', survey_type=NULL) {
                  )
                
     )
-
-    freq <- append(freq, sub)
+    if (type == 'ppl plot') {
+      sub <- append(sub, list(path=
+        list(sample = 'Bathing',
+             age = 'Adults',
+             neighborhood = paste('Neighborhood',i),
+             data = switch(survey_type, 
+                           'combined' = numeric(),
+                           'household' = numeric(),
+                           'school' = numeric(),
+                           'community' = numeric()
+             ) # end of switch
+        ),
+      path=
+        list(sample = 'Bathing',
+             age = 'Children',
+             neighborhood = paste('Neighborhood',i),
+             data = switch(survey_type, 
+                           'combined' = numeric(),
+                           'household' = numeric(),
+                           'school' = numeric(),
+                           'community' = numeric()
+             ) # end of switch
+        )
+      )
+      )
+    }
+    
+     freq <- append(freq, sub)
+     
 
   }
   
@@ -578,6 +605,7 @@ calculate_freq <- function(..., type='pie chart', survey_type=NULL) {
   }
   # frequencies for pie charts
   else if (type == 'ppl plot') {
+
     # if we want data for a people plot, calculate 4 - the value per vector object in the list
     for (i in 1:length(freq)) {
       freq[[i]]$data <- 4 - freq[[i]]$data
@@ -595,14 +623,14 @@ create_freqTbl <- function(freq_vector, sample_type) {
   # convert the answers from the frequency calculation funcitons into 
   # a table for plotting
   labels <- unlist(ifelse(sample_type=='Municipal and Piped Water', list(c("everyday","4-6/wk","1-3/wk","never","don't know")),
-                          ifelse(sample_type=="Produce" | sample_type=="Public Latrine Surfaces",list(c(">10/mo","6-10/mo","1-5/mo","never","don't know")),
+                          ifelse(sample_type=="Produce" | sample_type=="Public Latrine Surfaces",list(c(">10/wk","6-10/wk","1-5/wk","never","don't know")),
                           list(c(">10/mo","6-10/mo","1-5/mo","never","don't know"))))
   )
   colors <- c('#00FF00', '#99FF00', '#FF6600', '#FF0000', '#333333')
   
   tbl <- as.data.frame(table('answer'= freq_vector))
-  tbl$color <- factor(colors[tbl$answer], levels=colors[tbl$answer])
-  tbl$answer <- labels[tbl$answer]
+  tbl$color <- factor(colors[factor_to_numeric(tbl$answer)], levels=colors)
+  tbl$answer <- labels[factor_to_numeric(tbl$answer)]
   tbl$breaks <- cumsum(tbl$Freq) - tbl$Freq / 2
   tbl$labels = paste(tbl$answer, "\n", paste0(round(tbl$Freq / sum(tbl$Freq) * 100, 1),"%")) 
   return(tbl)
@@ -625,34 +653,44 @@ calculate_pplPlotData <- function(freq, conc, nburn=1000, niter=10000, thin=1, c
   # need to find the number of neighborhoods
   # and samples
   
-  neighborhoods <- c(unique(names(list.names(conc, neighborhood))), unique(names(list.names(freq, neighborhood)))) # unique neighborhood values
-  neighborhoods <- unique(neighborhoods[duplicated(neighborhoods)]) # if it's duplicated, then it will show up in both freq and conc
+  # Only do concentration and behavior data where we have samples/neighborhoods in both
+  # Neighborhood and sample types that match
+  
+  conc_neighborhoods <- unique(names(list.names(conc, neighborhood))) # unique neighborhood values
+  freq_neighborhoods <- unique(names(list.names(freq, neighborhood))) # if it's duplicated, then it will show up in both freq and conc
   
   # Bathing water can be assumed as 30, all others should be present to calculate 
-  samples <- c(unique(names(list.names(conc, sample))), unique(names(list.names(freq, sample)))) # unique sample values
-  samples <- unique(samples[duplicated(samples)])
+  # Ignore particulate
+  # For smp == 9 only require concentration data
+  
+  conc_samples <- unique(names(list.names(conc, sample))) # unique sample values
+  freq_samples <- unique(names(list.names(freq, sample)))
   
   age <- unique(names(list.names(freq, age)))
   
   ps.freq <- list()
-  for (smp in samples) {
+  for (smp in conc_samples) {
     print(smp)
-    for (nb in neighborhoods) {
-      # filter the concentration data to just this neighborhood and sample
+    for (nb in conc_neighborhoods) {
       sub.conc <- conc[[list.which(conc, neighborhood == nb && sample == smp)]]
-      print(nb)
-      # calculate exposure for adults and children using the behavior data
-      for (a in age) {
-        print(a)
-        # filter frequency to just the age we want 
-        sub.freq <- freq[[list.which(freq, sample == smp && neighborhood == nb && age == a)]]
-        
-        # calculate the exposure. Requires concentration, freq is optional
-        exposed <- calculate_exposure(sub.freq, sub.conc, smp)
-        
-        # update the object at this position
-        ps.freq <- append(ps.freq, list('path' = exposed))
+      
+      if (smp %in% freq_samples & nb %in% freq_neighborhoods & length(sub.conc$data) > 0) {
+        print(nb)
+        # calculate exposure for adults and children using the behavior data
+        for (a in age) {
+          print(a)
+          # filter frequency to just the age we want 
+          sub.freq <- freq[[list.which(freq, sample == smp && neighborhood == nb && age == a)]]
+          
+          # calculate the exposure. Requires concentration, freq is optional
+          exposed <- calculate_exposure(sub.freq, sub.conc, smp)
+          
+          # update the object at this position
+          ps.freq <- append(ps.freq, list('path' = exposed))
+        }
       }
+      # filter the concentration data to just this neighborhood and sample
+      
     }
   }
   
@@ -814,7 +852,7 @@ calculate_exposure <- function(behavior_data, concentration_data, smp) {
       f[m] <- round(rnbinom(1, size= behavior_data$r, prob= behavior_data$p)/7*30)
     } else if (smp==3) {
       f[m] <- min(round(rnbinom(1, size= behavior_data$r, prob= behavior_data$p)/7*30),30)
-    } else if (smp==9){
+    } else if (smp == 9) {
       f[m] <- 30
     } else {
       f[m] <- rnbinom(1, size= behavior_data$r, prob= behavior_data$p)
