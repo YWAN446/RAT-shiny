@@ -10,21 +10,28 @@ library(rjags)
 # master create_ecData
 create_ecData <- function(collection_data, lab_data) {
   #logic to decide whether the function recieves IDEXX data or MF data;
-  #return(create_ecData_Idexx(collection_data, lab_data)) or return(create_ecData_MF(collection_data, lab_data));
-  return(create_ecData_MF(collection_data, lab_data))
+  #This is assuming all the samples will be tested in one of the method: either IDEXX or MF.
+  #This field will be filled based on configuration of the project.
+  if (lab_data$lab_analysis[1]==1){
+    return(create_ecData_Idexx(collection_data, lab_data))
+  } else if (lab_data$lab_analysis[1]==2){
+    return(create_ecData_MF(collection_data, lab_data))
+  }
 }
 
+#load the IDEXX table;
 load("./data/mpn_tbl.rda")
 
 # IDEXX method to calculate the concentration-----------------------------
 create_ecData_Idexx <- function(collection_data, lab_data){
   #function to prepare the ec_data for IDEXX;
   for (i in 1:length(lab_data$lab_id)){
-    lab_data$lab_1_ecoli[i]<-mpn_tbl[lab_data$lab_1_ecoli_big[i]+1,lab_data$lab_1_ecoli_small[i]+1]
-    lab_data$lab_2_ecoli[i]<-mpn_tbl[lab_data$lab_2_ecoli_big[i]+1,lab_data$lab_2_ecoli_small[i]+1]
-    lab_data$lab_3_ecoli[i]<-mpn_tbl[lab_data$lab_3_ecoli_big[i]+1,lab_data$lab_3_ecoli_small[i]+1]
+    lab_data$lab_1_ecoli[i]<-ifelse(lab_data$lab_1_ecoli_reading_idexx==2,mpn_tbl[lab_data$lab_1_ecoli_big_idexx[i]+1,lab_data$lab_1_ecoli_small_idexx[i]+1],9999)
+    lab_data$lab_2_ecoli[i]<-ifelse(lab_data$lab_2_ecoli_reading_idexx==2,mpn_tbl[lab_data$lab_2_ecoli_big_idexx[i]+1,lab_data$lab_2_ecoli_small_idexx[i]+1],9999)
+    lab_data$lab_3_ecoli[i]<-ifelse(lab_data$lab_3_ecoli_reading_idexx==2,mpn_tbl[lab_data$lab_3_ecoli_big_idexx[i]+1,lab_data$lab_3_ecoli_small_idexx[i]+1],9999)
   }
   
+  #Capitalized and remove missings in ID and sample types for merge purpose;
   collection_data[,c("col_sample_type","col_id")] <- apply(collection_data[,c("col_sample_type","col_id")], 2, function(x) toupper(x))
   lab_data[,c("lab_sample_type","lab_id")] <- apply(lab_data[,c("lab_sample_type","lab_id")], 2, function(x) toupper(x))
   collection_data$col_id<-gsub(" ","",collection_data$col_id)
@@ -33,10 +40,13 @@ create_ecData_Idexx <- function(collection_data, lab_data){
   ec_data<-merge(collection_data,lab_data,by.x=c("col_sample_type","col_id"),by.y=c("lab_sample_type","lab_id"))
   names(ec_data)[which(names(ec_data)=="col_sample_type")]<-"sample_type"
   names(ec_data)[which(names(ec_data)=="col_id")]<-"sampleid"
+  #back calculation factor
   ec_data$ec_denom=100
   ec_data$ec_denom[which(ec_data$sample_type==2)]=500
-  ec_data$ec_denom[which(ec_data$sample_type==2)]=14
+  ec_data$ec_denom[which(ec_data$sample_type==7)]=14
   ec_data$ec_denom[which(ec_data$sample_type==8)]=2
+  #street food used WASH benefit protocol 10 grams into 100 mL, serving size was defined using weight of street food sampled.
+  ec_data$ec_denom[which(ec_data$sample_type==10)]=10*ec_data$lab_sf_weight[which(ec_data$sample_type==10)]
   ec_data$ec_denom[is.na(ec_data$sample_type)]=NA
   
   #ec_data$neighbor<-factor_to_numeric(ec_data$neighbor)
@@ -53,10 +63,6 @@ create_ecData_Idexx <- function(collection_data, lab_data){
   ec_data$ec_ecnt1<-factor_to_numeric(ec_data$lab_1_ecoli)
   ec_data$ec_ecnt2<-factor_to_numeric(ec_data$lab_2_ecoli)
   ec_data$ec_ecnt3<-factor_to_numeric(ec_data$lab_3_ecoli)
-  
-  ec_data$ec_ecnt1[which(ec_data$lab_1_ecoli_reading==1)]<-9999
-  ec_data$ec_ecnt2[which(ec_data$lab_2_ecoli_reading==1)]<-9999
-  ec_data$ec_ecnt3[which(ec_data$lab_3_ecoli_reading==1)]<-9999
   
   swap1<-(ec_data$ec_dil1>=ec_data$ec_dil2 & is.na(ec_data$ec_dil3))
   swap2<-(ec_data$ec_dil1<ec_data$ec_dil2 & is.na(ec_data$ec_dil3))
@@ -208,8 +214,10 @@ create_ecData_MF <- function(collection_data, lab_data) {
   names(ec_data)[which(names(ec_data)=="col_id")]<-"sampleid"
   ec_data$ec_denom=100
   ec_data$ec_denom[which(ec_data$sample_type==2)]=500
-  ec_data$ec_denom[which(ec_data$sample_type==2)]=14
+  ec_data$ec_denom[which(ec_data$sample_type==7)]=14
   ec_data$ec_denom[which(ec_data$sample_type==8)]=2
+  #street food used WASH benefit protocol 10 grams into 100 mL, serving size was defined using weight of street food sampled.
+  ec_data$ec_denom[which(ec_data$sample_type==10)]=10*ec_data$lab_sf_weight[which(ec_data$sample_type==10)]
   ec_data$ec_denom[is.na(ec_data$sample_type)]=NA
 
   #ec_data$neighbor<-factor_to_numeric(ec_data$neighbor)
@@ -223,16 +231,16 @@ create_ecData_MF <- function(collection_data, lab_data) {
   ec_data$ec_dil1<-(10^ec_data$ec_dil1)/(10^7)*ec_data$lab_1_volume
   ec_data$ec_dil2<-(10^ec_data$ec_dil2)/(10^7)*ec_data$lab_2_volume
   ec_data$ec_dil3<-(10^ec_data$ec_dil3)/(10^7)*ec_data$lab_3_volume
-  ec_data$ec_ecnt1<-factor_to_numeric(ec_data$lab_1_ecoli)
-  ec_data$ec_ecnt2<-factor_to_numeric(ec_data$lab_2_ecoli)
-  ec_data$ec_ecnt3<-factor_to_numeric(ec_data$lab_3_ecoli)
+  ec_data$ec_ecnt1<-factor_to_numeric(ec_data$lab_1_ecoli_membrane)
+  ec_data$ec_ecnt2<-factor_to_numeric(ec_data$lab_2_ecoli_membrane)
+  ec_data$ec_ecnt3<-factor_to_numeric(ec_data$lab_3_ecoli_membrane)
 
-  ec_data$ec_ecnt1[which(ec_data$lab_1_ecoli_reading==1)]<-999
-  ec_data$ec_ecnt1[which(ec_data$lab_1_ecoli_reading==2)]<-998
-  ec_data$ec_ecnt2[which(ec_data$lab_2_ecoli_reading==1)]<-999
-  ec_data$ec_ecnt2[which(ec_data$lab_2_ecoli_reading==2)]<-998
-  ec_data$ec_ecnt3[which(ec_data$lab_3_ecoli_reading==1)]<-999
-  ec_data$ec_ecnt3[which(ec_data$lab_3_ecoli_reading==2)]<-998
+  ec_data$ec_ecnt1[which(ec_data$lab_1_ecoli_reading_membrane==1)]<-999
+  ec_data$ec_ecnt1[which(ec_data$lab_1_ecoli_reading_membrane==2)]<-998
+  ec_data$ec_ecnt2[which(ec_data$lab_2_ecoli_reading_membrane==1)]<-999
+  ec_data$ec_ecnt2[which(ec_data$lab_2_ecoli_reading_membrane==2)]<-998
+  ec_data$ec_ecnt3[which(ec_data$lab_3_ecoli_reading_membrane==1)]<-999
+  ec_data$ec_ecnt3[which(ec_data$lab_3_ecoli_reading_membrane==2)]<-998
 
   swap1<-(ec_data$ec_dil1>=ec_data$ec_dil2 & is.na(ec_data$ec_dil3))
   swap2<-(ec_data$ec_dil1<ec_data$ec_dil2 & is.na(ec_data$ec_dil3))
@@ -436,7 +444,7 @@ calculate_freq <- function(..., type='pie chart', survey_type=NULL) {
   # headers, we can figure out what data we have using that.
   dat <- list(...)
   # this should be based on the columns within each export
-  data_map <- c('household_data' = 'h_', 'c_' = 'school', 'school_data' = 's_')
+  data_map <- c('household_data' = 'h_', 'community_data' = 'c_', 'school_data' = 's_')
 
   # let's figure out what we have
   surveys_matched <- character()
@@ -750,6 +758,82 @@ calculate_freq <- function(..., type='pie chart', survey_type=NULL) {
                                                                 rep(3,sum(community_data$c_l_c_1[which(community_data$c_neighborhood==i)])),rep(4,sum(community_data$c_l_c_0[which(community_data$c_neighborhood==i)])),
                                                                 rep(5,sum(community_data$c_l_c_na[which(community_data$c_neighborhood==i)]))))
                       ) # end of switch
+                 ),
+               path=
+                 list(sample = 'Street Food',
+                      age = 'Adults',
+                      neighborhood = paste('Neighborhood',i),
+                      data = switch(survey_type,
+                                    'combined' = c(as.numeric(household_data$h_sf_a[which(household_data$h_sf_a!="n/a" & household_data$h_neighborhood==i)]),
+                                                   as.numeric(c(rep(1,sum(school_data$s_sf_a_3[which(school_data$s_neighborhood==i)])),rep(2,sum(school_data$s_sf_a_2[which(school_data$s_neighborhood==i)])),
+                                                                rep(3,sum(school_data$s_sf_a_1[which(school_data$s_neighborhood==i)])),rep(4,sum(school_data$s_sf_a_0[which(school_data$s_neighborhood==i)])),
+                                                                rep(5,sum(school_data$s_sf_a_na[which(school_data$s_neighborhood==i)])))),
+                                                   as.numeric(c(rep(1,sum(community_data$c_sf_a_3[which(community_data$c_neighborhood==i)])),rep(2,sum(community_data$c_sf_a_2[which(community_data$c_neighborhood==i)])),
+                                                                rep(3,sum(community_data$c_sf_a_1[which(community_data$c_neighborhood==i)])),rep(4,sum(community_data$c_sf_a_0[which(community_data$c_neighborhood==i)]))))),
+                                    'household' = as.numeric(household_data$h_sf_a[which(household_data$h_sf_a!="n/a" & household_data$h_neighborhood==i)]),
+                                    'school' = as.numeric(c(rep(1,sum(school_data$s_sf_a_3[which(school_data$s_neighborhood==i)])),rep(2,sum(school_data$s_sf_a_2[which(school_data$s_neighborhood==i)])),
+                                                            rep(3,sum(school_data$s_sf_a_1[which(school_data$s_neighborhood==i)])),rep(4,sum(school_data$s_sf_a_0[which(school_data$s_neighborhood==i)])),
+                                                            rep(5,sum(school_data$s_sf_a_na[which(school_data$s_neighborhood==i)])))),
+                                    'community' = as.numeric(c(rep(1,sum(community_data$c_sf_a_3[which(community_data$c_neighborhood==i)])),rep(2,sum(community_data$c_sf_a_2[which(community_data$c_neighborhood==i)])),
+                                                               rep(3,sum(community_data$c_sf_a_1[which(community_data$c_neighborhood==i)])),rep(4,sum(community_data$c_sf_a_0[which(community_data$c_neighborhood==i)]))))
+                      ) # end of switch
+                 ),
+               path=
+                 list(sample = 'Street Food',
+                      age = 'Children',
+                      neighborhood = paste('Neighborhood',i),
+                      data = switch(survey_type,
+                                    'combined' = c(as.numeric(household_data$h_sf_c[which(household_data$h_sf_c!="n/a" & household_data$h_neighborhood==i)]),
+                                                   as.numeric(c(rep(1,sum(school_data$s_sf_c_3[which(school_data$s_neighborhood==i)])),rep(2,sum(school_data$s_sf_c_2[which(school_data$s_neighborhood==i)])),
+                                                                rep(3,sum(school_data$s_sf_c_1[which(school_data$s_neighborhood==i)])),rep(4,sum(school_data$s_sf_c_0[which(school_data$s_neighborhood==i)])))),
+                                                   as.numeric(c(rep(1,sum(community_data$c_sf_c_3[which(community_data$c_neighborhood==i)])),rep(2,sum(community_data$c_sf_c_2[which(community_data$c_neighborhood==i)])),
+                                                                rep(3,sum(community_data$c_sf_c_1[which(community_data$c_neighborhood==i)])),rep(4,sum(community_data$c_sf_c_0[which(community_data$c_neighborhood==i)])),
+                                                                rep(5,sum(community_data$c_sf_c_na[which(community_data$c_neighborhood==i)]))))),
+                                    'household' = as.numeric(household_data$h_sf_c[which(household_data$h_sf_c!="n/a" & household_data$h_neighborhood==i)]),
+                                    'school' = as.numeric(c(rep(1,sum(school_data$s_sf_c_3[which(school_data$s_neighborhood==i)])),rep(2,sum(school_data$s_sf_c_2[which(school_data$s_neighborhood==i)])),
+                                                            rep(3,sum(school_data$s_sf_c_1[which(school_data$s_neighborhood==i)])),rep(4,sum(school_data$s_sf_c_0[which(school_data$s_neighborhood==i)])))),
+                                    'community' =  as.numeric(c(rep(1,sum(community_data$c_sf_c_3[which(community_data$c_neighborhood==i)])),rep(2,sum(community_data$c_sf_c_2[which(community_data$c_neighborhood==i)])),
+                                                                rep(3,sum(community_data$c_sf_c_1[which(community_data$c_neighborhood==i)])),rep(4,sum(community_data$c_sf_c_0[which(community_data$c_neighborhood==i)])),
+                                                                rep(5,sum(community_data$c_sf_c_na[which(community_data$c_neighborhood==i)]))))
+                      ) # end of switch
+                 ),
+               path=
+                 list(sample = 'Bathing Water',
+                      age = 'Adults',
+                      neighborhood = paste('Neighborhood',i),
+                      data = switch(survey_type,
+                                    'combined' = c(as.numeric(household_data$h_bw_a[which(household_data$h_bw_a!="n/a" & household_data$h_neighborhood==i)]),
+                                                   as.numeric(c(rep(1,sum(school_data$s_bw_a_3[which(school_data$s_neighborhood==i)])),rep(2,sum(school_data$s_bw_a_2[which(school_data$s_neighborhood==i)])),
+                                                                rep(3,sum(school_data$s_bw_a_1[which(school_data$s_neighborhood==i)])),rep(4,sum(school_data$s_bw_a_0[which(school_data$s_neighborhood==i)])),
+                                                                rep(5,sum(school_data$s_bw_a_na[which(school_data$s_neighborhood==i)])))),
+                                                   as.numeric(c(rep(1,sum(community_data$c_bw_a_3[which(community_data$c_neighborhood==i)])),rep(2,sum(community_data$c_bw_a_2[which(community_data$c_neighborhood==i)])),
+                                                                rep(3,sum(community_data$c_bw_a_1[which(community_data$c_neighborhood==i)])),rep(4,sum(community_data$c_bw_a_0[which(community_data$c_neighborhood==i)]))))),
+                                    'household' = as.numeric(household_data$h_bw_a[which(household_data$h_bw_a!="n/a" & household_data$h_neighborhood==i)]),
+                                    'school' = as.numeric(c(rep(1,sum(school_data$s_bw_a_3[which(school_data$s_neighborhood==i)])),rep(2,sum(school_data$s_bw_a_2[which(school_data$s_neighborhood==i)])),
+                                                            rep(3,sum(school_data$s_bw_a_1[which(school_data$s_neighborhood==i)])),rep(4,sum(school_data$s_bw_a_0[which(school_data$s_neighborhood==i)])),
+                                                            rep(5,sum(school_data$s_bw_a_na[which(school_data$s_neighborhood==i)])))),
+                                    'community' = as.numeric(c(rep(1,sum(community_data$c_bw_a_3[which(community_data$c_neighborhood==i)])),rep(2,sum(community_data$c_bw_a_2[which(community_data$c_neighborhood==i)])),
+                                                               rep(3,sum(community_data$c_bw_a_1[which(community_data$c_neighborhood==i)])),rep(4,sum(community_data$c_bw_a_0[which(community_data$c_neighborhood==i)]))))
+                      ) # end of switch
+                 ),
+               path=
+                 list(sample = 'Bathing Water',
+                      age = 'Children',
+                      neighborhood = paste('Neighborhood',i),
+                      data = switch(survey_type,
+                                    'combined' = c(as.numeric(household_data$h_bw_c[which(household_data$h_bw_c!="n/a" & household_data$h_neighborhood==i)]),
+                                                   as.numeric(c(rep(1,sum(school_data$s_bw_c_3[which(school_data$s_neighborhood==i)])),rep(2,sum(school_data$s_bw_c_2[which(school_data$s_neighborhood==i)])),
+                                                                rep(3,sum(school_data$s_bw_c_1[which(school_data$s_neighborhood==i)])),rep(4,sum(school_data$s_bw_c_0[which(school_data$s_neighborhood==i)])))),
+                                                   as.numeric(c(rep(1,sum(community_data$c_bw_c_3[which(community_data$c_neighborhood==i)])),rep(2,sum(community_data$c_bw_c_2[which(community_data$c_neighborhood==i)])),
+                                                                rep(3,sum(community_data$c_bw_c_1[which(community_data$c_neighborhood==i)])),rep(4,sum(community_data$c_bw_c_0[which(community_data$c_neighborhood==i)])),
+                                                                rep(5,sum(community_data$c_bw_c_na[which(community_data$c_neighborhood==i)]))))),
+                                    'household' = as.numeric(household_data$h_bw_c[which(household_data$h_bw_c!="n/a" & household_data$h_neighborhood==i)]),
+                                    'school' = as.numeric(c(rep(1,sum(school_data$s_bw_c_3[which(school_data$s_neighborhood==i)])),rep(2,sum(school_data$s_bw_c_2[which(school_data$s_neighborhood==i)])),
+                                                            rep(3,sum(school_data$s_bw_c_1[which(school_data$s_neighborhood==i)])),rep(4,sum(school_data$s_bw_c_0[which(school_data$s_neighborhood==i)])))),
+                                    'community' =  as.numeric(c(rep(1,sum(community_data$c_bw_c_3[which(community_data$c_neighborhood==i)])),rep(2,sum(community_data$c_bw_c_2[which(community_data$c_neighborhood==i)])),
+                                                                rep(3,sum(community_data$c_bw_c_1[which(community_data$c_neighborhood==i)])),rep(4,sum(community_data$c_bw_c_0[which(community_data$c_neighborhood==i)])),
+                                                                rep(5,sum(community_data$c_bw_c_na[which(community_data$c_neighborhood==i)]))))
+                      ) # end of switch
                  )
 
     )
@@ -809,7 +893,7 @@ create_freqTbl <- function(freq_vector, sample_type) {
   # convert the answers from the frequency calculation funcitons into
   # a table for plotting
   labels <- unlist(ifelse(sample_type=='Municipal and Piped Water', list(c("everyday","4-6/wk","1-3/wk","never","don't know")),
-                          ifelse(sample_type=="Produce" | sample_type=="Public Latrine Surfaces",list(c(">10/wk","6-10/wk","1-5/wk","never","don't know")),
+                          ifelse(sample_type=="Produce" | sample_type=="Public Latrine Surfaces" | sample_type=="Flood Water" | sample_type=="Street Food" | sample_type=="Bathing Water",list(c(">10/wk","6-10/wk","1-5/wk","never","don't know")),
                           list(c(">10/mo","6-10/mo","1-5/mo","never","don't know"))))
   )
   #colors <- c('#00FF00', '#99FF00', '#FF6600', '#FF0000', '#333333')
@@ -947,11 +1031,19 @@ bayesian_behavior_estimates <- function(freq, nburn=1000, niter=10000, thin=1, c
         init_be[which(freq_be==1)]<-1
         init_be[which(freq_be==2)]<-2
         init_be[which(freq_be==3)]<-3
-
-        init_freq_be<-as.numeric(rep(NA,length(freq_be)))
-        init_freq_be[which(freq_be==1)]<-2
-        init_freq_be[which(freq_be==2)]<-7
-        init_freq_be[which(freq_be==3)]<-12
+        if (freq[[k]]$sample=='Municipal and Piped Water'){
+          cutpoint<-c(0,3,6)
+          init_freq_be<-as.numeric(rep(NA,length(freq_be)))
+          init_freq_be[which(freq_be==1)]<-2
+          init_freq_be[which(freq_be==2)]<-5
+          init_freq_be[which(freq_be==3)]<-7
+        } else {
+          cutpoint<-c(0,5,10)
+          init_freq_be<-as.numeric(rep(NA,length(freq_be)))
+          init_freq_be[which(freq_be==1)]<-2
+          init_freq_be[which(freq_be==2)]<-7
+          init_freq_be[which(freq_be==3)]<-12
+        }
 
         be_data<-list(select=freq_be,N=length(freq_be),cut=cutpoint)
         init<-list(freq=init_freq_be,r=1,p=0.2)
@@ -1020,22 +1112,20 @@ calculate_exposure <- function(behavior_data, concentration_data, smp) {
   risk <- rep(NA, 1000)
 
   # values applied based on sample and age
-  intake<-array(c(0.0006,1,10.43,0.0154,0.037,0.0006,0.034,NA,0.0499,
-                  0.01,0.5,4.14,0.2042,0.2042,0.01,0.034,NA,0.09975),c(9,2)) #need to input this information!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  intake<-array(c(0.0006,1,10.43,0.0154,0.037,0.0006,0.034,NA,0.0499,1,
+                  0.01,0.5,4.14,0.2042,0.2042,0.01,0.034,NA,0.09975,0.5),c(10,2)) #need to input this information!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   rownames(intake) <- c('Drain Water', 'Produce', 'Municipal and Piped Water', 'Ocean Water', 'Surface Water',
-                        'Flood Water', 'Public Latrine', 'Particulate', 'Bathing')
+                        'Flood Water', 'Public Latrine', 'Particulate', 'Bathing Water','Street Food')
   colnames(intake) <- c("Adults", "Children")
 
   # simulate some numbers
   for (m in 1:1000){
     # is it necessary for this to be in a loop?
     e[m] <- rnorm(1, concentration_data$mu, concentration_data$sigma)
-    if (smp %in% c(2,7)) {
+    if (smp %in% c(2,6,7,9,10)) {
       f[m] <- round(rnbinom(1, size= behavior_data$r, prob= behavior_data$p)/7*30)
     } else if (smp==3) {
       f[m] <- min(round(rnbinom(1, size= behavior_data$r, prob= behavior_data$p)/7*30),30)
-    } else if (smp == 9) {
-      f[m] <- 30
     } else {
       f[m] <- rnbinom(1, size= behavior_data$r, prob= behavior_data$p)
     }
