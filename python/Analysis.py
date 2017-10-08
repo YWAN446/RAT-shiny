@@ -32,7 +32,36 @@ import numpy as np
 rcon.pandas2ri.activate()
 
 class Analysis():
-    pass
+    def __init__(self):
+        # import the proper functions so we can do stuff
+        rcon.r("source('model/analysis_helpers.R')")
+        # TODO analysis_helpers.R currently tries to load an
+        # r data file from rsrc.  Assuming the current working directory
+        # is set to ./python this should be ok, but it's not the best.
+
+        # we're essentially creating class methods here.
+        # we need to calculate frequecies of answers to then use either for
+        # plotting data in the application or for further analysis
+        # pie chart uses raw answers, ppl plot takes all answers and centers
+        # them around 0.  I never learned why.  For some reason we need it
+        # that way.
+        self.calculate_freq = rcon.r('calculate_freq')
+        '''
+        ____________________________________________
+        household => df of household data gathered
+        community => df of community data gathered
+        school => df of school data gathered
+        survey_type => optional. can be 'household', 'community', 'school'
+        ____________________________________________
+        returns a dict of dicts and numpy arrays (with the frequencies)
+
+        currently, calculate_freq always needs all 3 dataframes to work
+        but will only use one for output if survey_type is declared.
+        otherwise it will create a combined score.
+        '''
+
+        self.calculate_pplPlotData = rcon.r('calculate_pplPlotData')
+        self.calculate_ecData = rcon.r('calculate_ecData')
 
 class RSetup():
     '''
