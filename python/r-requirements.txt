@@ -1,0 +1,5 @@
+# Requirements for R analysis helpers
+rjags
+rlist
+plyr
+reshape2
