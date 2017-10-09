@@ -19,9 +19,9 @@ to run the Bayesian calculations for people plots.  The env will
 need to have that installed.  JAGS also only works on Linux to make
 things more complicated.
 
-Using conda:
+Using conda to make sure necessary programs are installed:
 conda install -c trent jags
-
+conda install -c r r-base
 '''
 import rpy2.robjects as rcon
 import pandas as pd
@@ -53,7 +53,8 @@ class Analysis():
 		type => 'pie chart' or 'ppl plot'. defaults to 'pie chart'
 		survey_type => optional. can be 'household', 'community', 'school'
 		____________________________________________
-		returns a dict of dicts and numpy arrays (with the frequencies)
+		returns an R list of lists of answer frequency data.
+		passed to calculate_exposure
 
 		computes the frequenceis of answers to pathway questions. it's
 		very inefficient.
@@ -71,22 +72,7 @@ class Analysis():
 		lab_data => df of lab samples processed
 		mpn_loc => path to mpn_tbl.rda in rsrc folder
 		____________________________________________
-		returns a list of dicts and numpy arrays
-
-		iterates through samples collected and labs processed
-		to create scores used in the bayesian analysis.
-		example data structure:
-		[
-		  {'conc':
-			{'sample' : 'Ocean Water',
-			 'neighborhood' : 'Somoto',
-			 'data' : array([13123.02, 23423.01])
-			}
-		  },
-		  {'conc':
-		  ...
-		  }
-		]
+		returns an R list of concentration values by neighborhood and pathway
 		'''
 
 
@@ -104,12 +90,19 @@ class Analysis():
 		returns a list of dicts used for people plot creation
 		'''
 
+class Plotting():
+	# wrappers around plotting functions for pie charts, histograms and people plots
+	def __init__(self):
+		# this is technically in the same environment for R, which is normal.
+		# but should we make it fully separate?
+		rcon.r('source("model/plotting_helpers.R")')
+		# self.create_pie_charts = rcon.r('')
+		pass
 
 class RSetup():
 	'''
 	Make sure proper packages are installed to r-base.
 	If missing, install them. Otherwise, do nothing.
-	This could be a subclass maybe?
 	'''
 	def __init__(self, r_requirements_file):
 		# get a numpy 1d array of the installed packages
