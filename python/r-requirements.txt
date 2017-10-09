@@ -1,5 +1,14 @@
+# List all required libraries on separate lines.
+# commented lines with hashes are ignored.  RSetup() class
+# will compare installed libraries with those listed here
+# and only install those that are missing. 
 # Requirements for R analysis helpers
 rjags
 rlist
 plyr
 reshape2
+
+# plotting libraries
+ggplot2
+ggrepel
+RgoogleMaps
