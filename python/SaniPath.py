@@ -9,6 +9,10 @@ Analysis:
 -> run bayesian calculations on frequency data for
    people plot displays.  Return formatted data
    ready for charting
+Plotting:
+-> create pie charts with the data
+-> create histograms
+-> create people plots
 RSetup:
 -> init R environment if first time, ensure proper
    packages installed listed in r-requirements.txt
@@ -22,18 +26,21 @@ things more complicated.
 Using conda to make sure necessary programs are installed:
 conda install -c trent jags
 conda install -c r r-base
+conda install krb5
+conda install -c r rpy2
 '''
-import rpy2.robjects as rcon
+from rpy2.robjects import pandas2ri, r as rcon
 import pandas as pd
 import numpy as np
 
 # make sure we're translating things back and forth correctly
-rcon.pandas2ri.activate()
+pandas2ri.activate()
 
 class Analysis():
 	def __init__(self):
+
 		# import the proper functions so we can do stuff
-		rcon.r("source('model/analysis_helpers.R')")
+		rcon("source('model/analysis_helpers.R')")
 		# TODO analysis_helpers.R currently tries to load an
 		# r data file from rsrc.  Assuming the current working directory
 		# is set to ./python this should be ok, but it's not the best.
@@ -44,7 +51,7 @@ class Analysis():
 		# pie chart uses raw answers, ppl plot takes all answers and centers
 		# them around 0.  I never learned why.  For some reason we need it
 		# that way. Using slightly more intuitive names for the functions here
-		self.calculate_frequencies = rcon.r('calculate_freq')
+		self.calculate_frequencies = rcon('calculate_freq')
 		'''
 		____________________________________________
 		household => df of household data gathered
@@ -65,7 +72,7 @@ class Analysis():
 		'''
 
 
-		self.calculate_concentrations = rcon.r('create_concData')
+		self.calculate_concentrations = rcon('create_concData')
 		'''
 		____________________________________________
 		collection_data => df of collection (sample) data
@@ -76,7 +83,7 @@ class Analysis():
 		'''
 
 
-		self.calc_exposure = rcon.r('calculate_pplPlotData')
+		self.calc_exposure = rcon('calculate_pplPlotData')
 		'''
 		____________________________________________
 		freq => frequency values calculated using calculate_frequencies(type='ppl plot')
@@ -95,8 +102,8 @@ class Plotting():
 	def __init__(self):
 		# this is technically in the same environment for R, which is normal.
 		# but should we make it fully separate?
-		rcon.r('source("model/plotting_helpers.R")')
-		# self.create_pie_charts = rcon.r('')
+		rcon('source("model/plotting_helpers.R")')
+		# self.create_pie_charts = rcon('')
 		pass
 
 class RSetup():
@@ -105,15 +112,16 @@ class RSetup():
 	If missing, install them. Otherwise, do nothing.
 	'''
 	def __init__(self, r_requirements_file):
+		import pdb; pdb.set_trace()
 		# get a numpy 1d array of the installed packages
-		installed_packages = rcon.r('rownames(installed.packages())')
+		installed_packages = rcon('rownames(installed.packages())')
 		# get the libraries we need
 		requirements = self._read(r_requirements_file)
 		pkgs_to_install = self._filter_pkgs(installed_packages, requirements)
 		# pull the installer function
 		if len(pkgs_to_install) > 0:
 			# we have some things to install, pull the install function
-			installR = rcon.r('install.packages')
+			installR = rcon('install.packages')
 			# some window dressing so we know it's working
 			print("Packages to install:", ", ".join(pkgs_to_install))
 			# now install things from the cloud mirror
@@ -131,4 +139,4 @@ class RSetup():
 		reqs = f.readlines()
 		f.close()
 		# remove commented lines and line breaks
-		return [r.replace('\n', '') for r in filter(lambda x: '#' not in x, reqs)]
+		return [r.replace('(\n)|(\r)', '') for r in filter(lambda x: '#' not in x, reqs)]
