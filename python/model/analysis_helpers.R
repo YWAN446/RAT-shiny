@@ -1,11 +1,34 @@
 ## Analysis helpers for the SaniPath Analysis tool
 ## these have been derived from the original server.R
 ## file.
-library(ggplot2)
+# library(ggplot2)
 library(rlist)
 library(plyr)
 library(reshape2)
-library(rjags)
+# library(rjags)
+
+create_concData <- function(collection_data, lab_data) {
+  ec_data <- create_ecData(collection_data, lab_data)
+  # Calculate concentration amounts?
+  conc_names <- c("Drain Water", "Produce", "Municipal and Piped Water",'Ocean Water', 'Surface Water', "Flood Water",
+                  "Public Latrine", "Particulate", "Bathing")
+  conc<-list()
+  for (i in 1:length(unique(factor_to_numeric(ec_data$neighbor)))){
+    # sample type 1=drain water, 2=produce, 3=piped water, 4=ocean water, 5=surface water, 6=flood water, 7=Public Latrine Surfaces, 8=particulate, 9=bathing
+    for (j in 1:9){
+      conc <- append(conc,
+                     list(conc=list(sample = conc_names[j],
+                                    neighborhood = paste("Neighborhood", i),
+                                    data = ec_data$ec_conc[which(ec_data$neighbor==sort(unique(ec_data$neighbor))[i]
+                                                                 & ec_data$sample_type==j)])
+                     )
+      )
+
+    }
+  }
+  return(conc)
+}
+
 
 # master create_ecData
 create_ecData <- function(collection_data, lab_data) {
@@ -20,23 +43,23 @@ create_ecData <- function(collection_data, lab_data) {
 }
 
 #load the IDEXX table;
-load("./data/mpn_tbl.rda")
+# load("./data/mpn_tbl.rda")
 
 # IDEXX method to calculate the concentration-----------------------------
-create_ecData_Idexx <- function(collection_data, lab_data){
+create_ecData_Idexx <- function(collection_data, lab_data, mpn_loc){
   #function to prepare the ec_data for IDEXX;
   for (i in 1:length(lab_data$lab_id)){
     lab_data$lab_1_ecoli[i]<-ifelse(lab_data$lab_1_ecoli_reading_idexx==2,mpn_tbl[lab_data$lab_1_ecoli_big_idexx[i]+1,lab_data$lab_1_ecoli_small_idexx[i]+1],9999)
     lab_data$lab_2_ecoli[i]<-ifelse(lab_data$lab_2_ecoli_reading_idexx==2,mpn_tbl[lab_data$lab_2_ecoli_big_idexx[i]+1,lab_data$lab_2_ecoli_small_idexx[i]+1],9999)
     lab_data$lab_3_ecoli[i]<-ifelse(lab_data$lab_3_ecoli_reading_idexx==2,mpn_tbl[lab_data$lab_3_ecoli_big_idexx[i]+1,lab_data$lab_3_ecoli_small_idexx[i]+1],9999)
   }
-  
+
   #Capitalized and remove missings in ID and sample types for merge purpose;
   collection_data[,c("col_sample_type","col_id")] <- apply(collection_data[,c("col_sample_type","col_id")], 2, function(x) toupper(x))
   lab_data[,c("lab_sample_type","lab_id")] <- apply(lab_data[,c("lab_sample_type","lab_id")], 2, function(x) toupper(x))
   collection_data$col_id<-gsub(" ","",collection_data$col_id)
   lab_data$lab_id<-gsub(" ","",lab_data$lab_id)
-  
+
   ec_data<-merge(collection_data,lab_data,by.x=c("col_sample_type","col_id"),by.y=c("lab_sample_type","lab_id"))
   names(ec_data)[which(names(ec_data)=="col_sample_type")]<-"sample_type"
   names(ec_data)[which(names(ec_data)=="col_id")]<-"sampleid"
@@ -48,7 +71,7 @@ create_ecData_Idexx <- function(collection_data, lab_data){
   #street food used WASH benefit protocol 10 grams into 100 mL, serving size was defined using weight of street food sampled.
   ec_data$ec_denom[which(ec_data$sample_type==10)]=10*ec_data$lab_sf_weight[which(ec_data$sample_type==10)]
   ec_data$ec_denom[is.na(ec_data$sample_type)]=NA
-  
+
   #ec_data$neighbor<-factor_to_numeric(ec_data$neighbor)
   ec_data$sample_type<-as.numeric(ec_data$sample_type)
   ec_data$ec_dil1<-factor_to_numeric(ec_data$lab_1_dil_tested)
@@ -63,7 +86,7 @@ create_ecData_Idexx <- function(collection_data, lab_data){
   ec_data$ec_ecnt1<-factor_to_numeric(ec_data$lab_1_ecoli)
   ec_data$ec_ecnt2<-factor_to_numeric(ec_data$lab_2_ecoli)
   ec_data$ec_ecnt3<-factor_to_numeric(ec_data$lab_3_ecoli)
-  
+
   swap1<-(ec_data$ec_dil1>=ec_data$ec_dil2 & is.na(ec_data$ec_dil3))
   swap2<-(ec_data$ec_dil1<ec_data$ec_dil2 & is.na(ec_data$ec_dil3))
   swap3<-(ec_data$ec_dil1>=ec_data$ec_dil2 & !is.na(ec_data$ec_dil3))
@@ -72,68 +95,68 @@ create_ecData_Idexx <- function(collection_data, lab_data){
   swap6<-(ec_data$ec_dil2<ec_data$ec_dil3 & !is.na(ec_data$ec_dil3))
   swap7<-(ec_data$ec_dil3>=ec_data$ec_dil1 & !is.na(ec_data$ec_dil3))
   swap8<-(ec_data$ec_dil3<ec_data$ec_dil1 & !is.na(ec_data$ec_dil3))
-  
+
   dilution3<-!is.na(ec_data$ec_dil3)
   no_dilution3<-is.na(ec_data$ec_dil3)
-  
+
   ec_data$count1[swap1]<-ec_data$ec_ecnt1[swap1]
   ec_data$count2[swap1]<-ec_data$ec_ecnt2[swap1]
   ec_data$dil1[swap1]<-ec_data$ec_dil1[swap1]
   ec_data$dil2[swap1]<-ec_data$ec_dil2[swap1]
-  
+
   ec_data$count2[swap2]<-ec_data$ec_ecnt1[swap2]
   ec_data$count1[swap2]<-ec_data$ec_ecnt2[swap2]
   ec_data$dil2[swap2]<-ec_data$ec_dil1[swap2]
   ec_data$dil1[swap2]<-ec_data$ec_dil2[swap2]
-  
+
   ec_data$count1[swap3 & swap5 & swap8]<-ec_data$ec_ecnt1[swap3 & swap5 & swap8]
   ec_data$count2[swap3 & swap5 & swap8]<-ec_data$ec_ecnt2[swap3 & swap5 & swap8]
   ec_data$count3[swap3 & swap5 & swap8]<-ec_data$ec_ecnt3[swap3 & swap5 & swap8]
   ec_data$dil1[swap3 & swap5 & swap8]<-ec_data$ec_dil1[swap3 & swap5 & swap8]
   ec_data$dil2[swap3 & swap5 & swap8]<-ec_data$ec_dil2[swap3 & swap5 & swap8]
   ec_data$dil3[swap3 & swap5 & swap8]<-ec_data$ec_dil3[swap3 & swap5 & swap8]
-  
+
   ec_data$count1[swap3 & swap6 & swap7]<-ec_data$ec_ecnt3[swap3 & swap6 & swap7]
   ec_data$count2[swap3 & swap6 & swap7]<-ec_data$ec_ecnt1[swap3 & swap6 & swap7]
   ec_data$count3[swap3 & swap6 & swap7]<-ec_data$ec_ecnt2[swap3 & swap6 & swap7]
   ec_data$dil1[swap3 & swap6 & swap7]<-ec_data$ec_dil3[swap3 & swap6 & swap7]
   ec_data$dil2[swap3 & swap6 & swap7]<-ec_data$ec_dil1[swap3 & swap6 & swap7]
   ec_data$dil3[swap3 & swap6 & swap7]<-ec_data$ec_dil2[swap3 & swap6 & swap7]
-  
+
   ec_data$count1[swap4 & swap5 & swap7]<-ec_data$ec_ecnt2[swap4 & swap5 & swap7]
   ec_data$count2[swap4 & swap5 & swap7]<-ec_data$ec_ecnt3[swap4 & swap5 & swap7]
   ec_data$count3[swap4 & swap5 & swap7]<-ec_data$ec_ecnt1[swap4 & swap5 & swap7]
   ec_data$dil1[swap4 & swap5 & swap7]<-ec_data$ec_dil2[swap4 & swap5 & swap7]
   ec_data$dil2[swap4 & swap5 & swap7]<-ec_data$ec_dil3[swap4 & swap5 & swap7]
   ec_data$dil3[swap4 & swap5 & swap7]<-ec_data$ec_dil1[swap4 & swap5 & swap7]
-  
+
   ec_data$count1[swap3 & swap6 & swap8]<-ec_data$ec_ecnt1[swap3 & swap6 & swap8]
   ec_data$count2[swap3 & swap6 & swap8]<-ec_data$ec_ecnt3[swap3 & swap6 & swap8]
   ec_data$count3[swap3 & swap6 & swap8]<-ec_data$ec_ecnt2[swap3 & swap6 & swap8]
   ec_data$dil1[swap3 & swap6 & swap8]<-ec_data$ec_dil1[swap3 & swap6 & swap8]
   ec_data$dil2[swap3 & swap6 & swap8]<-ec_data$ec_dil3[swap3 & swap6 & swap8]
   ec_data$dil3[swap3 & swap6 & swap8]<-ec_data$ec_dil2[swap3 & swap6 & swap8]
-  
+
   ec_data$count1[swap4 & swap5 & swap8]<-ec_data$ec_ecnt2[swap4 & swap5 & swap8]
   ec_data$count2[swap4 & swap5 & swap8]<-ec_data$ec_ecnt1[swap4 & swap5 & swap8]
   ec_data$count3[swap4 & swap5 & swap8]<-ec_data$ec_ecnt3[swap4 & swap5 & swap8]
   ec_data$dil1[swap4 & swap5 & swap8]<-ec_data$ec_dil2[swap4 & swap5 & swap8]
   ec_data$dil2[swap4 & swap5 & swap8]<-ec_data$ec_dil1[swap4 & swap5 & swap8]
   ec_data$dil3[swap4 & swap5 & swap8]<-ec_data$ec_dil3[swap4 & swap5 & swap8]
-  
+
   ec_data$count1[swap4 & swap6 & swap7]<-ec_data$ec_ecnt3[swap4 & swap6 & swap7]
   ec_data$count2[swap4 & swap6 & swap7]<-ec_data$ec_ecnt2[swap4 & swap6 & swap7]
   ec_data$count3[swap4 & swap6 & swap7]<-ec_data$ec_ecnt1[swap4 & swap6 & swap7]
   ec_data$dil1[swap4 & swap6 & swap7]<-ec_data$ec_dil3[swap4 & swap6 & swap7]
   ec_data$dil2[swap4 & swap6 & swap7]<-ec_data$ec_dil2[swap4 & swap6 & swap7]
   ec_data$dil3[swap4 & swap6 & swap7]<-ec_data$ec_dil1[swap4 & swap6 & swap7]
-  
+
   #check whether threre is a dilution jumping.
   dil_jump1_1<-abs(ec_data$dil1/ec_data$dil2-10)<0.0001
   dil_jump1_2<-abs(ec_data$dil1/ec_data$dil2-100)<0.0001
   dil_jump2_1<-abs(ec_data$dil2/ec_data$dil3-10)<0.0001
   dil_jump2_2<-abs(ec_data$dil2/ec_data$dil3-100)<0.0001
-  
+
   #two dilution cases (1:10 dilution jump and 1:100 dilution jump)
   condition1=which(ec_data$count1==9999 & ec_data$count2==9999 & no_dilution3)
   condition2=which(ec_data$count1==9999 & ec_data$count2>=200 & ec_data$count2<=2419.6 & no_dilution3)
@@ -145,7 +168,7 @@ create_ecData_Idexx <- function(collection_data, lab_data){
   condition8=which(ec_data$count1>=1 & ec_data$count1<200 & ec_data$count2>=1 & ec_data$count2<200 & no_dilution3 & dil_jump1_2)
   condition9=which(ec_data$count1>=1 & ec_data$count1<200 & ec_data$count2<1 & no_dilution3)
   condition10=which(ec_data$count1<1 & ec_data$count2<1 & no_dilution3)
-  
+
   #three dilution cases (1:10 dilution jump and 1:100 dilution jump)
   condition11=which(ec_data$count1==9999 & ec_data$count2==9999 & ec_data$count3==9999 & dilution3)
   condition12=which(ec_data$count1==9999 & ec_data$count2==9999 & ec_data$count3>=200 & ec_data$count3<=2419.6 & dilution3)
@@ -156,7 +179,7 @@ create_ecData_Idexx <- function(collection_data, lab_data){
   condition18=which(ec_data$count1==9999 & ec_data$count2>=1 & ec_data$count2<200 & ec_data$count3>=1 & ec_data$count3<200 & dilution3 & dil_jump2_1)
   condition19=which(ec_data$count1==9999 & ec_data$count2>=1 & ec_data$count2<200 & ec_data$count3>=1 & ec_data$count3<200 & dilution3 & dil_jump2_2)
   condition20=which(ec_data$count1==9999 & ec_data$count2>=1 & ec_data$count2<200 & ec_data$count3<1 & dilution3)
-  
+
   condition23=which(ec_data$count1>=200 & ec_data$count1<=2419.6 & ec_data$count2>=200 & ec_data$count2<=2419.6 & ec_data$count3>=1 & ec_data$count3<200 & dilution3 & dil_jump1_1 & dil_jump2_1)
   condition25=which(ec_data$count1>=200 & ec_data$count1<=2419.6 & ec_data$count2>=1 & ec_data$count2<200 & ec_data$count3>=1 & ec_data$count3<200 & dilution3 & dil_jump1_1 & dil_jump2_1)
   condition26=which(ec_data$count1>=200 & ec_data$count1<=2419.6 & ec_data$count2>=1 & ec_data$count2<200 & ec_data$count3>=1 & ec_data$count3<200 & dilution3 & dil_jump1_2 & dil_jump2_2)
@@ -165,7 +188,7 @@ create_ecData_Idexx <- function(collection_data, lab_data){
   condition30=which(ec_data$count1>=1 & ec_data$count1<200 & ec_data$count2>=1 & ec_data$count2<200 & ec_data$count3<1 & dilution3 & dil_jump1_2)
   condition31=which(ec_data$count1>=1 & ec_data$count1<200 & ec_data$count2<1 & ec_data$count3<1 & dilution3)
   condition32=which(ec_data$count1<1 & ec_data$count2<1 & ec_data$count3<1 & dilution3)
-  
+
   ec_con<-rep(NA,length(ec_data$ec_ecnt1))
   ec_con[condition1]=2419.6/ec_data$dil2[condition1]*ec_data$ec_denom[condition1]
   ec_con[condition2]=ec_data$count2[condition2]/ec_data$dil2[condition2]*ec_data$ec_denom[condition2]
@@ -196,7 +219,7 @@ create_ecData_Idexx <- function(collection_data, lab_data){
   ec_con[condition32]=0.5/ec_data$dil1[condition32]*ec_data$ec_denom[condition32]
   ec_data$ec_conc<-ec_con
   ec_data$neighbor <- as.factor(ec_data$col_neighborhood)
-  
+
   return(ec_data)
 }
 
@@ -390,26 +413,6 @@ create_ecData_MF <- function(collection_data, lab_data) {
   return(ec_data)
 }
 
-create_concData <- function(ec_data) {
-  # Calculate concentration amounts?
-  conc_names <- c("Drain Water", "Produce", "Municipal and Piped Water",'Ocean Water', 'Surface Water', "Flood Water",
-                  "Public Latrine", "Particulate", "Bathing")
-  conc<-list()
-  for (i in 1:length(unique(factor_to_numeric(ec_data$neighbor)))){
-    # sample type 1=drain water, 2=produce, 3=piped water, 4=ocean water, 5=surface water, 6=flood water, 7=Public Latrine Surfaces, 8=particulate, 9=bathing
-    for (j in 1:9){
-      conc <- append(conc,
-                        list(conc=list(sample = conc_names[j],
-                                       neighborhood = paste("Neighborhood", i),
-                                       data = ec_data$ec_conc[which(ec_data$neighbor==sort(unique(ec_data$neighbor))[i]
-                                                                                          & ec_data$sample_type==j)])
-                        )
-      )
-
-    }
-  }
-  return(conc)
-}
 
 # FREQUENCIES ----------------------------------------------------------------
 calculate_freq <- function(..., type='pie chart', survey_type=NULL) {
@@ -444,7 +447,7 @@ calculate_freq <- function(..., type='pie chart', survey_type=NULL) {
   # headers, we can figure out what data we have using that.
   dat <- list(...)
   # this should be based on the columns within each export
-  data_map <- c('household_data' = 'h_', 'community_data' = 'c_', 'school_data' = 's_')
+  data_map <- c('household_data' = '^h_', 'community_data' = '^c_', 'school_data' = '^s_')
 
   # let's figure out what we have
   surveys_matched <- character()
@@ -842,7 +845,7 @@ calculate_freq <- function(..., type='pie chart', survey_type=NULL) {
         list(sample = 'Bathing',
              age = 'Adults',
              neighborhood = paste('Neighborhood',i),
-             data = switch(survey_type, 
+             data = switch(survey_type,
                            'combined' = numeric(),
                            'household' = numeric(),
                            'school' = numeric(),
@@ -853,7 +856,7 @@ calculate_freq <- function(..., type='pie chart', survey_type=NULL) {
         list(sample = 'Bathing',
              age = 'Children',
              neighborhood = paste('Neighborhood',i),
-             data = switch(survey_type, 
+             data = switch(survey_type,
                            'combined' = numeric(),
                            'household' = numeric(),
                            'school' = numeric(),
@@ -863,9 +866,9 @@ calculate_freq <- function(..., type='pie chart', survey_type=NULL) {
       )
       )
     }
-    
+
      freq <- append(freq, sub)
-     
+
 
   }
 
@@ -956,7 +959,7 @@ calculate_pplPlotData <- function(freq, conc, nburn=1000, niter=10000, thin=1, c
 
       }
       # filter the concentration data to just this neighborhood and sample
-      
+
     }
   }
 
