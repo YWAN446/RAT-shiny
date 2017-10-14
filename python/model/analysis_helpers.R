@@ -462,7 +462,6 @@ calculate_freq <- function(..., type='pie chart', analysis_type=NULL) {
       surveys_matched <- c(surveys_matched, names(data_map[match]))
     }
   }
-  print(surveys_matched)
 
   # some error handling
 #   if (!(length(surveys_matched) == 1 | length(surveys_matched) == 3)) {
@@ -486,8 +485,7 @@ calculate_freq <- function(..., type='pie chart', analysis_type=NULL) {
   else {
     df_for_analysis <- eval(parse(text=paste0(analysis_type, '_data')))
   }
-  print(analysis_type)
-  
+
   freq <- find_pathways(df_for_analysis, analysis_type)
 
   # lastly, make sure it's the right numbers.
@@ -521,7 +519,6 @@ find_pathways <- function(df, analysis_type) {
     .[,c(1:3)] %>% 
     .[!duplicated(.),] %>%
     .[!apply(. == 'metadata' | . == 'neighborhood', 1, any),] # neighborhood is making it through for some reason
-  print(pathways)
   # iterate through neighborhoods and find pathways for each
   freq <- lapply(neighborhoods, function(n) {
     apply(pathways, 1, function(pathway_combo) find_pathway(df, n, analysis_type, pathway_combo[2], pathway_combo[3])) %>% unname() %>% unlist(recursive=F)
@@ -558,13 +555,10 @@ find_freq <- function(df, survey_type, pathway_type, population_type) {
                    '_1' = 3,
                    '_0' = 4,
                    '_na' = 5)
-  print(pathway_type)
-  print(population_type)
   # find the column names that match the pattern
   cols <- grep(paste0(c(survey_type, pathway_type, population_type), collapse='_'), names(df), value = T)
   if (survey_type != 'h') {
     results <- sapply(names(value_map), function(x) {
-      print(x)
       n <- df[,grep(paste0(x,"$"), cols, value=T)] %>% as.numeric() %>% sum()
       if (length(n) > 0) {
         rep(value_map[x], n)
