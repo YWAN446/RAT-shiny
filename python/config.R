@@ -1,0 +1,36 @@
+## Examples for how to parameterize EC data functions
+## we will probably move this to a YAML file eventually.
+
+config <- list(
+  #sample type
+  'sample_type_code' = list('d' = 1, 'p' = 2, 'dw' = 3, 'o' = 4, 's' = 5, 'f' = 6, 'l' = 7,
+                            'pa' = 8, 'bw' = 9, 'sf' = 10),
+  'sample_type_label' = list('d' = 'Drain Water', 'p' = 'Produce', 'dw' = 'Municipal and Piped Water', 'o' = 'Ocean Water',
+                             's' = 'Surface Water', 'f' = 'Flood Water', 'l' = 'Public Latrine',
+                             'pa' = 'Particulate', 'bw' = 'Bathing Water', 'sf' = 'Street Food'),
+  # idexx and membrane filtration
+  'lab_analysis_method' = list('idexx' = 1, 'membrane' = 2),
+  #idexx value
+  'idexx_reading' = list('not valid' = 1, 'valid' = 2),
+  'idexx_value' = list('negative' = 0.5, 'lower limit' = 1, 'cut point' = 200, 'upper limit' = 2419.6,'censored' = 9999),
+  #membrane filtration value
+  'membrane_reading' = list('TNTC' = 1, "TDTC" = 2, 'valid' = 3),
+  'membrane_value' = list('negative' = 0.5, 'lower limit' = 0, 'cut point' = 10, 'upper limit' = 200, 'TDTC' = 998, 'TNTC' = 999),
+  # back-calculation denominator
+  'denoms' = list('default' = 100, 'p' = 500, 'l' = 14, 'pa' = 2, 'sf' = 10),# street food is 'sf', but the denominator is depended on the other street food weight variable "lab_sf_weight"
+  #config for JAGS;
+  'jags_par_env' = list('niter' = 10000, #number of iterations
+                        'nburn' = 1000, #number of burn in
+                        'thin' = 1 #thin
+  ),
+  'jags_par_freq' = list('niter' = 10000, #number of iterations
+                        'nburn' = 1000, #number of burn in
+                        'thin' = 1 #thin
+  ),
+  'cut_point' = list('times' = c(0, 5, 10), 'days' = c(0, 3, 6)),
+  'init_freq' = list('times' = c(NA, 2, 7, 12), "days" = c(NA, 2, 5, 7), 'r' = 1, 'p' = 0.2),
+  #parameters for monte carlo simulation
+  'nsim' = 1000,
+  'intake' = array(c(0.0006,1,10.43,0.0154,0.037,0.0006,0.034,NA,0.0499,1, #first row is for adults
+                     0.01,0.5,4.14,0.2042,0.2042,0.01,0.034,NA,0.09975,0.5),c(10,2)) #second row is for children
+)

@@ -8,20 +8,17 @@ library(reshape2)
 library(magrittr)
 # library(rjags)
 
-create_concData <- function(collection_data, lab_data) {
-  ec_data <- create_ecData(collection_data, lab_data)
-  # Calculate concentration amounts?
-  conc_names <- c("Drain Water", "Produce", "Municipal and Piped Water",'Ocean Water', 'Surface Water', "Flood Water",
-                  "Public Latrine", "Particulate", "Bathing")
+create_concData <- function(collection_data, lab_data, pathway_selected_vector, idexx_reading = config$idexx_reading, idexx_value = config$idexx_value, membrane_reading = config$membrane_reading, membrane_value = config$membrane_value, denoms = config$denoms, sample_type_code = config$sample_type_code, sample_type_label = config$sample_type_label, lab_analysis_method = config$lab_analysis_method) {
+  ec_data <- create_ecData(collection_data = collection_data, lab_data = lab_data, idexx_reading = idexx_reading, idexx_value = idexx_value, membrane_reading = membrane_reading, membrane_value = membrane_value, denoms = denoms, sample_type_code = sample_type_code, lab_analysis_method = lab_analysis_method)
   conc<-list()
   for (i in 1:length(unique(factor_to_numeric(ec_data$neighbor)))){
     # sample type 1=drain water, 2=produce, 3=piped water, 4=ocean water, 5=surface water, 6=flood water, 7=Public Latrine Surfaces, 8=particulate, 9=bathing
-    for (j in 1:9){
+    for (j in 1:length(pathway_selected_vector)){
       conc <- append(conc,
-                     list(conc=list(sample = conc_names[j],
-                                    neighborhood = paste("Neighborhood", i),
+                     list(conc=list(sample = sample_type_label[pathway_selected_vector[j]],
+                                    neighborhood = paste("Neighborhood", i),# The neighborhood information should change based on the configuration before deployment.
                                     data = ec_data$ec_conc[which(ec_data$neighbor==sort(unique(ec_data$neighbor))[i]
-                                                                 & ec_data$sample_type==j)])
+                                                                 & ec_data$sample_type==sample_type_code[pathway_selected_vector[j]])])
                      )
       )
 
@@ -32,14 +29,14 @@ create_concData <- function(collection_data, lab_data) {
 
 
 # master create_ecData
-create_ecData <- function(collection_data, lab_data) {
+create_ecData <- function(collection_data, lab_data, idexx_reading = config$idexx_reading, idexx_value = config$idexx_value, membrane_reading = config$membrane_reading, membrane_value = config$membrane_value, denoms = config$denoms, sample_type_code = config$sample_type_code, lab_analysis_method = config$lab_analysis_method) {
   #logic to decide whether the function recieves IDEXX data or MF data;
   #This is assuming all the samples will be tested in one of the method: either IDEXX or MF.
   #This field will be filled based on configuration of the project.
-  if (lab_data$lab_analysis[1]==1){
-    return(create_ecData_Idexx(collection_data, lab_data))
-  } else if (lab_data$lab_analysis[1]==2){
-    return(create_ecData_MF(collection_data, lab_data))
+  if (lab_data$lab_analysis[1]==get('idexx',lab_analysis_method)){
+    return(create_ecData_Idexx(collection_data = collection_data, lab_data = lab_data, idexx_reading = idexx_reading, idexx_value = idexx_value, denoms = denoms, sample_type_code = sample_type_code))
+  } else if (lab_data$lab_analysis[1]==get('membrane',lab_analysis_method)){
+    return(create_ecData_MF(collection_data = collection_data, lab_data = lab_data, membrane_reading = membrane_reading, membrane_value = membrane_value, denoms = denoms, sample_type_code = sample_type_code))
   }
 }
 
@@ -47,12 +44,12 @@ create_ecData <- function(collection_data, lab_data) {
 # load("./data/mpn_tbl.rda")
 
 # IDEXX method to calculate the concentration-----------------------------
-create_ecData_Idexx <- function(collection_data, lab_data, mpn_loc, default_denom = 100, alternate_denoms = list('p' = 500, 'l' = 14)){
+create_ecData_Idexx <- function(collection_data, lab_data, mpn_tbl = mpn_tbl, idexx_reading = config$idexx_reading, idexx_value = config$idexx_value, denoms = config$denoms, sample_type_code = config$sample_type_code){
   #function to prepare the ec_data for IDEXX;
   for (i in 1:length(lab_data$lab_id)){
-    lab_data$lab_1_ecoli[i]<-ifelse(lab_data$lab_1_ecoli_reading_idexx==2,mpn_tbl[lab_data$lab_1_ecoli_big_idexx[i]+1,lab_data$lab_1_ecoli_small_idexx[i]+1],9999)
-    lab_data$lab_2_ecoli[i]<-ifelse(lab_data$lab_2_ecoli_reading_idexx==2,mpn_tbl[lab_data$lab_2_ecoli_big_idexx[i]+1,lab_data$lab_2_ecoli_small_idexx[i]+1],9999)
-    lab_data$lab_3_ecoli[i]<-ifelse(lab_data$lab_3_ecoli_reading_idexx==2,mpn_tbl[lab_data$lab_3_ecoli_big_idexx[i]+1,lab_data$lab_3_ecoli_small_idexx[i]+1],9999)
+    lab_data$lab_1_ecoli[i]<-ifelse(lab_data$lab_1_ecoli_reading_idexx==get('valid',idexx_reading),mpn_tbl[lab_data$lab_1_ecoli_big_idexx[i]+1,lab_data$lab_1_ecoli_small_idexx[i]+1],NA) #need to think about how this NA means to the analysis???
+    lab_data$lab_2_ecoli[i]<-ifelse(lab_data$lab_2_ecoli_reading_idexx==get('valid',idexx_reading),mpn_tbl[lab_data$lab_2_ecoli_big_idexx[i]+1,lab_data$lab_2_ecoli_small_idexx[i]+1],NA)
+    lab_data$lab_3_ecoli[i]<-ifelse(lab_data$lab_3_ecoli_reading_idexx==get('valid',idexx_reading),mpn_tbl[lab_data$lab_3_ecoli_big_idexx[i]+1,lab_data$lab_3_ecoli_small_idexx[i]+1],NA)
   }
 
   #Capitalized and remove missings in ID and sample types for merge purpose;
@@ -65,12 +62,12 @@ create_ecData_Idexx <- function(collection_data, lab_data, mpn_loc, default_deno
   names(ec_data)[which(names(ec_data)=="col_sample_type")]<-"sample_type"
   names(ec_data)[which(names(ec_data)=="col_id")]<-"sampleid"
   #back calculation factor
-  ec_data$ec_denom=100
-  ec_data$ec_denom[which(ec_data$sample_type==2)]=500
-  ec_data$ec_denom[which(ec_data$sample_type==7)]=14
-  ec_data$ec_denom[which(ec_data$sample_type==8)]=2
+  ec_data$ec_denom=get('default',denoms)
+  ec_data$ec_denom[which(ec_data$sample_type==get('p',sample_type_code))]=get('p',denoms)
+  ec_data$ec_denom[which(ec_data$sample_type==get('l',sample_type_code))]=get('l',denoms)
+  ec_data$ec_denom[which(ec_data$sample_type==get('pa',sample_type_code))]=get('pa',denoms)
   #street food used WASH benefit protocol 10 grams into 100 mL, serving size was defined using weight of street food sampled.
-  ec_data$ec_denom[which(ec_data$sample_type==10)]=10*ec_data$lab_sf_weight[which(ec_data$sample_type==10)]
+  ec_data$ec_denom[which(ec_data$sample_type==get('sf',sample_type_code))]=get('sf',denoms)*ec_data$lab_sf_weight[which(ec_data$sample_type==get('sf',sample_type_code))]
   ec_data$ec_denom[is.na(ec_data$sample_type)]=NA
 
   #ec_data$neighbor<-factor_to_numeric(ec_data$neighbor)
@@ -81,7 +78,7 @@ create_ecData_Idexx <- function(collection_data, lab_data, mpn_loc, default_deno
   ec_data$lab_1_volume<-factor_to_numeric(ec_data$lab_1_volume)
   ec_data$lab_2_volume<-factor_to_numeric(ec_data$lab_2_volume)
   ec_data$lab_3_volume<-factor_to_numeric(ec_data$lab_3_volume)
-  ec_data$ec_dil1<-(10^ec_data$ec_dil1)/(10^7)*ec_data$lab_1_volume
+  ec_data$ec_dil1<-(10^ec_data$ec_dil1)/(10^7)*ec_data$lab_1_volume #If lab protocol won't change, this won't change. We can ask Suraja about this part;
   ec_data$ec_dil2<-(10^ec_data$ec_dil2)/(10^7)*ec_data$lab_2_volume
   ec_data$ec_dil3<-(10^ec_data$ec_dil3)/(10^7)*ec_data$lab_3_volume
   ec_data$ec_ecnt1<-factor_to_numeric(ec_data$lab_1_ecoli)
@@ -159,39 +156,39 @@ create_ecData_Idexx <- function(collection_data, lab_data, mpn_loc, default_deno
   dil_jump2_2<-abs(ec_data$dil2/ec_data$dil3-100)<0.0001
 
   #two dilution cases (1:10 dilution jump and 1:100 dilution jump)
-  condition1=which(ec_data$count1==9999 & ec_data$count2==9999 & no_dilution3)
-  condition2=which(ec_data$count1==9999 & ec_data$count2>=200 & ec_data$count2<=2419.6 & no_dilution3)
-  condition3=which(ec_data$count1==9999 & ec_data$count2>=1 & ec_data$count2<200 & no_dilution3)
-  condition4=which(ec_data$count1>=200 & ec_data$count1<=2419.6 & ec_data$count2>=200 & ec_data$count2<2419.6 & no_dilution3 & dil_jump1_1)
-  condition5=which(ec_data$count1>=200 & ec_data$count1<=2419.6 & ec_data$count2>=1 & ec_data$count2<200 & no_dilution3)
-  condition6=which(ec_data$count1>=200 & ec_data$count1<=2419.6 & ec_data$count2<1 & no_dilution3)
-  condition7=which(ec_data$count1>=1 & ec_data$count1<200 & ec_data$count2>=1 & ec_data$count2<200 & no_dilution3 & dil_jump1_1)
-  condition8=which(ec_data$count1>=1 & ec_data$count1<200 & ec_data$count2>=1 & ec_data$count2<200 & no_dilution3 & dil_jump1_2)
-  condition9=which(ec_data$count1>=1 & ec_data$count1<200 & ec_data$count2<1 & no_dilution3)
-  condition10=which(ec_data$count1<1 & ec_data$count2<1 & no_dilution3)
+  condition1=which(ec_data$count1==get('censored', idexx_value) & ec_data$count2==get('censored', idexx_value) & no_dilution3)
+  condition2=which(ec_data$count1==get('censored', idexx_value) & ec_data$count2>=get('cut point', idexx_value) & ec_data$count2<=get('upper limit', idexx_value) & no_dilution3)
+  condition3=which(ec_data$count1==get('censored', idexx_value) & ec_data$count2>=get('lower limit', idexx_value) & ec_data$count2<get('cut point', idexx_value) & no_dilution3)
+  condition4=which(ec_data$count1>=get('cut point', idexx_value) & ec_data$count1<=get('upper limit', idexx_value) & ec_data$count2>=get('cut point', idexx_value) & ec_data$count2<get('upper limit', idexx_value) & no_dilution3 & dil_jump1_1)
+  condition5=which(ec_data$count1>=get('cut point', idexx_value) & ec_data$count1<=get('upper limit', idexx_value) & ec_data$count2>=get('lower limit', idexx_value) & ec_data$count2<get('cut point', idexx_value) & no_dilution3)
+  condition6=which(ec_data$count1>=get('cut point', idexx_value) & ec_data$count1<=get('upper limit', idexx_value) & ec_data$count2<get('lower limit', idexx_value) & no_dilution3)
+  condition7=which(ec_data$count1>=get('lower limit', idexx_value) & ec_data$count1<get('cut point', idexx_value) & ec_data$count2>=get('lower limit', idexx_value) & ec_data$count2<get('cut point', idexx_value) & no_dilution3 & dil_jump1_1)
+  condition8=which(ec_data$count1>=get('lower limit', idexx_value) & ec_data$count1<get('cut point', idexx_value) & ec_data$count2>=get('lower limit', idexx_value) & ec_data$count2<get('cut point', idexx_value) & no_dilution3 & dil_jump1_2)
+  condition9=which(ec_data$count1>=get('lower limit', idexx_value) & ec_data$count1<get('cut point', idexx_value) & ec_data$count2<get('lower limit', idexx_value) & no_dilution3)
+  condition10=which(ec_data$count1<get('lower limit', idexx_value) & ec_data$count2<get('lower limit', idexx_value) & no_dilution3)
 
   #three dilution cases (1:10 dilution jump and 1:100 dilution jump)
-  condition11=which(ec_data$count1==9999 & ec_data$count2==9999 & ec_data$count3==9999 & dilution3)
-  condition12=which(ec_data$count1==9999 & ec_data$count2==9999 & ec_data$count3>=200 & ec_data$count3<=2419.6 & dilution3)
-  condition13=which(ec_data$count1==9999 & ec_data$count2==9999 & ec_data$count3>=1 & ec_data$count3<200 & dilution3)
-  condition15=which(ec_data$count1==9999 & ec_data$count2>=200 & ec_data$count2<=2419.6 & ec_data$count3>=200 & ec_data$count3<=2419.6 & dilution3 & dil_jump2_1)
-  condition16=which(ec_data$count1==9999 & ec_data$count2>=200 & ec_data$count2<=2419.6 & ec_data$count3>=1 & ec_data$count3<200 & dilution3)
-  condition17=which(ec_data$count1==9999 & ec_data$count2>=200 & ec_data$count2<=2419.6 & ec_data$count3<1 & dilution3)
-  condition18=which(ec_data$count1==9999 & ec_data$count2>=1 & ec_data$count2<200 & ec_data$count3>=1 & ec_data$count3<200 & dilution3 & dil_jump2_1)
-  condition19=which(ec_data$count1==9999 & ec_data$count2>=1 & ec_data$count2<200 & ec_data$count3>=1 & ec_data$count3<200 & dilution3 & dil_jump2_2)
-  condition20=which(ec_data$count1==9999 & ec_data$count2>=1 & ec_data$count2<200 & ec_data$count3<1 & dilution3)
+  condition11=which(ec_data$count1==get('censored', idexx_value) & ec_data$count2==get('censored', idexx_value) & ec_data$count3==get('censored', idexx_value) & dilution3)
+  condition12=which(ec_data$count1==get('censored', idexx_value) & ec_data$count2==get('censored', idexx_value) & ec_data$count3>=get('cut point', idexx_value) & ec_data$count3<=get('upper limit', idexx_value) & dilution3)
+  condition13=which(ec_data$count1==get('censored', idexx_value) & ec_data$count2==get('censored', idexx_value) & ec_data$count3>=get('lower limit', idexx_value) & ec_data$count3<get('cut point', idexx_value) & dilution3)
+  condition15=which(ec_data$count1==get('censored', idexx_value) & ec_data$count2>=get('cut point', idexx_value) & ec_data$count2<=get('upper limit', idexx_value) & ec_data$count3>=get('cut point', idexx_value) & ec_data$count3<=get('upper limit', idexx_value) & dilution3 & dil_jump2_1)
+  condition16=which(ec_data$count1==get('censored', idexx_value) & ec_data$count2>=get('cut point', idexx_value) & ec_data$count2<=get('upper limit', idexx_value) & ec_data$count3>=get('lower limit', idexx_value) & ec_data$count3<get('cut point', idexx_value) & dilution3)
+  condition17=which(ec_data$count1==get('censored', idexx_value) & ec_data$count2>=get('cut point', idexx_value) & ec_data$count2<=get('upper limit', idexx_value) & ec_data$count3<get('lower limit', idexx_value) & dilution3)
+  condition18=which(ec_data$count1==get('censored', idexx_value) & ec_data$count2>=get('lower limit', idexx_value) & ec_data$count2<get('cut point', idexx_value) & ec_data$count3>=get('lower limit', idexx_value) & ec_data$count3<get('cut point', idexx_value) & dilution3 & dil_jump2_1)
+  condition19=which(ec_data$count1==get('censored', idexx_value) & ec_data$count2>=get('lower limit', idexx_value) & ec_data$count2<get('cut point', idexx_value) & ec_data$count3>=get('lower limit', idexx_value) & ec_data$count3<get('cut point', idexx_value) & dilution3 & dil_jump2_2)
+  condition20=which(ec_data$count1==get('censored', idexx_value) & ec_data$count2>=get('lower limit', idexx_value) & ec_data$count2<get('cut point', idexx_value) & ec_data$count3<get('lower limit', idexx_value) & dilution3)
 
-  condition23=which(ec_data$count1>=200 & ec_data$count1<=2419.6 & ec_data$count2>=200 & ec_data$count2<=2419.6 & ec_data$count3>=1 & ec_data$count3<200 & dilution3 & dil_jump1_1 & dil_jump2_1)
-  condition25=which(ec_data$count1>=200 & ec_data$count1<=2419.6 & ec_data$count2>=1 & ec_data$count2<200 & ec_data$count3>=1 & ec_data$count3<200 & dilution3 & dil_jump1_1 & dil_jump2_1)
-  condition26=which(ec_data$count1>=200 & ec_data$count1<=2419.6 & ec_data$count2>=1 & ec_data$count2<200 & ec_data$count3>=1 & ec_data$count3<200 & dilution3 & dil_jump1_2 & dil_jump2_2)
-  condition27=which(ec_data$count1>=200 & ec_data$count1<=2419.6 & ec_data$count2>=1 & ec_data$count2<200 & ec_data$count3<1 & dilution3)
-  condition29=which(ec_data$count1>=1 & ec_data$count1<200 & ec_data$count2>=1 & ec_data$count2<200 & ec_data$count3<1 & dilution3 & dil_jump1_1)
-  condition30=which(ec_data$count1>=1 & ec_data$count1<200 & ec_data$count2>=1 & ec_data$count2<200 & ec_data$count3<1 & dilution3 & dil_jump1_2)
-  condition31=which(ec_data$count1>=1 & ec_data$count1<200 & ec_data$count2<1 & ec_data$count3<1 & dilution3)
-  condition32=which(ec_data$count1<1 & ec_data$count2<1 & ec_data$count3<1 & dilution3)
+  condition23=which(ec_data$count1>=get('cut point', idexx_value) & ec_data$count1<=get('upper limit', idexx_value) & ec_data$count2>=get('cut point', idexx_value) & ec_data$count2<=get('upper limit', idexx_value) & ec_data$count3>=get('lower limit', idexx_value) & ec_data$count3<get('cut point', idexx_value) & dilution3 & dil_jump1_1 & dil_jump2_1)
+  condition25=which(ec_data$count1>=get('cut point', idexx_value) & ec_data$count1<=get('upper limit', idexx_value) & ec_data$count2>=get('lower limit', idexx_value) & ec_data$count2<get('cut point', idexx_value) & ec_data$count3>=get('lower limit', idexx_value) & ec_data$count3<get('cut point', idexx_value) & dilution3 & dil_jump1_1 & dil_jump2_1)
+  condition26=which(ec_data$count1>=get('cut point', idexx_value) & ec_data$count1<=get('upper limit', idexx_value) & ec_data$count2>=get('lower limit', idexx_value) & ec_data$count2<get('cut point', idexx_value) & ec_data$count3>=get('lower limit', idexx_value) & ec_data$count3<get('cut point', idexx_value) & dilution3 & dil_jump1_2 & dil_jump2_2)
+  condition27=which(ec_data$count1>=get('cut point', idexx_value) & ec_data$count1<=get('upper limit', idexx_value) & ec_data$count2>=get('lower limit', idexx_value) & ec_data$count2<get('cut point', idexx_value) & ec_data$count3<get('lower limit', idexx_value) & dilution3)
+  condition29=which(ec_data$count1>=get('lower limit', idexx_value) & ec_data$count1<get('cut point', idexx_value) & ec_data$count2>=get('lower limit', idexx_value) & ec_data$count2<get('cut point', idexx_value) & ec_data$count3<get('lower limit', idexx_value) & dilution3 & dil_jump1_1)
+  condition30=which(ec_data$count1>=get('lower limit', idexx_value) & ec_data$count1<get('cut point', idexx_value) & ec_data$count2>=get('lower limit', idexx_value) & ec_data$count2<get('cut point', idexx_value) & ec_data$count3<get('lower limit', idexx_value) & dilution3 & dil_jump1_2)
+  condition31=which(ec_data$count1>=get('lower limit', idexx_value) & ec_data$count1<get('cut point', idexx_value) & ec_data$count2<get('lower limit', idexx_value) & ec_data$count3<get('lower limit', idexx_value) & dilution3)
+  condition32=which(ec_data$count1<get('lower limit', idexx_value) & ec_data$count2<get('lower limit', idexx_value) & ec_data$count3<get('lower limit', idexx_value) & dilution3)
 
   ec_con<-rep(NA,length(ec_data$ec_ecnt1))
-  ec_con[condition1]=2419.6/ec_data$dil2[condition1]*ec_data$ec_denom[condition1]
+  ec_con[condition1]=get('upper limit', idexx_value)/ec_data$dil2[condition1]*ec_data$ec_denom[condition1]
   ec_con[condition2]=ec_data$count2[condition2]/ec_data$dil2[condition2]*ec_data$ec_denom[condition2]
   ec_con[condition3]=ec_data$count2[condition3]/ec_data$dil2[condition3]*ec_data$ec_denom[condition3]
   ec_con[condition4]=(ec_data$count1[condition4]/ec_data$dil1[condition4]+ec_data$count2[condition4]/ec_data$dil2[condition4])/2*ec_data$ec_denom[condition4]
@@ -200,8 +197,8 @@ create_ecData_Idexx <- function(collection_data, lab_data, mpn_loc, default_deno
   ec_con[condition7]=(ec_data$count1[condition7]/ec_data$dil1[condition7]+ec_data$count2[condition7]/ec_data$dil2[condition7])/2*ec_data$ec_denom[condition7]
   ec_con[condition8]=ec_data$count1[condition8]/ec_data$dil1[condition8]*ec_data$ec_denom[condition8]
   ec_con[condition9]=ec_data$count1[condition9]/ec_data$dil1[condition9]*ec_data$ec_denom[condition9]
-  ec_con[condition10]=0.5/ec_data$dil1[condition10]*ec_data$ec_denom[condition10]
-  ec_con[condition11]=2419.6/ec_data$dil3[condition11]*ec_data$ec_denom[condition11]
+  ec_con[condition10]=get('negative', idexx_value)/ec_data$dil1[condition10]*ec_data$ec_denom[condition10]
+  ec_con[condition11]=get('upper limit', idexx_value)/ec_data$dil3[condition11]*ec_data$ec_denom[condition11]
   ec_con[condition12]=ec_data$count3[condition12]/ec_data$dil3[condition12]*ec_data$ec_denom[condition12]
   ec_con[condition13]=ec_data$count3[condition13]/ec_data$dil3[condition13]*ec_data$ec_denom[condition13]
   ec_con[condition15]=(ec_data$count2[condition15]/ec_data$dil2[condition15]+ec_data$count3[condition15]/ec_data$dil3[condition15])/2*ec_data$ec_denom[condition15]
@@ -217,7 +214,7 @@ create_ecData_Idexx <- function(collection_data, lab_data, mpn_loc, default_deno
   ec_con[condition29]=(ec_data$count1[condition29]/ec_data$dil1[condition29]+ec_data$count2[condition29]/ec_data$dil2[condition29])/2*ec_data$ec_denom[condition29]
   ec_con[condition30]=ec_data$count1[condition30]/ec_data$dil1[condition30]*ec_data$ec_denom[condition30]
   ec_con[condition31]=ec_data$count1[condition31]/ec_data$dil1[condition31]*ec_data$ec_denom[condition31]
-  ec_con[condition32]=0.5/ec_data$dil1[condition32]*ec_data$ec_denom[condition32]
+  ec_con[condition32]=get('negative', idexx_value)/ec_data$dil1[condition32]*ec_data$ec_denom[condition32]
   ec_data$ec_conc<-ec_con
   ec_data$neighbor <- as.factor(ec_data$col_neighborhood)
 
@@ -225,7 +222,7 @@ create_ecData_Idexx <- function(collection_data, lab_data, mpn_loc, default_deno
 }
 
 # MERGING and Membrane Filtration to calculate the concentration-----------------------------
-create_ecData_MF <- function(collection_data, lab_data) {
+create_ecData_MF <- function(collection_data, lab_data, membrane_reading = config$membrane_reading, membrane_value = config$membrane_value, denoms = config$denoms, sample_type_code = config$sample_type_code) {
   # merge and calculate e. coli data?
   collection_data[,c("col_sample_type","col_id")] <- apply(collection_data[,c("col_sample_type","col_id")], 2, function(x) toupper(x))
   lab_data[,c("lab_sample_type","lab_id")] <- apply(lab_data[,c("lab_sample_type","lab_id")], 2, function(x) toupper(x))
@@ -236,12 +233,12 @@ create_ecData_MF <- function(collection_data, lab_data) {
   ec_data<-merge(collection_data,lab_data,by.x=c("col_sample_type","col_id"),by.y=c("lab_sample_type","lab_id"))
   names(ec_data)[which(names(ec_data)=="col_sample_type")]<-"sample_type"
   names(ec_data)[which(names(ec_data)=="col_id")]<-"sampleid"
-  ec_data$ec_denom=100
-  ec_data$ec_denom[which(ec_data$sample_type==2)]=500
-  ec_data$ec_denom[which(ec_data$sample_type==7)]=14
-  ec_data$ec_denom[which(ec_data$sample_type==8)]=2
+  ec_data$ec_denom=get('default',denoms)
+  ec_data$ec_denom[which(ec_data$sample_type==get('p',sample_type_code))]=get('p',denoms)
+  ec_data$ec_denom[which(ec_data$sample_type==get('l',sample_type_code))]=get('l',denoms)
+  ec_data$ec_denom[which(ec_data$sample_type==get('pa',sample_type_code))]=get('pa',denoms)
   #street food used WASH benefit protocol 10 grams into 100 mL, serving size was defined using weight of street food sampled.
-  ec_data$ec_denom[which(ec_data$sample_type==10)]=10*ec_data$lab_sf_weight[which(ec_data$sample_type==10)]
+  ec_data$ec_denom[which(ec_data$sample_type==get('sf',sample_type_code))]=get('sf',denoms)*ec_data$lab_sf_weight[which(ec_data$sample_type==get('sf',sample_type_code))]
   ec_data$ec_denom[is.na(ec_data$sample_type)]=NA
 
   #ec_data$neighbor<-factor_to_numeric(ec_data$neighbor)
@@ -259,12 +256,12 @@ create_ecData_MF <- function(collection_data, lab_data) {
   ec_data$ec_ecnt2<-factor_to_numeric(ec_data$lab_2_ecoli_membrane)
   ec_data$ec_ecnt3<-factor_to_numeric(ec_data$lab_3_ecoli_membrane)
 
-  ec_data$ec_ecnt1[which(ec_data$lab_1_ecoli_reading_membrane==1)]<-999
-  ec_data$ec_ecnt1[which(ec_data$lab_1_ecoli_reading_membrane==2)]<-998
-  ec_data$ec_ecnt2[which(ec_data$lab_2_ecoli_reading_membrane==1)]<-999
-  ec_data$ec_ecnt2[which(ec_data$lab_2_ecoli_reading_membrane==2)]<-998
-  ec_data$ec_ecnt3[which(ec_data$lab_3_ecoli_reading_membrane==1)]<-999
-  ec_data$ec_ecnt3[which(ec_data$lab_3_ecoli_reading_membrane==2)]<-998
+  ec_data$ec_ecnt1[which(ec_data$lab_1_ecoli_reading_membrane==get('TNTC', membrane_reading))]<-get('TNTC', membrane_value) #should we differentiate TNTC and TDTC?
+  ec_data$ec_ecnt1[which(ec_data$lab_1_ecoli_reading_membrane==get('TDTC', membrane_reading))]<-get('TDTC', membrane_value)
+  ec_data$ec_ecnt2[which(ec_data$lab_2_ecoli_reading_membrane==get('TNTC', membrane_reading))]<-get('TNTC', membrane_value)
+  ec_data$ec_ecnt2[which(ec_data$lab_2_ecoli_reading_membrane==get('TDTC', membrane_reading))]<-get('TDTC', membrane_value)
+  ec_data$ec_ecnt3[which(ec_data$lab_3_ecoli_reading_membrane==get('TNTC', membrane_reading))]<-get('TNTC', membrane_value)
+  ec_data$ec_ecnt3[which(ec_data$lab_3_ecoli_reading_membrane==get('TDTC', membrane_reading))]<-get('TDTC', membrane_value)
 
   swap1<-(ec_data$ec_dil1>=ec_data$ec_dil2 & is.na(ec_data$ec_dil3))
   swap2<-(ec_data$ec_dil1<ec_data$ec_dil2 & is.na(ec_data$ec_dil3))
@@ -337,43 +334,43 @@ create_ecData_MF <- function(collection_data, lab_data) {
   dil_jump2_2<-abs(ec_data$dil2/ec_data$dil3-100)<0.0001
 
   #two dilution cases (1:10 dilution jump and 1:100 dilution jump)
-  condition1=which((ec_data$count1==999 | ec_data$count1==998) & (ec_data$count2==999 | ec_data$count2==998) & no_dilution3)
-  condition2=which((ec_data$count1==999 | ec_data$count1==998) & ec_data$count2>=10 & ec_data$count2<=200 & no_dilution3)
-  condition3=which((ec_data$count1==999 | ec_data$count1==998) & ec_data$count2>=1 & ec_data$count2<=9 & no_dilution3)
-  condition4=which(ec_data$count1>=10 & ec_data$count1<=200 & ec_data$count2>=10 & ec_data$count2<=200 & no_dilution3 & dil_jump1_1)
-  condition5=which(ec_data$count1>=10 & ec_data$count1<=200 & ec_data$count2>=1 & ec_data$count2<=9 & no_dilution3)
-  condition6=which(ec_data$count1>=10 & ec_data$count1<=200 & ec_data$count2==0 & no_dilution3)
-  condition7=which(ec_data$count1>=1 & ec_data$count1<=9 & ec_data$count2>=1 & ec_data$count2<=9 & no_dilution3 & dil_jump1_1)
-  condition8=which(ec_data$count1>=1 & ec_data$count1<=9 & ec_data$count2==0 & no_dilution3)
-  condition9=which(ec_data$count1==0 & ec_data$count2==0 & no_dilution3)
-  condition10=which((ec_data$count1==999 | ec_data$count1==998) & ec_data$count2==0 & no_dilution3 & dil_jump1_2)
+  condition1=which((ec_data$count1==get('TNTC', membrane_value) | ec_data$count1==get('TDTC', membrane_value)) & (ec_data$count2==get('TNTC', membrane_value) | ec_data$count2==get('TDTC', membrane_value)) & no_dilution3)
+  condition2=which((ec_data$count1==get('TNTC', membrane_value) | ec_data$count1==get('TDTC', membrane_value)) & ec_data$count2>=get('cut point', membrane_value) & ec_data$count2<=get('upper limit', membrane_value) & no_dilution3)
+  condition3=which((ec_data$count1==get('TNTC', membrane_value) | ec_data$count1==get('TDTC', membrane_value)) & ec_data$count2>get('lower limit', membrane_value) & ec_data$count2<get('cut point', membrane_value) & no_dilution3)
+  condition4=which(ec_data$count1>=get('cut point', membrane_value) & ec_data$count1<=get('upper limit', membrane_value) & ec_data$count2>=get('cut point', membrane_value) & ec_data$count2<=get('upper limit', membrane_value) & no_dilution3 & dil_jump1_1)
+  condition5=which(ec_data$count1>=get('cut point', membrane_value) & ec_data$count1<=get('upper limit', membrane_value) & ec_data$count2>get('lower limit', membrane_value) & ec_data$count2<get('cut point', membrane_value) & no_dilution3)
+  condition6=which(ec_data$count1>=get('cut point', membrane_value) & ec_data$count1<=get('upper limit', membrane_value) & ec_data$count2==get('lower limit', membrane_value) & no_dilution3)
+  condition7=which(ec_data$count1>get('lower limit', membrane_value) & ec_data$count1<get('cut point', membrane_value) & ec_data$count2>get('lower limit', membrane_value) & ec_data$count2<get('cut point', membrane_value) & no_dilution3 & dil_jump1_1)
+  condition8=which(ec_data$count1>get('lower limit', membrane_value) & ec_data$count1<get('cut point', membrane_value) & ec_data$count2==get('lower limit', membrane_value) & no_dilution3)
+  condition9=which(ec_data$count1==get('lower limit', membrane_value) & ec_data$count2==get('lower limit', membrane_value) & no_dilution3)
+  condition10=which((ec_data$count1==get('TNTC', membrane_value) | ec_data$count1==get('TDTC', membrane_value)) & ec_data$count2==get('lower limit', membrane_value) & no_dilution3 & dil_jump1_2)
 
   #three dilution cases (1:10 dilution jump and 1:100 dilution jump)
-  condition11=which((ec_data$count1==999 | ec_data$count1==998) & (ec_data$count2==999 | ec_data$count2==998) & (ec_data$count3==999 | ec_data$count3==998) & dilution3)
-  condition12=which((ec_data$count1==999 | ec_data$count1==998) & (ec_data$count2==999 | ec_data$count2==998) & ec_data$count3>=10 & ec_data$count3<=200 & dilution3)
-  condition13=which((ec_data$count1==999 | ec_data$count1==998) & (ec_data$count2==999 | ec_data$count2==998) & ec_data$count3>=1 & ec_data$count3<=9 & dilution3)
-  condition14=which((ec_data$count1==999 | ec_data$count1==998) & (ec_data$count2==999 | ec_data$count2==998) & ec_data$count3==0 & dilution3 & dil_jump2_2)
-  condition15=which((ec_data$count1==999 | ec_data$count1==998) & ec_data$count2>=10 & ec_data$count2<=200 & ec_data$count3>=10 & ec_data$count3<=200 & dilution3)
-  condition16=which((ec_data$count1==999 | ec_data$count1==998) & ec_data$count2>=10 & ec_data$count2<=200 & ec_data$count3>=1 & ec_data$count3<=9 & dilution3)
-  condition17=which((ec_data$count1==999 | ec_data$count1==998) & ec_data$count2>=10 & ec_data$count2<=200 & ec_data$count3==0 & dilution3)
-  condition18=which((ec_data$count1==999 | ec_data$count1==998) & ec_data$count2>=1 & ec_data$count2<=9 & ec_data$count3>=1 & ec_data$count3<=9 & dilution3 & dil_jump2_1)
-  condition19=which((ec_data$count1==999 | ec_data$count1==998) & ec_data$count2>=1 & ec_data$count2<=9 & ec_data$count3>=1 & ec_data$count3<=9 & dilution3 & dil_jump2_2)
-  condition20=which((ec_data$count1==999 | ec_data$count1==998) & ec_data$count2>=1 & ec_data$count2<=9 & ec_data$count3==0 & dilution3)
-  condition21=which((ec_data$count1==999 | ec_data$count1==998) & ec_data$count2==0 & ec_data$count3==0 & dilution3 & dil_jump1_2)
-  condition22=which(ec_data$count1>=10 & ec_data$count1<=200 & ec_data$count2>=10 & ec_data$count2<=200 & ec_data$count3>=10 & ec_data$count3<=200 & dilution3 & dil_jump1_1 & dil_jump2_1)
-  condition23=which(ec_data$count1>=10 & ec_data$count1<=200 & ec_data$count2>=10 & ec_data$count2<=200 & ec_data$count3>=1 & ec_data$count3<=9 & dilution3 & dil_jump1_1 & dil_jump2_1)
-  condition24=which(ec_data$count1>=10 & ec_data$count1<=200 & ec_data$count2>=10 & ec_data$count2<=200 & ec_data$count3>=1 & ec_data$count3<=9 & dilution3 & dil_jump1_2 & dil_jump2_2)
-  condition25=which(ec_data$count1>=10 & ec_data$count1<=200 & ec_data$count2>=10 & ec_data$count2<=200 & ec_data$count3==0 & dilution3)
-  condition26=which(ec_data$count1>=10 & ec_data$count1<=200 & ec_data$count2>=1 & ec_data$count2<=9 & ec_data$count3>=1 & ec_data$count3<=9 & dilution3)
-  condition27=which(ec_data$count1>=10 & ec_data$count1<=200 & ec_data$count2>=1 & ec_data$count2<=9 & ec_data$count3==0 & dilution3)
-  condition28=which(ec_data$count1>=10 & ec_data$count1<=200 & ec_data$count2==0 & ec_data$count3==0 & dilution3)
-  condition29=which(ec_data$count1>=1 & ec_data$count1<=9 & ec_data$count2>=1 & ec_data$count2<=9 & ec_data$count3==0 & dilution3 & dil_jump1_1)
-  condition30=which(ec_data$count1>=1 & ec_data$count1<=9 & ec_data$count2>=1 & ec_data$count2<=9 & ec_data$count3==0 & dilution3 & dil_jump1_2)
-  condition31=which(ec_data$count1>=1 & ec_data$count1<=9 & ec_data$count2==0 & ec_data$count3==0 & dilution3)
-  condition32=which(ec_data$count1==0 & ec_data$count2==0 & ec_data$count3==0 & dilution3)
+  condition11=which((ec_data$count1==get('TNTC', membrane_value) | ec_data$count1==get('TDTC', membrane_value)) & (ec_data$count2==get('TNTC', membrane_value) | ec_data$count2==get('TDTC', membrane_value)) & (ec_data$count3==get('TNTC', membrane_value) | ec_data$count3==get('TDTC', membrane_value)) & dilution3)
+  condition12=which((ec_data$count1==get('TNTC', membrane_value) | ec_data$count1==get('TDTC', membrane_value)) & (ec_data$count2==get('TNTC', membrane_value) | ec_data$count2==get('TDTC', membrane_value)) & ec_data$count3>=get('cut point', membrane_value) & ec_data$count3<=get('upper limit', membrane_value) & dilution3)
+  condition13=which((ec_data$count1==get('TNTC', membrane_value) | ec_data$count1==get('TDTC', membrane_value)) & (ec_data$count2==get('TNTC', membrane_value) | ec_data$count2==get('TDTC', membrane_value)) & ec_data$count3>get('lower limit', membrane_value) & ec_data$count3<get('cut point', membrane_value) & dilution3)
+  condition14=which((ec_data$count1==get('TNTC', membrane_value) | ec_data$count1==get('TDTC', membrane_value)) & (ec_data$count2==get('TNTC', membrane_value) | ec_data$count2==get('TDTC', membrane_value)) & ec_data$count3==get('lower limit', membrane_value) & dilution3 & dil_jump2_2)
+  condition15=which((ec_data$count1==get('TNTC', membrane_value) | ec_data$count1==get('TDTC', membrane_value)) & ec_data$count2>=get('cut point', membrane_value) & ec_data$count2<=get('upper limit', membrane_value) & ec_data$count3>=get('cut point', membrane_value) & ec_data$count3<=get('upper limit', membrane_value) & dilution3)
+  condition16=which((ec_data$count1==get('TNTC', membrane_value) | ec_data$count1==get('TDTC', membrane_value)) & ec_data$count2>=get('cut point', membrane_value) & ec_data$count2<=get('upper limit', membrane_value) & ec_data$count3>get('lower limit', membrane_value) & ec_data$count3<get('cut point', membrane_value) & dilution3)
+  condition17=which((ec_data$count1==get('TNTC', membrane_value) | ec_data$count1==get('TDTC', membrane_value)) & ec_data$count2>=get('cut point', membrane_value) & ec_data$count2<=get('upper limit', membrane_value) & ec_data$count3==get('lower limit', membrane_value) & dilution3)
+  condition18=which((ec_data$count1==get('TNTC', membrane_value) | ec_data$count1==get('TDTC', membrane_value)) & ec_data$count2>get('lower limit', membrane_value) & ec_data$count2<get('cut point', membrane_value) & ec_data$count3>get('lower limit', membrane_value) & ec_data$count3<get('cut point', membrane_value) & dilution3 & dil_jump2_1)
+  condition19=which((ec_data$count1==get('TNTC', membrane_value) | ec_data$count1==get('TDTC', membrane_value)) & ec_data$count2>get('lower limit', membrane_value) & ec_data$count2<get('cut point', membrane_value) & ec_data$count3>get('lower limit', membrane_value) & ec_data$count3<get('cut point', membrane_value) & dilution3 & dil_jump2_2)
+  condition20=which((ec_data$count1==get('TNTC', membrane_value) | ec_data$count1==get('TDTC', membrane_value)) & ec_data$count2>get('lower limit', membrane_value) & ec_data$count2<get('cut point', membrane_value) & ec_data$count3==get('lower limit', membrane_value) & dilution3)
+  condition21=which((ec_data$count1==get('TNTC', membrane_value) | ec_data$count1==get('TDTC', membrane_value)) & ec_data$count2==get('lower limit', membrane_value) & ec_data$count3==get('lower limit', membrane_value) & dilution3 & dil_jump1_2)
+  condition22=which(ec_data$count1>=get('cut point', membrane_value) & ec_data$count1<=get('upper limit', membrane_value) & ec_data$count2>=get('cut point', membrane_value) & ec_data$count2<=get('upper limit', membrane_value) & ec_data$count3>=get('cut point', membrane_value) & ec_data$count3<=get('upper limit', membrane_value) & dilution3 & dil_jump1_1 & dil_jump2_1)
+  condition23=which(ec_data$count1>=get('cut point', membrane_value) & ec_data$count1<=get('upper limit', membrane_value) & ec_data$count2>=get('cut point', membrane_value) & ec_data$count2<=get('upper limit', membrane_value) & ec_data$count3>get('lower limit', membrane_value) & ec_data$count3<get('cut point', membrane_value) & dilution3 & dil_jump1_1 & dil_jump2_1)
+  condition24=which(ec_data$count1>=get('cut point', membrane_value) & ec_data$count1<=get('upper limit', membrane_value) & ec_data$count2>=get('cut point', membrane_value) & ec_data$count2<=get('upper limit', membrane_value) & ec_data$count3>get('lower limit', membrane_value) & ec_data$count3<get('cut point', membrane_value) & dilution3 & dil_jump1_2 & dil_jump2_2)
+  condition25=which(ec_data$count1>=get('cut point', membrane_value) & ec_data$count1<=get('upper limit', membrane_value) & ec_data$count2>=get('cut point', membrane_value) & ec_data$count2<=get('upper limit', membrane_value) & ec_data$count3==get('lower limit', membrane_value) & dilution3)
+  condition26=which(ec_data$count1>=get('cut point', membrane_value) & ec_data$count1<=get('upper limit', membrane_value) & ec_data$count2>get('lower limit', membrane_value) & ec_data$count2<get('cut point', membrane_value) & ec_data$count3>get('lower limit', membrane_value) & ec_data$count3<get('cut point', membrane_value) & dilution3)
+  condition27=which(ec_data$count1>=get('cut point', membrane_value) & ec_data$count1<=get('upper limit', membrane_value) & ec_data$count2>get('lower limit', membrane_value) & ec_data$count2<get('cut point', membrane_value) & ec_data$count3==get('lower limit', membrane_value) & dilution3)
+  condition28=which(ec_data$count1>=get('cut point', membrane_value) & ec_data$count1<=get('upper limit', membrane_value) & ec_data$count2==get('lower limit', membrane_value) & ec_data$count3==get('lower limit', membrane_value) & dilution3)
+  condition29=which(ec_data$count1>get('lower limit', membrane_value) & ec_data$count1<get('cut point', membrane_value) & ec_data$count2>get('lower limit', membrane_value) & ec_data$count2<get('cut point', membrane_value) & ec_data$count3==get('lower limit', membrane_value) & dilution3 & dil_jump1_1)
+  condition30=which(ec_data$count1>get('lower limit', membrane_value) & ec_data$count1<get('cut point', membrane_value) & ec_data$count2>get('lower limit', membrane_value) & ec_data$count2<get('cut point', membrane_value) & ec_data$count3==get('lower limit', membrane_value) & dilution3 & dil_jump1_2)
+  condition31=which(ec_data$count1>get('lower limit', membrane_value) & ec_data$count1<get('cut point', membrane_value) & ec_data$count2==get('lower limit', membrane_value) & ec_data$count3==get('lower limit', membrane_value) & dilution3)
+  condition32=which(ec_data$count1==get('lower limit', membrane_value) & ec_data$count2==get('lower limit', membrane_value) & ec_data$count3==get('lower limit', membrane_value) & dilution3)
 
   ec_con<-rep(NA,length(ec_data$ec_ecnt1))
-  ec_con[condition1]=200/ec_data$dil2[condition1]*ec_data$ec_denom[condition1]
+  ec_con[condition1]=get('upper limit', membrane_value)/ec_data$dil2[condition1]*ec_data$ec_denom[condition1]
   ec_con[condition2]=ec_data$count2[condition2]/ec_data$dil2[condition2]*ec_data$ec_denom[condition2]
   ec_con[condition3]=ec_data$count2[condition3]/ec_data$dil2[condition3]*ec_data$ec_denom[condition3]
   ec_con[condition4]=(ec_data$count1[condition4]/ec_data$dil1[condition4]+ec_data$count2[condition4]/ec_data$dil2[condition4])/2*ec_data$ec_denom[condition4]
@@ -383,20 +380,20 @@ create_ecData_MF <- function(collection_data, lab_data) {
   ec_con[condition8]=ec_data$count1[condition8]/ec_data$dil1[condition8]*ec_data$ec_denom[condition8]
   #since jumping dilution
   #ec_con[condition9]=0.5/(ec_data$dil1[condition9]+ec_data$dil2[condition9])*ec_data$ec_denom[condition9]
-  ec_con[condition9]=0.5/ec_data$dil1[condition9]*ec_data$ec_denom[condition9]
-  ec_con[condition10]=200/ec_data$dil1[condition10]*ec_data$ec_denom[condition10]
+  ec_con[condition9]=get('negative', membrane_value)/ec_data$dil1[condition9]*ec_data$ec_denom[condition9]
+  ec_con[condition10]=get('upper limit', membrane_value)/ec_data$dil1[condition10]*ec_data$ec_denom[condition10]
 
-  ec_con[condition11]=200/ec_data$dil3[condition11]*ec_data$ec_denom[condition11]
+  ec_con[condition11]=get('upper limit', membrane_value)/ec_data$dil3[condition11]*ec_data$ec_denom[condition11]
   ec_con[condition12]=ec_data$count3[condition12]/ec_data$dil3[condition12]*ec_data$ec_denom[condition12]
   ec_con[condition13]=ec_data$count3[condition13]/ec_data$dil3[condition13]*ec_data$ec_denom[condition13]
-  ec_con[condition14]=200/ec_data$dil2[condition14]*ec_data$ec_denom[condition14]
+  ec_con[condition14]=get('upper limit', membrane_value)/ec_data$dil2[condition14]*ec_data$ec_denom[condition14]
   ec_con[condition15]=(ec_data$count2[condition15]/ec_data$dil2[condition15]+ec_data$count3[condition15]/ec_data$dil3[condition15])/2*ec_data$ec_denom[condition15]
   ec_con[condition16]=ec_data$count2[condition16]/ec_data$dil2[condition16]*ec_data$ec_denom[condition16]
   ec_con[condition17]=ec_data$count2[condition17]/ec_data$dil2[condition17]*ec_data$ec_denom[condition17]
   ec_con[condition18]=ec_data$count3[condition18]/ec_data$dil3[condition18]*ec_data$ec_denom[condition18]
   ec_con[condition19]=ec_data$count2[condition19]/ec_data$dil2[condition19]*ec_data$ec_denom[condition19]
   ec_con[condition20]=ec_data$count2[condition20]/ec_data$dil2[condition20]*ec_data$ec_denom[condition20]
-  ec_con[condition21]=200/ec_data$dil1[condition21]*ec_data$ec_denom[condition21]
+  ec_con[condition21]=get('upper limit', membrane_value)/ec_data$dil1[condition21]*ec_data$ec_denom[condition21]
   ec_con[condition22]=(ec_data$count1[condition22]/ec_data$dil1[condition22]+ec_data$count2[condition22]/ec_data$dil2[condition22]+ec_data$count3[condition22]/ec_data$dil3[condition22])/3*ec_data$ec_denom[condition22]
   ec_con[condition23]=(ec_data$count1[condition23]/ec_data$dil1[condition23]+ec_data$count2[condition23]/ec_data$dil2[condition23])/2*ec_data$ec_denom[condition23]
   ec_con[condition24]=ec_data$count2[condition24]/ec_data$dil2[condition24]*ec_data$ec_denom[condition24]
@@ -407,7 +404,7 @@ create_ecData_MF <- function(collection_data, lab_data) {
   ec_con[condition29]=(ec_data$count1[condition29]/ec_data$dil1[condition29]+ec_data$count2[condition29]/ec_data$dil2[condition29])/2*ec_data$ec_denom[condition29]
   ec_con[condition30]=ec_data$count2[condition30]/ec_data$dil2[condition30]*ec_data$ec_denom[condition30]
   ec_con[condition31]=ec_data$count1[condition31]/ec_data$dil1[condition31]*ec_data$ec_denom[condition31]
-  ec_con[condition32]=0.5/ec_data$dil1[condition32]*ec_data$ec_denom[condition32]
+  ec_con[condition32]=get('negative', membrane_value)/ec_data$dil1[condition32]*ec_data$ec_denom[condition32]
   ec_data$ec_conc<-ec_con
   ec_data$neighbor <- as.factor(ec_data$col_neighborhood)
 
@@ -497,7 +494,7 @@ calculate_freq <- function(..., type='pie chart', analysis_type=NULL) {
 
     # if we want data for a people plot, calculate 4 - the value per vector object in the list
     for (i in 1:length(freq)) {
-      freq[[i]]$data <- 4 - freq[[i]]$data
+      freq[[i]]$data <- 4 - freq[[i]]$data # Aaron is coding a new function to replace this one.
     }
     return(freq)
   }
@@ -511,12 +508,12 @@ find_pathways <- function(df, analysis_type) {
   # this is ugly, but it works
   # pattern match columns, split by underscore, convert to rows,
   # look at the first three columns and find unique combinations,
-  # these are our full pathways. 
-  pathways <- grep('[a-z]{1}_[a-z]{1,2}_[a-z]{1}', names(df), value=T, perl = T) %>% 
-    strsplit("_") %>% 
-    lapply(function(j) as.data.frame(t(j), stringsAsFactors=F)) %>% 
-    bind_rows() %>% 
-    .[,c(1:3)] %>% 
+  # these are our full pathways.
+  pathways <- grep('[a-z]{1}_[a-z]{1,2}_[a-z]{1}', names(df), value=T, perl = T) %>%
+    strsplit("_") %>%
+    lapply(function(j) as.data.frame(t(j), stringsAsFactors=F)) %>%
+    bind_rows() %>%
+    .[,c(1:3)] %>%
     .[!duplicated(.),] %>%
     .[!apply(. == 'metadata' | . == 'neighborhood', 1, any),] # neighborhood is making it through for some reason
   # iterate through neighborhoods and find pathways for each
@@ -527,7 +524,7 @@ find_pathways <- function(df, analysis_type) {
 }
 
 find_pathway <- function(df, neighborhood, analysis_type, pathway_type, population_type) {
-  return(list(path = 
+  return(list(path =
                 list(sample = unname(pathway_type),
                       age = switch(population_type, 'a' = 'Adults', 'c' = 'Children'),
                       neighborhood = paste('Neighborhood',neighborhood),
@@ -540,7 +537,7 @@ find_pathway <- function(df, neighborhood, analysis_type, pathway_type, populati
                                     'household' = find_freq(df[df$h_neighborhood == neighborhood,], 'h', pathway_type, population_type),
                                     'school' = find_freq(df[df$s_neighborhood == neighborhood,], 's', pathway_type, population_type),
                                     'community' = find_freq(df[df$c_neighborhood == neighborhood,], 'c', pathway_type, population_type)
-                      ) 
+                      )
                   )
               )
   )
@@ -549,7 +546,7 @@ find_pathway <- function(df, neighborhood, analysis_type, pathway_type, populati
 find_freq <- function(df, survey_type, pathway_type, population_type) {
   # For a given survey dataframe, find the answers for that pathway and population type
   # assumes the pattern survey_pathway_population naming convention and expects
-  # _3, _2, etc for school and community surveys, household only pulls one column. 
+  # _3, _2, etc for school and community surveys, household only pulls one column.
   value_map = list('_3' = 1,
                    '_2' = 2,
                    '_1' = 3,
@@ -568,9 +565,9 @@ find_freq <- function(df, survey_type, pathway_type, population_type) {
   else {
     results <- df[,grep(paste0('*_', pathway_type, '_', population_type, "$"), names(df), value=T)]
   }
-  
+
   return(results)
-  
+
 }
 
 
@@ -596,15 +593,15 @@ create_freqTbl <- function(freq_vector, sample_type) {
 }
 
 # People Plotting
-calculate_pplPlotData <- function(freq, conc, nburn=1000, niter=10000, thin=1, cutpoint=c(0, 5, 10), shinySession=NULL) {
+calculate_pplPlotData <- function(freq, conc, jags_par_env = config$jags_par_env, jags_par_freq = config$jags_par_freq, cut_point = config$cut_point, init_freq = config$init_freq, nsim = config$nsim, intake = config$intake, sample_type_code = config$sample_type_code, shinySession=NULL) {
   # function to caclulate the percent of population
   # exposed for all pathways given.  performs Bayesian
   # analysis on behavior and environmental data first
   # then calculates the final statistics for plotting
-
+  nburn=1000, niter=10000, thin=1, cutpoint=c(0, 5, 10)
   # run the Bayesian analyses
-  freq <- bayesian_behavior_estimates(freq, nburn, niter, thin, cutpoint, shinySession=shinySession)
-  conc <- bayesian_environmental_estimates(conc, nburn, niter, thin, shinySession=shinySession)
+  freq <- bayesian_behavior_estimates(freq, nburn = get("nburn",jags_par_freq), niter = get("niter",jags_par_freq), thin = get("thin",jags_par_freq), cut_point = cut_point, init_freq = init_freq, shinySession=shinySession)
+  conc <- bayesian_environmental_estimates(conc, nburn = get("nburn",jags_par_env), niter = get("niter",jags_par_env), thin = get("thin",jags_par_env), shinySession=shinySession)
 
 
   # based on the original ps_plot section of the shiny server,
@@ -634,7 +631,7 @@ calculate_pplPlotData <- function(freq, conc, nburn=1000, niter=10000, thin=1, c
         sub.freq <- freq[[list.which(freq, sample == smp && neighborhood == nb && age == a)]]
 
         # calculate the exposure. Requires concentration, freq is optional
-        exposed <- calculate_exposure(sub.freq, sub.conc, smp)
+        exposed <- calculate_exposure(sub.freq, sub.conc, smp, nsim = nsim, intake = intake, sample_type_code = sample_type_code)
 
         # update the object at this position
         ps.freq <- append(ps.freq, list('path' = exposed))
@@ -696,7 +693,7 @@ bayesian_environmental_estimates <- function(conc, nburn=1000, niter=10000, thin
   return(conc)
 }
 
-bayesian_behavior_estimates <- function(freq, nburn=1000, niter=10000, thin=1, cutpoint=c(0, 5, 10), shinySession=NULL) {
+bayesian_behavior_estimates <- function(freq, nburn=1000, niter=10000, thin=1, cut_point = list('times' = c(0, 5, 10), 'days' = c(0, 3, 6)), init_freq = list('times' = c(NA, 2, 7, 12), "days" = c(NA, 2, 5, 7), 'r' = 1, 'p' = 0.2), shinySession=NULL) {
   # Run bayesian model on the behavior data collected.  this will be run for each
   # neighborhood, age, and sample combination.  Warning: Could take quite a while.
   # Future development: Way of backgrounding this?
@@ -717,21 +714,21 @@ bayesian_behavior_estimates <- function(freq, nburn=1000, niter=10000, thin=1, c
         init_be[which(freq_be==2)]<-2
         init_be[which(freq_be==3)]<-3
         if (freq[[k]]$sample=='Municipal and Piped Water'){
-          cutpoint<-c(0,3,6)
-          init_freq_be<-as.numeric(rep(NA,length(freq_be)))
-          init_freq_be[which(freq_be==1)]<-2
-          init_freq_be[which(freq_be==2)]<-5
-          init_freq_be[which(freq_be==3)]<-7
+          cutpoint<-get('days',cut_point)
+          init_freq_be<-as.numeric(rep(get('days',init_freq)[1],length(freq_be)))
+          init_freq_be[which(freq_be==1)]<-get('days',init_freq)[2]
+          init_freq_be[which(freq_be==2)]<-get('days',init_freq)[3]
+          init_freq_be[which(freq_be==3)]<-get('days',init_freq)[4]
         } else {
-          cutpoint<-c(0,5,10)
-          init_freq_be<-as.numeric(rep(NA,length(freq_be)))
-          init_freq_be[which(freq_be==1)]<-2
-          init_freq_be[which(freq_be==2)]<-7
-          init_freq_be[which(freq_be==3)]<-12
+          cutpoint<-get('times',cut_point)
+          init_freq_be<-as.numeric(rep(get('times',init_freq)[1],length(freq_be)))
+          init_freq_be[which(freq_be==1)]<-get('times',init_freq)[2]
+          init_freq_be[which(freq_be==2)]<-get('times',init_freq)[3]
+          init_freq_be[which(freq_be==3)]<-get('times',init_freq)[4]
         }
 
         be_data<-list(select=freq_be,N=length(freq_be),cut=cutpoint)
-        init<-list(freq=init_freq_be,r=1,p=0.2)
+        init<-list(freq=init_freq_be,r=get('r',init_freq),p=get('p',init_freq))
 
         # Jags model runs
         modelpos <- jags.model(file="./model/be_model.jags",data=be_data,n.chains=3,inits=init)
@@ -763,13 +760,22 @@ bayesian_behavior_estimates <- function(freq, nburn=1000, niter=10000, thin=1, c
       init_be[which(freq_be==2)]<-2
       init_be[which(freq_be==3)]<-3
 
-      init_freq_be<-as.numeric(rep(NA,length(freq_be)))
-      init_freq_be[which(freq_be==1)]<-2
-      init_freq_be[which(freq_be==2)]<-7
-      init_freq_be[which(freq_be==3)]<-12
+      if (freq[[k]]$sample=='Municipal and Piped Water'){
+        cutpoint<-get('days',cut_point)
+        init_freq_be<-as.numeric(rep(get('days',init_freq)[1],length(freq_be)))
+        init_freq_be[which(freq_be==1)]<-get('days',init_freq)[2]
+        init_freq_be[which(freq_be==2)]<-get('days',init_freq)[3]
+        init_freq_be[which(freq_be==3)]<-get('days',init_freq)[4]
+      } else {
+        cutpoint<-get('times',cut_point)
+        init_freq_be<-as.numeric(rep(get('times',init_freq)[1],length(freq_be)))
+        init_freq_be[which(freq_be==1)]<-get('times',init_freq)[2]
+        init_freq_be[which(freq_be==2)]<-get('times',init_freq)[3]
+        init_freq_be[which(freq_be==3)]<-get('times',init_freq)[4]
+      }
 
       be_data<-list(select=freq_be,N=length(freq_be),cut=cutpoint)
-      init<-list(freq=init_freq_be,r=1,p=0.2)
+      init<-list(freq=init_freq_be,r=get('r',init_freq),p=get('p',init_freq))
 
       # Jags model runs
       modelpos <- jags.model(file="./model/be_model.jags",data=be_data,n.chains=3,inits=init)
@@ -789,25 +795,25 @@ bayesian_behavior_estimates <- function(freq, nburn=1000, niter=10000, thin=1, c
   return(freq)
 }
 
-calculate_exposure <- function(behavior_data, concentration_data, smp) {
+calculate_exposure <- function(behavior_data, concentration_data, smp, nsim = 1000, intake = config$intake, sample_type_code = config$sample_type_code) {
   # used for people plot generation.  this is for a single pathway
   # and assumes the data are already subset to the appropriate level
-  e <- rep(NA, 1000)
-  f <- rep(NA, 1000)
-  risk <- rep(NA, 1000)
+  e <- rep(NA, nsim)
+  f <- rep(NA, nsim)
+  risk <- rep(NA, nsim)
 
   # values applied based on sample and age
-  intake<-array(c(0.0006,1,10.43,0.0154,0.037,0.0006,0.034,NA,0.0499,1,
-                  0.01,0.5,4.14,0.2042,0.2042,0.01,0.034,NA,0.09975,0.5),c(10,2)) #need to input this information!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  #intake<-array(c(0.0006,1,10.43,0.0154,0.037,0.0006,0.034,NA,0.0499,1,
+  #                0.01,0.5,4.14,0.2042,0.2042,0.01,0.034,NA,0.09975,0.5),c(10,2)) #need to input this information!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   rownames(intake) <- c('Drain Water', 'Produce', 'Municipal and Piped Water', 'Ocean Water', 'Surface Water',
                         'Flood Water', 'Public Latrine', 'Particulate', 'Bathing Water','Street Food')
   colnames(intake) <- c("Adults", "Children")
 
   # simulate some numbers
-  for (m in 1:1000){
+  for (m in 1:nsim){
     # is it necessary for this to be in a loop?
     e[m] <- rnorm(1, concentration_data$mu, concentration_data$sigma)
-    if (smp %in% c(2,6,7,9,10)) {
+    if (smp %in% unlist(sample_type_code[c('p','f','l','bw','sf')])) {
       f[m] <- round(rnbinom(1, size= behavior_data$r, prob= behavior_data$p)/7*30)
     } else if (smp==3) {
       f[m] <- min(round(rnbinom(1, size= behavior_data$r, prob= behavior_data$p)/7*30),30)
@@ -822,7 +828,7 @@ calculate_exposure <- function(behavior_data, concentration_data, smp) {
     return(tmp)
   }
 
-  n <-(1-length(which(f==0))/1000)*100;
+  n <-(1-length(which(f==0))/nsim)*100;
   dose <-log10(mean(non0(risk),na.rm=TRUE))
   # add the percent exposure and dose information to the behavior data
   behavior_data <- append(behavior_data, list('n' = n, 'dose' = dose))

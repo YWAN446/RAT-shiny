@@ -13,7 +13,8 @@ lab_form <- 'Training_Lab_e'
 household_form <- 'Training_Household_d'
 
 ## Load the files we need
-source("model/PS_Plot.r")
+source('config.R') # don't know how this will work after Python is used.
+source("model/PS_Plot.R")
 options(shiny.maxRequestSize = 9*1024^2)
 source('model/api_helpers.R') # Formhub interactions
 source('model/analysis_helpers.R') # Number crunching
