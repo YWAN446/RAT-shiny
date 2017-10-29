@@ -11,14 +11,15 @@ config <- list(
   # idexx and membrane filtration
   'lab_analysis_method' = list('idexx' = 1, 'membrane' = 2),
   #idexx value
-  'idexx_reading' = list('not valid' = 1, 'valid' = 2),
-  'idexx_value' = list('negative' = 0.5, 'lower limit' = 1, 'cut point' = 200, 'upper limit' = 2419.6,'censored' = 9999),
+  'idexx_reading' = list('not_valid' = 1, 'valid' = 2),
+  'idexx_value' = list('negative' = 0.5, 'lower limit' = 1, 'cut_point' = 200, 'upper limit' = 2419.6,'censored' = 9999),
   #membrane filtration value
   'membrane_reading' = list('TNTC' = 1, "TDTC" = 2, 'valid' = 3),
-  'membrane_value' = list('negative' = 0.5, 'lower limit' = 0, 'cut point' = 10, 'upper limit' = 200, 'TDTC' = 998, 'TNTC' = 999),
+  'membrane_value' = list('negative' = 0.5, 'lower_limit' = 0, 'cut point' = 10, 'upper_limit' = 200, 'TDTC' = 998, 'TNTC' = 999),
   # back-calculation denominator
   'denoms' = list('default' = 100, 'p' = 500, 'l' = 14, 'pa' = 2, 'sf' = 10),# street food is 'sf', but the denominator is depended on the other street food weight variable "lab_sf_weight"
-  #config for JAGS;
+  #config for JAGS; 
+  # THESE SEEM TO BE THE SAME?  CAN WE COMBINE?
   'jags_par_env' = list('niter' = 10000, #number of iterations
                         'nburn' = 1000, #number of burn in
                         'thin' = 1 #thin
