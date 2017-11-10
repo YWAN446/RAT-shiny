@@ -1,6 +1,8 @@
 ## Examples for how to parameterize EC data functions
 ## we will probably move this to a YAML file eventually.
 
+load("data/mpn_tbl.rda")
+
 config <- list(
   #sample type
   'sample_type_code' = list('d' = 1, 'p' = 2, 'dw' = 3, 'o' = 4, 's' = 5, 'f' = 6, 'l' = 7,
@@ -12,10 +14,10 @@ config <- list(
   'lab_analysis_method' = list('idexx' = 1, 'membrane' = 2),
   #idexx value
   'idexx_reading' = list('not_valid' = 1, 'valid' = 2),
-  'idexx_value' = list('negative' = 0.5, 'lower limit' = 1, 'cut_point' = 200, 'upper limit' = 2419.6,'censored' = 9999),
+  'idexx_value' = list('negative' = 0.5, 'lower_limit' = 1, 'cut_point' = 200, 'upper_limit' = 2419.6,'censored' = 9999),
   #membrane filtration value
   'membrane_reading' = list('TNTC' = 1, "TDTC" = 2, 'valid' = 3),
-  'membrane_value' = list('negative' = 0.5, 'lower_limit' = 0, 'cut point' = 10, 'upper_limit' = 200, 'TDTC' = 998, 'TNTC' = 999),
+  'membrane_value' = list('negative' = 0.5, 'lower_limit' = 0, 'cut_point' = 10, 'upper_limit' = 200, 'TDTC' = 998, 'TNTC' = 999),
   # back-calculation denominator
   'denoms' = list('default' = 100, 'p' = 500, 'l' = 14, 'pa' = 2, 'sf' = 10),# street food is 'sf', but the denominator is depended on the other street food weight variable "lab_sf_weight"
   #config for JAGS; 
@@ -33,5 +35,6 @@ config <- list(
   #parameters for monte carlo simulation
   'nsim' = 1000,
   'intake' = array(c(0.0006,1,10.43,0.0154,0.037,0.0006,0.034,NA,0.0499,1, #first row is for adults
-                     0.01,0.5,4.14,0.2042,0.2042,0.01,0.034,NA,0.09975,0.5),c(10,2)) #second row is for children
+                     0.01,0.5,4.14,0.2042,0.2042,0.01,0.034,NA,0.09975,0.5),c(10,2)), #second row is for children
+  'mpn_tbl' = mpn_tbl
 )

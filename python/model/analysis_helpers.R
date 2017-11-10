@@ -3,6 +3,7 @@
 ## file.
 library(rlist)
 library(plyr)
+library(dplyr)
 library(reshape2)
 library(magrittr)
 # library(rjags)
@@ -28,42 +29,42 @@ create_concData <- function(collection_data, lab_data, pathway_selected_vector, 
 
 
 # master create_ecData
-create_ecData <- function(collection_data, lab_data, mpn_tbl,
-                          reading = config$idexx_reading, value = config$idexx_value, 
-                          denoms = config$denoms, 
+create_ecData <- function(collection_data, lab_data, mpn_tbl = config$mpn_tbl,
+                          reading = config$idexx_reading, value = config$idexx_value,
+                          denoms = config$denoms,
                           MF = F, # defaults to IDEXX method
                           lab_analysis_method = config$lab_analysis_method) {
   #logic to decide whether the function recieves IDEXX data or MF data;
   #This is assuming all the samples will be tested in one of the method: either IDEXX or MF.
   #This field will be filled based on configuration of the project.
 
-  if (!mf) {
+  if (MF) {
     # idexx specific value manipulation
-    lab_data %<>% ec_prepare_idexx(reading, mpn_tbl)
+    lab_data %<>% ec_prepare_mf(reading)
   }
   else {
-    ec_data %<>% ec_prepare_mf(reading)
+    lab_data %<>% ec_prepare_idexx(reading, mpn_tbl)
   }
-  
+
   # These steps are the same for both methods
   ec_data <- ec_merge(collection_data, lab_data)
-  
+
   # add denominators
   ec_data %<>% ec_add_denoms(denoms)
-  
+
   # calculate the swaps
   ec_data %<>% ec_calc_swaps()
-  
+
   # calculate the conditions
   cond_func <- if (MF) ec_mf_conditions else ec_idexx_conditions
-  
+
   ec_data %<>% cond_func(value)
 
   ec_data$neighbor <- as.factor(ec_data$col_neighborhood)
-  
+
   return(ec_data)
 
-  
+
 }
 
 # FREQUENCIES ----------------------------------------------------------------
