@@ -3,9 +3,10 @@
 ## file.
 library(rlist)
 library(plyr)
-library(reshape2)
+library(dplyr)
+#library(reshape2)
 library(magrittr)
-# library(rjags)
+library(rjags)
 
 create_concData <- function(collection_data, lab_data, pathway_selected_vector, idexx_reading = config$idexx_reading, idexx_value = config$idexx_value, membrane_reading = config$membrane_reading, membrane_value = config$membrane_value, denoms = config$denoms, sample_type_code = config$sample_type_code, sample_type_label = config$sample_type_label, lab_analysis_method = config$lab_analysis_method) {
   ec_data <- create_ecData(collection_data = collection_data, lab_data = lab_data, idexx_reading = idexx_reading, idexx_value = idexx_value, membrane_reading = membrane_reading, membrane_value = membrane_value, denoms = denoms, sample_type_code = sample_type_code, lab_analysis_method = lab_analysis_method)
@@ -29,8 +30,8 @@ create_concData <- function(collection_data, lab_data, pathway_selected_vector, 
 
 # master create_ecData
 create_ecData <- function(collection_data, lab_data, mpn_tbl,
-                          reading = config$idexx_reading, value = config$idexx_value, 
-                          denoms = config$denoms, 
+                          reading = config$idexx_reading, value = config$idexx_value,
+                          denoms = config$denoms,
                           MF = F, # defaults to IDEXX method
                           lab_analysis_method = config$lab_analysis_method) {
   #logic to decide whether the function recieves IDEXX data or MF data;
@@ -44,26 +45,26 @@ create_ecData <- function(collection_data, lab_data, mpn_tbl,
   else {
     ec_data %<>% ec_prepare_mf(reading)
   }
-  
+
   # These steps are the same for both methods
   ec_data <- ec_merge(collection_data, lab_data)
-  
+
   # add denominators
   ec_data %<>% ec_add_denoms(denoms)
-  
+
   # calculate the swaps
   ec_data %<>% ec_calc_swaps()
-  
+
   # calculate the conditions
   cond_func <- if (MF) ec_mf_conditions else ec_idexx_conditions
-  
+
   ec_data %<>% cond_func(value)
 
   ec_data$neighbor <- as.factor(ec_data$col_neighborhood)
-  
+
   return(ec_data)
 
-  
+
 }
 
 # FREQUENCIES ----------------------------------------------------------------

@@ -23,10 +23,21 @@ to run the Bayesian calculations for people plots.  The env will
 need to have that installed.  JAGS also only works on Linux to make
 things more complicated.
 
+Ubuntu dependencies:
+libcurl4-openssl-dev
+
 Using conda to make sure necessary programs are installed:
-conda install -c trent jags
-conda install -c r r-base
+# we need jags 4.x
+conda install -c conda-forge jags
+
+# latest version of r. this will install most of the
+# libraries we need, but use the RSetup() class to make sure
+# everything is installed.
+conda install r-essentials
+
+# the connection between r and python
 conda install krb5
+conda install libssh2
 conda install -c r rpy2
 '''
 from rpy2.robjects import pandas2ri, r as rcon
@@ -34,11 +45,9 @@ import pandas as pd
 import numpy as np
 
 # make sure we're translating things back and forth correctly
-pandas2ri.activate()
-
 class Analysis():
 	def __init__(self):
-
+		pandas2ri.activate()
 		# import the proper functions so we can do stuff
 		rcon("source('model/analysis_helpers.R')")
 		# TODO analysis_helpers.R currently tries to load an
@@ -52,6 +61,8 @@ class Analysis():
 		# them around 0.  I never learned why.  For some reason we need it
 		# that way. Using slightly more intuitive names for the functions here
 		self.calculate_frequencies = rcon('calculate_freq')
+		# if not using this dynamically, convert pandas df to R df using
+		# pandas2ri.py2ri(df) before calling the function!
 		'''
 		____________________________________________
 		household => df of household data gathered
@@ -63,16 +74,20 @@ class Analysis():
 		returns an R list of lists of answer frequency data.
 		passed to calculate_exposure
 
-		computes the frequenceis of answers to pathway questions. it's
-		very inefficient.
+		computes the frequencies of answers to pathway questions. .
 
-		currently, calculate_freq always needs all 3 dataframes to work
-		but will only use one for output if survey_type is declared.
-		otherwise it will create a combined score.
+		calculate_freq can work with just one data frame if all other args are
+		explicitly declared. ie calculate_freq(houeshold, type='pie chart', survey_type='household')
+		if survey type is missing, the function tries to infer which data are
+		being processed by looking at the column names since they are coded by survey type.
+		if survey_type is declared, it will do the desired calculations.  either pass
+		one or all data frames at once.  it will get angry if you only give it two.
+		if all three are provdied and survey_type == 'combined' it will create a combined score.
 		'''
 
-
 		self.calculate_concentrations = rcon('create_concData')
+		# if not using this dynamically, convert pandas df to R df using
+		# pandas2ri.py2ri(df) before calling the function!
 		'''
 		____________________________________________
 		collection_data => df of collection (sample) data
@@ -84,6 +99,8 @@ class Analysis():
 
 
 		self.calc_exposure = rcon('calculate_pplPlotData')
+		# if not using this dynamically, convert pandas df to R df using
+		# pandas2ri.py2ri(df) before calling the function!
 		'''
 		____________________________________________
 		freq => frequency values calculated using calculate_frequencies(type='ppl plot')
@@ -112,22 +129,32 @@ class RSetup():
 	If missing, install them. Otherwise, do nothing.
 	'''
 	def __init__(self, r_requirements_file):
-		import pdb; pdb.set_trace()
+		pandas2ri.activate()
+		rcon('options(download.file.method="wget")')
 		# get a numpy 1d array of the installed packages
-		installed_packages = rcon('rownames(installed.packages())')
+		installed_packages = self._check_pkgs()
 		# get the libraries we need
 		requirements = self._read(r_requirements_file)
 		pkgs_to_install = self._filter_pkgs(installed_packages, requirements)
 		# pull the installer function
-		if len(pkgs_to_install) > 0:
+		if  all([x != '' for x in pkgs_to_install]):
 			# we have some things to install, pull the install function
 			installR = rcon('install.packages')
 			# some window dressing so we know it's working
-			print("Packages to install:", ", ".join(pkgs_to_install))
+			print("Packages to install:" + ", ".join(pkgs_to_install))
 			# now install things from the cloud mirror
-			installR(pkgs_to_install, repos='https://cloud.r-project.org/')
+			installR(pkgs_to_install, repos='https://cloud.r-project.org/', dependencies=True)
+			try:
+				pkgs = self._filter_pkgs(self._check_pkgs(), requirements)
+				assert(len(pkgs) == 0)
+			except:
+				raise ValueError('Not all packages successfully installed.')
+
 		else:
 			print('Everything is installed!')
+
+	def _check_pkgs(self):
+		return rcon('rownames(installed.packages())')
 
 	def _filter_pkgs(self, installed, requirements):
 		# just return packages that don't already show up in the r
@@ -135,8 +162,9 @@ class RSetup():
 		return np.asarray([r for r in requirements if r not in installed])
 
 	def _read(self, r_requirements_file):
+		# TODO need to check how line breaks are stripped here
 		f = open(r_requirements_file)
 		reqs = f.readlines()
 		f.close()
 		# remove commented lines and line breaks
-		return [r.replace('(\n)|(\r)', '') for r in filter(lambda x: '#' not in x, reqs)]
+		return [r.replace('\n','').replace('\r','') for r in filter(lambda x: '#' not in x, reqs)]
