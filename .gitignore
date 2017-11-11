@@ -1,3 +1,6 @@
+.DS_Store
+.Rhistory
+
 global.R
 temp/*
 # Byte-compiled / optimized / DLL files
