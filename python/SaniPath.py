@@ -50,6 +50,8 @@ class Analysis():
 		pandas2ri.activate()
 		# import the proper functions so we can do stuff
 		rcon("source('model/analysis_helpers.R')")
+        rcon("source('model/ec_helpers.R')")
+
 		# TODO analysis_helpers.R currently tries to load an
 		# r data file from rsrc.  Assuming the current working directory
 		# is set to ./python this should be ok, but it's not the best.
