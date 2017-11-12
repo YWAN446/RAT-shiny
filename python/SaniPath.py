@@ -50,7 +50,7 @@ class Analysis():
 		pandas2ri.activate()
 		# import the proper functions so we can do stuff
 		rcon("source('model/analysis_helpers.R')")
-        rcon("source('model/ec_helpers.R')")
+		rcon("source('model/ec_helpers.R')")
 
 		# TODO analysis_helpers.R currently tries to load an
 		# r data file from rsrc.  Assuming the current working directory
@@ -90,6 +90,7 @@ class Analysis():
 		self.calculate_concentrations = rcon('create_concData')
 		# if not using this dynamically, convert pandas df to R df using
 		# pandas2ri.py2ri(df) before calling the function!
+		# TODO: needs to have config options passed down.
 		'''
 		____________________________________________
 		collection_data => df of collection (sample) data

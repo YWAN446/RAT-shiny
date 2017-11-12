@@ -4,7 +4,7 @@
 library(rlist)
 library(plyr)
 library(dplyr)
-library(reshape2)
+#library(reshape2)
 library(magrittr)
 library(rjags)
 
@@ -30,7 +30,6 @@ create_concData <- function(collection_data, lab_data,
   # now build our output of concentration values
   if (missing(pathway_selected_vector)) pathway_selected_vector <- unique(ec_data$sample_type)
 
->>>>>>> Stashed changes
   conc<-list()
   for (i in 1:length(unique(factor_to_numeric(ec_data$neighbor)))){
     # sample type 1=drain water, 2=produce, 3=piped water, 4=ocean water, 5=surface water, 6=flood water, 7=Public Latrine Surfaces, 8=particulate, 9=bathing
