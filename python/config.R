@@ -1,7 +1,7 @@
 ## Examples for how to parameterize EC data functions
 ## we will probably move this to a YAML file eventually.
 
-load("data/mpn_tbl.rda")
+load("rsrc/mpn_tbl.rda")
 
 config <- list(
   #sample type
