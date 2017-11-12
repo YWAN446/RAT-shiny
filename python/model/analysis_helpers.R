@@ -4,18 +4,38 @@
 library(rlist)
 library(plyr)
 library(dplyr)
-#library(reshape2)
+library(reshape2)
 library(magrittr)
-library(rjags)
+# library(rjags)
 
-create_concData <- function(collection_data, lab_data, pathway_selected_vector, idexx_reading = config$idexx_reading, idexx_value = config$idexx_value, membrane_reading = config$membrane_reading, membrane_value = config$membrane_value, denoms = config$denoms, sample_type_code = config$sample_type_code, sample_type_label = config$sample_type_label, lab_analysis_method = config$lab_analysis_method) {
-  ec_data <- create_ecData(collection_data = collection_data, lab_data = lab_data, idexx_reading = idexx_reading, idexx_value = idexx_value, membrane_reading = membrane_reading, membrane_value = membrane_value, denoms = denoms, sample_type_code = sample_type_code, lab_analysis_method = lab_analysis_method)
+create_concData <- function(collection_data, lab_data, 
+                            mpn_tbl, 
+                            pathway_selected_vector, 
+                            reading = config$idexx_reading, 
+                            value = config$idexx_value, 
+                            denoms = config$denoms, 
+                            MF = F,
+                            lab_analysis_method = config$lab_analysis_method,
+                            sample_type_code = config$sample_type_code, 
+                            sample_type_label = config$sample_type_label) {
+  
+  # Calculate the e coli combined dataframe
+  ec_data <- create_ecData(collection_data = collection_data, lab_data = lab_data, 
+                           mpn_tbl = mpn_tbl,
+                           reading = reading, 
+                           value = value, 
+                           denoms = denoms, 
+                           lab_analysis_method = lab_analysis_method)
+  
+  # now build our output of concentration values
+  if (missing(pathway_selected_vector)) pathway_selected_vector <- unique(ec_data$sample_type)
+  
   conc<-list()
   for (i in 1:length(unique(factor_to_numeric(ec_data$neighbor)))){
     # sample type 1=drain water, 2=produce, 3=piped water, 4=ocean water, 5=surface water, 6=flood water, 7=Public Latrine Surfaces, 8=particulate, 9=bathing
     for (j in 1:length(pathway_selected_vector)){
       conc <- append(conc,
-                     list(conc=list(sample = sample_type_label[pathway_selected_vector[j]],
+                     list(conc=list(sample = sample_type_label[[pathway_selected_vector[j]]],
                                     neighborhood = paste("Neighborhood", i),# The neighborhood information should change based on the configuration before deployment.
                                     data = ec_data$ec_conc[which(ec_data$neighbor==sort(unique(ec_data$neighbor))[i]
                                                                  & ec_data$sample_type==sample_type_code[pathway_selected_vector[j]])])
@@ -38,7 +58,7 @@ create_ecData <- function(collection_data, lab_data, mpn_tbl,
   #This is assuming all the samples will be tested in one of the method: either IDEXX or MF.
   #This field will be filled based on configuration of the project.
 
-  if (!mf) {
+  if (!MF) {
     # idexx specific value manipulation
     lab_data %<>% ec_prepare_idexx(reading, mpn_tbl)
   }
