@@ -6,30 +6,31 @@ library(plyr)
 library(dplyr)
 library(reshape2)
 library(magrittr)
-# library(rjags)
+library(rjags)
 
-create_concData <- function(collection_data, lab_data, 
-                            mpn_tbl, 
-                            pathway_selected_vector, 
-                            reading = config$idexx_reading, 
-                            value = config$idexx_value, 
-                            denoms = config$denoms, 
+create_concData <- function(collection_data, lab_data,
+                            mpn_tbl,
+                            pathway_selected_vector,
+                            reading = config$idexx_reading,
+                            value = config$idexx_value,
+                            denoms = config$denoms,
                             MF = F,
                             lab_analysis_method = config$lab_analysis_method,
-                            sample_type_code = config$sample_type_code, 
+                            sample_type_code = config$sample_type_code,
                             sample_type_label = config$sample_type_label) {
-  
+
   # Calculate the e coli combined dataframe
-  ec_data <- create_ecData(collection_data = collection_data, lab_data = lab_data, 
+  ec_data <- create_ecData(collection_data = collection_data, lab_data = lab_data,
                            mpn_tbl = mpn_tbl,
-                           reading = reading, 
-                           value = value, 
-                           denoms = denoms, 
+                           reading = reading,
+                           value = value,
+                           denoms = denoms,
                            lab_analysis_method = lab_analysis_method)
-  
+
   # now build our output of concentration values
   if (missing(pathway_selected_vector)) pathway_selected_vector <- unique(ec_data$sample_type)
-  
+
+>>>>>>> Stashed changes
   conc<-list()
   for (i in 1:length(unique(factor_to_numeric(ec_data$neighbor)))){
     # sample type 1=drain water, 2=produce, 3=piped water, 4=ocean water, 5=surface water, 6=flood water, 7=Public Latrine Surfaces, 8=particulate, 9=bathing
