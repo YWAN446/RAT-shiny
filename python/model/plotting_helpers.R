@@ -231,61 +231,13 @@ ordered_shinyHists <- function(dat, columns=2, level1_type=NULL,
 
   return(ordered_list)
 }
-
-make_plots <- function(obj, type, output_dir='./plots/') {
-  # Make plots for the analyzed data and output pngs to a directory
-  # __________________________________________________
-  # obj => the list object that has each unique pathway, sample, population 
-  # type => type of plot to make. can be "pie", "hist", or "ppl"
-  # output_dir => the directory where the plots will be stored
-  # __________________________________________________
-  # returns an updated list with filename appended to each element
-  
-  if (!dir.exists(output_dir)) dir.create(output_dir)
-  
-  types <- c('pie', 'hist', 'ppl')
-  if (!(type %in% types)) stop(sprintf('Invalid plot type "%s".  Options: %s',type, paste0(types, collapse=', ')))
-  
-  plot_func <- switch(type,
-                'pie' = make_pie,
-                'hist' = make_histogram, 
-                'ppl' = make_pplplot)
-  
-  obj <- mclapply(obj, function(x) {
-    x$fn <- fname(output_dir, type, x$fn)
-    png(x$fn)
-    plot_func(x)
-    dev.off()
-    x
-  }, mc.cores = detectCores())
-  
-  return(obj)
-}
-
-make_pie <- function(freq) {
-  # this will make a pie charts based on the input freq values
-  
-  # first let's regroup the data into a table that can be used
-  # for plotting.  it will have 4 columns, neighborhood, age, answer, Freq
-  
-  tbl <- create_freqTbl(freq$data, freq$sample)
-  p <- suppressWarnings(ggpie(tbl, 'answer', 'Freq', freq$plot_name, nudgex=.22))
-  return(plot(p))
-}
-
-
-make_histogram <- function(conc) {
+make_histogram <- function(conc, title) {
   # make a histogram with a specific path data
-    hist(log10(as.numeric(conc$data)),breaks=seq(-2,10,by=1),col="skyblue",ylim=c(0,1),freq=FALSE,yaxt="n",ylab="percent",
-         main=conc$plot_name,
+    hist(log10(as.numeric(conc)),breaks=seq(-2,10,by=1),col="skyblue",ylim=c(0,1),freq=FALSE,yaxt="n",ylab="percent",
+         main=title,
          cex.main=1.3,xlab=expression(paste("log10 ", italic("E. coli"), "concentration (CFU/100mL)")))
   axis(2,c("0%","20%","40%","60%","80%","100%"),at=seq(0,1,0.2))
    # returns NULL
-}
-
-make_pplplot <- function(ps.freq) {
-  PS_Plot(ps.freq$plot_name, as.numeric(ps.freq$n), as.numeric(ps.freq$dose))
-  
 }
 
 ## Graphing support -----------------------------------------------------
@@ -315,12 +267,11 @@ ggpie <- function (dat, group_by, value_column, title, nudgex=.5) {
       legend.position = 'none'
     ) +
     scale_y_continuous(breaks = cumsum(dat[[value_column]]) - dat[[value_column]] / 2)  +
-    ggtitle(title) 
-    # + geom_text_repel(aes(y=breaks, label= labels),
-    #                                  color='black', fontface='bold',
-    #                                   box.padding = unit(.1, 'lines'),
-    #                                   point.padding = unit(.1, 'lines'),nudge_y = 0, nudge_x= nudgex # nudge sets how far out the labels show
-    #                                   ,alpha=.7)
+    ggtitle(title) + geom_text_repel(aes(y=breaks, label= labels),
+                                     color='black', fontface='bold',
+                                      box.padding = unit(.1, 'lines'),
+                                      point.padding = unit(.1, 'lines'),nudge_y = 0, nudge_x= nudgex # nudge sets how far out the labels show
+                                      ,alpha=.7)
 #
 #     scale_fill_manual(values=dat$color) + scale_color_manual(values=dat$color)
 #     geom_text_repel(aes(y=breaks, label= labels), color='black',
@@ -356,7 +307,18 @@ create_shinyPieCharts <- function(dat, label_level, sample_filter=NULL, neighbor
   return(output)
 }
 
+create_pieChart <- function(freq, sample_type, title_label) {
+  # this will make a pie charts based on the input freq values
 
+  # first let's regroup the data into a table that can be used
+  # for plotting.  it will have 4 columns, neighborhood, age, answer, Freq
+
+  tbl <- create_freqTbl(freq, sample_type)
+  p <- suppressWarnings(ggpie(tbl, 'answer', 'Freq', title_label, nudgex=.22))
+
+
+  return(p)
+}
 
 create_surveyMap <- function(household_data, school_data, community_data, collection_data) {
 
