@@ -10,9 +10,9 @@ PS_Plot<-function(main,num,ln_conc){
   
   library(png)
   
-  img.white <- readPNG("./pic/person.png")
-  img.red <- readPNG("./pic/red_person.png")
-  img.green <- readPNG("./pic/green_person.png")
+  img.white <- readPNG("./rsrc/person.png")
+  img.red <- readPNG("./rsrc/red_person.png")
+  img.green <- readPNG("./rsrc/green_person.png")
   #img.green <- readPNG("./pic/grey_person.png")
   
   brightness <- function(hex) {
