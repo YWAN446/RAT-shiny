@@ -24,9 +24,13 @@ test <- make_plots(conc_data, 'hist')
 
 # lazy defaulting to standards here
 # is failing on bayesian calculations.  why?
-data_for_ppl_plots <- calculate_pplPlotData(sc_freq, conc_data)
+sc_freq <- calculate_freq(sc, type='ppl plot', survey_type='school')
+data_for_ppl_plots <- calculate_pplPlotData(sc_freq, conc_data,parallel = T)
+ppl <- make_plots(data_for_ppl_plots, 'ppl')
+
+
 
 # seems to be failing after the setup in bayesian_behavior_estimates()
 undebug(bayesian_behavior_estimates)
 # is it because of how the data are setup before being passed to the jags model?
-behavior <- bayesian_behavior_estimates(hh_freq) # lazy load the other defaults for now
+behavior <- bayesian_behavior_estimates(sc_freq) # lazy load the other defaults for now

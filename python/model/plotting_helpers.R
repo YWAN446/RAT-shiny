@@ -233,13 +233,23 @@ ordered_shinyHists <- function(dat, columns=2, level1_type=NULL,
 }
 
 make_plots <- function(obj, type, output_dir='./plots/') {
+  # Make plots for the analyzed data and output pngs to a directory
+  # __________________________________________________
+  # obj => the list object that has each unique pathway, sample, population 
+  # type => type of plot to make. can be "pie", "hist", or "ppl"
+  # output_dir => the directory where the plots will be stored
+  # __________________________________________________
+  # returns an updated list with filename appended to each element
+  
+  if (!dir.exists(output_dir)) dir.create(output_dir)
+  
   types <- c('pie', 'hist', 'ppl')
   if (!(type %in% types)) stop(sprintf('Invalid plot type "%s".  Options: %s',type, paste0(types, collapse=', ')))
   
   plot_func <- switch(type,
                 'pie' = make_pie,
                 'hist' = make_histogram, 
-                'ppl' = make_pplplots)
+                'ppl' = make_pplplot)
   
   obj <- mclapply(obj, function(x) {
     x$fn <- fname(output_dir, type, x$fn)
@@ -274,7 +284,7 @@ make_histogram <- function(conc) {
 }
 
 make_pplplot <- function(ps.freq) {
-  PS_Plot(ps.freq$plot_name, as.numeric(my_i$n), as.numeric(my_i$dose))
+  PS_Plot(ps.freq$plot_name, as.numeric(ps.freq$n), as.numeric(ps.freq$dose))
   
 }
 

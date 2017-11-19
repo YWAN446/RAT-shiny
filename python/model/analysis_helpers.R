@@ -206,12 +206,14 @@ find_pathways <- function(df, analysis_type, sample_type_label=config$sample_typ
     .[,c(1:3)] %>%
     .[!duplicated(.),] %>%
     .[!apply(. == 'metadata' | . == 'neighborhood', 1, any),] # neighborhood is making it through for some reason
+  
+  pathways <- pathways[-grep("\\d{1,}$", pathways$V3),]
   # iterate through neighborhoods and find pathways for each
   freq <- lapply(neighborhoods, function(n) {
     apply(pathways, 1, function(pathway_combo) {
       x <- find_pathway(df, n, analysis_type, pathway_combo[2], pathway_combo[3])
-      x$plot_name <- sprintf("%s, %s\n%s (N= %s)", x$neighborhood, x$sample, x$age, length(x$data))
       x$sample <- sample_type_label[[pathway_combo[2]]]
+      x$plot_name <- sprintf("%s, %s\n%s (N= %s)", x$neighborhood, x$sample, x$age, length(x$data))
       x$s <- unname(pathway_combo[2])
       x$neighb <- n
       x$pop <- unname(pathway_combo[3])
@@ -221,7 +223,7 @@ find_pathways <- function(df, analysis_type, sample_type_label=config$sample_typ
       }) %>% unname() %>% unlist(recursive=F)
   }) %>% unlist(recursive=F)
   
-  freq <- freq[sapply(freq, function(x) !is.null(x$data))]
+  freq <- freq[sapply(freq, function(x) !is.null(x$data) & !is.null(x$sample))]
   
   return(freq)
 }
