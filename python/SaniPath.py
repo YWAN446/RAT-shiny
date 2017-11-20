@@ -40,21 +40,20 @@ conda install krb5
 conda install libssh2
 conda install -c r rpy2
 '''
-from rpy2.robjects import pandas2ri, r as rcon
+from rpy2.robjects import pandas2ri, r as rcon, vectors
 import pandas as pd
 import numpy as np
+from functools import partial
 
 # make sure we're translating things back and forth correctly
 class Analysis():
-	def __init__(self):
+	def __init__(self, r_dir='./', plot_dir = './plots/'):
 		pandas2ri.activate()
 		# import the proper functions so we can do stuff
-		rcon("source('model/analysis_helpers.R')")
-		rcon("source('model/ec_helpers.R')")
+		rcon("setwd('"+r_dir+"')")
+		rcon("source('main.R')")
+		self.config = rcon('config')
 
-		# TODO analysis_helpers.R currently tries to load an
-		# r data file from rsrc.  Assuming the current working directory
-		# is set to ./python this should be ok, but it's not the best.
 
 		# we're essentially creating class methods here.
 		# we need to calculate frequecies of answers to then use either for
@@ -62,7 +61,7 @@ class Analysis():
 		# pie chart uses raw answers, ppl plot takes all answers and centers
 		# them around 0.  I never learned why.  For some reason we need it
 		# that way. Using slightly more intuitive names for the functions here
-		self.calculate_frequencies = rcon('calculate_freq')
+		self.compute_frequencies = self._add_config(rcon('compute_frequencies'))
 		# if not using this dynamically, convert pandas df to R df using
 		# pandas2ri.py2ri(df) before calling the function!
 		'''
@@ -76,7 +75,7 @@ class Analysis():
 		returns an R list of lists of answer frequency data.
 		passed to calculate_exposure
 
-		computes the frequencies of answers to pathway questions. .
+		computes the frequencies of answers to pathway questions.
 
 		calculate_freq can work with just one data frame if all other args are
 		explicitly declared. ie calculate_freq(houeshold, type='pie chart', survey_type='household')
@@ -87,7 +86,7 @@ class Analysis():
 		if all three are provdied and survey_type == 'combined' it will create a combined score.
 		'''
 
-		self.calculate_concentrations = rcon('create_concData')
+		self.compute_concentrations = self._add_config(rcon('compute_concentrations'))
 		# if not using this dynamically, convert pandas df to R df using
 		# pandas2ri.py2ri(df) before calling the function!
 		# TODO: needs to have config options passed down.
@@ -95,13 +94,15 @@ class Analysis():
 		____________________________________________
 		collection_data => df of collection (sample) data
 		lab_data => df of lab samples processed
-		mpn_loc => path to mpn_tbl.rda in rsrc folder
+		config => the config list with options. defaults to those defined in config.R
+		pathway_selected_vector => a str vector of pathway codes
+		sample_type_code => a mapping of pathway code to numeric value in sample
+		sample_type_label => a mapping of pathway code to pathway label
 		____________________________________________
 		returns an R list of concentration values by neighborhood and pathway
 		'''
 
-
-		self.calc_exposure = rcon('calculate_pplPlotData')
+		self.compute_exposure = self._add_config(rcon('compute_exposure'))
 		# if not using this dynamically, convert pandas df to R df using
 		# pandas2ri.py2ri(df) before calling the function!
 		'''
@@ -116,6 +117,19 @@ class Analysis():
 		____________________________________________
 		returns a list of dicts used for people plot creation
 		'''
+
+		self.make_plots = partial(rcon('make_plots'), output_dir = plot_dir)
+		'''
+		____________________________________________
+		obj => r object from one of the compute functions
+		type => type of plot to make. "pie", "hist", or "ppl" are valid options
+		____________________________________________
+		returns an R list with updated information
+		'''
+
+	def _add_config(self, x):
+		return partial(x, config= self.config)
+
 
 class Plotting():
 	# wrappers around plotting functions for pie charts, histograms and people plots

@@ -8,13 +8,14 @@ library(dplyr)
 library(magrittr)
 library(purrr)
 library(doParallel)
-# library(rjags)
+library(rjags)
 
-create_concData <- function(collection_data, lab_data,
-                            config,
-                            pathway_selected_vector,
-                            sample_type_code = config$sample_type_code,
-                            sample_type_label = config$sample_type_label) {
+
+# CONCENTRATIONS ---------------------------------------------  
+compute_concentrations <- function(collection_data, lab_data,
+                            config = config,
+                            pathway_codes = config$pathway_codes,
+                            pathway_labels = config$pathway_labels) {
   
   lab_analysis_method <- unique(lab_data$lab_analysis)
   if (lab_analysis_method == 1) {
@@ -39,24 +40,26 @@ create_concData <- function(collection_data, lab_data,
                            MF = MF) 
 
   # now build our output of concentration values
-  if (missing(pathway_selected_vector)) pathway_selected_vector <- unique(ec_data$sample_type)
-
+  pathway_selected_vector <- suppressWarnings(as.integer(pathway_codes) %>% .[!is.na(.)])
+  
+  found_pathways <- unique(ec_data$sample_type)
   conc<-list()
-  for (i in 1:length(unique(factor_to_numeric(ec_data$neighbor)))){
+  for (i in unique(factor_to_numeric(ec_data$neighbor))) {
     # sample type 1=drain water, 2=produce, 3=piped water, 4=ocean water, 5=surface water, 6=flood water, 7=Public Latrine Surfaces, 8=particulate, 9=bathing
     for (j in 1:length(pathway_selected_vector)) {
-      s = names(sample_type_code[sapply(sample_type_code, function(x) x == pathway_selected_vector[j])])
-      x <-list(s = s,
-              neighb = i,
-              sample = sample_type_label[[s]],
-              neighborhood = paste("Neighborhood", i),# The neighborhood information should change based on the configuration before deployment.
-              data = ec_data$ec_conc[which(ec_data$neighbor==sort(unique(ec_data$neighbor))[i]
-                                           & ec_data$sample_type==sample_type_code[pathway_selected_vector[j]])])
-      
-      x$plot_name <- paste0(x$neighborhood,", ", x$sample, '\n(N=',length(x$data),")")
-      x$fn <- sprintf('%s_%s.png', x$n, x$s)
-      conc <- append(conc, list(x))
-
+      if (pathway_selected_vector[j] %in% found_pathways) {
+        s = names(pathway_codes[j])
+        x <-list(s = s,
+                 neighb = i,
+                 sample = pathway_labels[[s]],
+                 neighborhood = paste("Neighborhood", i),# The neighborhood information should change based on the configuration before deployment.
+                 data = ec_data$ec_conc[which(ec_data$neighbor == i
+                                              & ec_data$sample_type == pathway_selected_vector[j])])
+        
+        x$plot_name <- paste0(x$neighborhood,", ", x$sample, '\n(N=',length(x$data),")")
+        x$fn <- sprintf('%s_%s.png', i, x$s)
+        conc <- append(conc, list(x))
+      }
     }
   }
   return(conc)
@@ -103,7 +106,8 @@ create_ecData <- function(collection_data, lab_data, mpn_tbl,
 }
 
 # FREQUENCIES ----------------------------------------------------------------
-calculate_freq <- function(..., type='pie chart', analysis_type=NULL, sample_type_label=config$sample_type_label) {
+compute_frequencies <- function(..., type='pie', analysis_type=NULL, 
+                                config=config,  pathway_labels = config$pathway_labels) {
   # calculate the appropriate factors for plotting pie charts
   # and people plots.  This can handle all of the different survey types
   # household, community, and school.  The function returns a long list.
@@ -128,7 +132,6 @@ calculate_freq <- function(..., type='pie chart', analysis_type=NULL, sample_typ
   #
   # Or Ex.
   # > calculate_freq(hh, sch, comm)
-
 
   # this allows us to pass multiple data objects without having to explictly
   #say what they are. since the surveys always follow a pattern for the question
@@ -156,7 +159,7 @@ calculate_freq <- function(..., type='pie chart', analysis_type=NULL, sample_typ
 #                 'Matched objects: ', paste(surveys_matched, collapse=', ')))
 #   }
   if (!any(surveys_matched %in% names(data_map))) {
-    stop(paste('Unable to determine survey type. Do the column headers have hh, sch, or com in the names?\n',
+    stop(paste('Unable to determine survey type. Do the column headers have h, s, or c in the names?\n',
                'Matched objects:', paste(surveys_matched, collapse=', ')))
 
   }
@@ -173,27 +176,28 @@ calculate_freq <- function(..., type='pie chart', analysis_type=NULL, sample_typ
     df_for_analysis <- eval(parse(text=paste0(analysis_type, '_data')))
   }
 
-  freq <- find_pathways(df_for_analysis, analysis_type, sample_type_label = sample_type_label)
+  freq <- find_pathways(df_for_analysis, analysis_type, pathway_labels = pathway_labels)
 
   # lastly, make sure it's the right numbers.
-  if (type == 'pie chart') {
+  if (type == 'pie') {
     return(freq)
   }
   # frequencies for pie charts
-  else if (type == 'ppl plot') {
+  else if (type == 'ppl') {
 
     # if we want data for a people plot, calculate 4 - the value per vector object in the list
-    for (i in 1:length(freq)) {
-      freq[[i]]$data <- 4 - freq[[i]]$data # Aaron is coding a new function to replace this one.
-    }
+    freq <- lapply(freq, function(x) {
+      x$data %<>% subtract(4, .) 
+      x
+    })
     return(freq)
   }
   else {
-    warning('Unknown type.  Options are "pie chart" or "ppl plot"\n')
+    warning('Unknown type.  Options are "pie" or "ppl"\n')
   }
 }
 
-find_pathways <- function(df, analysis_type, sample_type_label=config$sample_type_label) {
+find_pathways <- function(df, analysis_type, pathway_labels=config$pathway_labels) {
   neighborhoods <- unique(df[,grep('neighborhood$', names(df))])
   # this is ugly, but it works
   # pattern match columns, split by underscore, convert to rows,
@@ -212,7 +216,7 @@ find_pathways <- function(df, analysis_type, sample_type_label=config$sample_typ
   freq <- lapply(neighborhoods, function(n) {
     apply(pathways, 1, function(pathway_combo) {
       x <- find_pathway(df, n, analysis_type, pathway_combo[2], pathway_combo[3])
-      x$sample <- sample_type_label[[pathway_combo[2]]]
+      x$sample <- pathway_labels[[pathway_combo[2]]]
       x$plot_name <- sprintf("%s, %s\n%s (N= %s)", x$neighborhood, x$sample, x$age, length(x$data))
       x$s <- unname(pathway_combo[2])
       x$neighb <- n
@@ -295,22 +299,25 @@ create_freqTbl <- function(freq_vector, sample_type) {
   return(tbl)
 }
 
-# People Plotting
-calculate_pplPlotData <- function(freq, conc, 
-                                  jags_par_env = config$jags_par_env, 
-                                  jags_par_freq = config$jags_par_freq, 
-                                  cut_point = config$cut_point, 
-                                  init_freq = config$init_freq, 
-                                  nsim = config$nsim, 
-                                  intake = config$intake, 
-                                  sample_type_code = config$sample_type_code, 
-                                  parallel=T, nc=detectCores()) {
+# EXPOSURE -----------------------------------------------------
+compute_exposure <- function(freq, 
+                             conc, 
+                             config = config,
+                             parallel=T, nc=detectCores()) {
   # function to caclulate the percent of population
   # exposed for all pathways given.  performs Bayesian
   # analysis on behavior and environmental data first
   # then calculates the final statistics for plotting
   # nburn=1000, niter=10000, thin=1, cutpoint=c(0, 5, 10)
   # run the Bayesian analyses
+  jags_par_env = config$jags_par_env
+  jags_par_freq = config$jags_par_freq
+  cut_point = config$cut_point
+  init_freq = config$init_freq
+  nsim = config$nsim 
+  intake = config$intake
+  pathway_codes = config$pathway_codes
+  
   freq <- bayesian_behavior_estimates(freq, 
                                       nburn = get("nburn",jags_par_freq), 
                                       niter = get("niter",jags_par_freq), 
@@ -341,25 +348,18 @@ calculate_pplPlotData <- function(freq, conc,
 
   ps.freq <- list()
   for (smp in samples) {
-    print(smp)
     for (nb in neighborhoods) {
       sub.conc <- conc[[list.which(conc, neighborhood == nb && sample == smp)]]
-      print(nb)
       # calculate exposure for adults and children using the behavior data
       for (a in age) {
-        print(a)
         # filter frequency to just the age we want
         sub.freq <- freq[[list.which(freq, sample == smp && neighborhood == nb && age == a)]]
-
         # calculate the exposure. Requires concentration, freq is optional
-        exposed <- calculate_exposure(sub.freq, sub.conc, smp, nsim = nsim, intake = intake, sample_type_code = sample_type_code)
-
+        exposed <- calculate_exposure(sub.freq, sub.conc, smp, nsim = nsim, intake = intake, pathway_codes = pathway_codes)
         # update the object at this position
         ps.freq <- append(ps.freq, list(exposed))
-
       }
       # filter the concentration data to just this neighborhood and sample
-
     }
   }
 
@@ -460,7 +460,7 @@ bayesian_behavior_estimates <- function(freq, nburn=1000, niter=10000, thin=1,
   return(freq)
 }
 
-calculate_exposure <- function(behavior_data, concentration_data, smp, nsim = 1000, intake = config$intake, sample_type_code = config$sample_type_code) {
+calculate_exposure <- function(behavior_data, concentration_data, smp, nsim = 1000, intake = config$intake, pathway_codes = config$pathway_codes) {
   # used for people plot generation.  this is for a single pathway
   # and assumes the data are already subset to the appropriate level
   e <- rep(NA, nsim)
@@ -478,7 +478,7 @@ calculate_exposure <- function(behavior_data, concentration_data, smp, nsim = 10
   for (m in 1:nsim){
     # is it necessary for this to be in a loop?
     e[m] <- rnorm(1, concentration_data$mu, concentration_data$sigma)
-    if (smp %in% unlist(sample_type_code[c('p','f','l','bw','sf')])) {
+    if (smp %in% unlist(pathway_codes[c('p','f','l','bw','sf')])) {
       f[m] <- round(rnbinom(1, size= behavior_data$r, prob= behavior_data$p)/7*30)
     } else if (smp==3) {
       f[m] <- min(round(rnbinom(1, size= behavior_data$r, prob= behavior_data$p)/7*30),30)
@@ -503,7 +503,3 @@ calculate_exposure <- function(behavior_data, concentration_data, smp, nsim = 10
 
 }
 
-factor_to_numeric <- function(x) {
-  # convert factor or character data to numeric
-  return(suppressWarnings(as.numeric(as.character(x))))
-}

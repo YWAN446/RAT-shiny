@@ -5,9 +5,9 @@ load("rsrc/mpn_tbl.rda")
 
 config <- list(
   #sample type
-  'sample_type_code' = list('d' = 1, 'p' = 2, 'dw' = 3, 'o' = 4, 's' = 5, 'f' = 6, 'l' = 7,
+  'pathway_codes' = list('d' = 1, 'p' = 2, 'dw' = 3, 'o' = 4, 's' = 5, 'f' = 6, 'l' = 7,
                             'pa' = 8, 'bw' = 9, 'sf' = 10),
-  'sample_type_label' = list('d' = 'Drain Water', 'p' = 'Produce', 'dw' = 'Municipal and Piped Water', 'o' = 'Ocean Water',
+  'pathway_labels' = list('d' = 'Drain Water', 'p' = 'Produce', 'dw' = 'Municipal and Piped Water', 'o' = 'Ocean Water',
                              's' = 'Surface Water', 'f' = 'Flood Water', 'l' = 'Public Latrine',
                              'pa' = 'Particulate', 'bw' = 'Bathing Water', 'sf' = 'Street Food'),
   # idexx and membrane filtration
