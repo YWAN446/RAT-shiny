@@ -1,3 +1,5 @@
+source('main.R')
+
 hh <- read.csv('rsrc/HOUSEHOLD_EXAMPLE.csv', stringsAsFactors = F)
 cc <- read.csv('rsrc/COMMUNITY_EXAMPLE.csv', stringsAsFactors = F)
 sc <- read.csv('rsrc/SCHOOL_EXAMPLE.csv', stringsAsFactors = F)
@@ -5,8 +7,7 @@ sc <- read.csv('rsrc/SCHOOL_EXAMPLE.csv', stringsAsFactors = F)
 col <- read.csv('rsrc/SAMPLE_EXAMPLE.csv', stringsAsFactors = F)
 lab <- read.csv('rsrc/LAB_EXAMPLE.csv', stringsAsFactors = F)
 
-sapply(grep('.R$', list.files('model', full.names = T), value=T), source)
-source('config.R')
+
 
 # Frequency calculations
 hh_freq <- compute_frequencies(hh,survey_type = 'household')
