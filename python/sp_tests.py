@@ -23,7 +23,7 @@ conc = analysis.make_plots(conc, 'hist')
 
 # Exposure data uses people plots
 # we also need to make the frequencies again but for people plots
-sc_freq_ppl = analysis.compute_frequencies(sc, type='ppl', survey_type='school')
+sc_freq_ppl = analysis.compute_frequencies(sc, type='ppl', analysis_type='school')
 # we can use the same concentration data already calculated
 ppl_plots = analysis.compute_exposure(sc_freq_ppl, conc)
 ppl_plots = analysis.make_plots(ppl_plots)
@@ -36,7 +36,7 @@ ppl_plots = analysis.make_plots(ppl_plots)
 
 # pass the configured pathways using a python dicctionary and convert to an R list
 pathway_labels = vectors.ListVector({'p' : 'Produce', 'dw' : 'Municipal and Drain Water', 'o' : 'Ocean Water',   'l' : 'Public Latrine'})
-sc_freq = analysis.compute_frequencies(sc, type='ppl', survey_type='school', pathway_labels= pathway_labels)
+sc_freq = analysis.compute_frequencies(sc, type='ppl', analysis_type='school', pathway_labels= pathway_labels)
 
 
 # the sample collection form codes each pathway selected as a numeric value, we can pass these also as a named lists
