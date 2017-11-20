@@ -9,8 +9,8 @@ sapply(grep('.R$', list.files('model', full.names = T), value=T), source)
 source('config.R')
 
 # Frequency calculations
-hh_freq <- calculate_freq(hh,survey_type = 'household')
-sc_freq <- calculate_freq(sc, type='pie chart', survey_type='school')
+hh_freq <- compute_frequencies(hh,survey_type = 'household')
+sc_freq <- compute_frequencies(sc, type='pie', analysis_type='school')
 sc_freq <- make_plots(sc_freq, 'pie')
 
 # community is failing because there are a few columns such as c_c_y and c_p_a2
@@ -19,18 +19,32 @@ sc_freq <- make_plots(sc_freq, 'pie')
 
 
 # calculate the concentration data (which does ecData too)
-conc_data <- create_concData(col, lab, config=config)
+conc_data <- compute_concentrations(col, lab, config=config, pathway_codes = pathway_codes)
 test <- make_plots(conc_data, 'hist')
 
 # lazy defaulting to standards here
 # is failing on bayesian calculations.  why?
-sc_freq <- calculate_freq(sc, type='ppl plot', survey_type='school')
-data_for_ppl_plots <- calculate_pplPlotData(sc_freq, conc_data,parallel = T)
-ppl <- make_plots(data_for_ppl_plots, 'ppl')
+sc_freq <- compute_frequencies(sc, type='ppl', analysis_type='school', config=config)
+exposed <- compute_exposure(sc_freq, conc_data,parallel = T, config=config)
+ppl <- make_plots(exposed, 'ppl')
 
 
+# Defining new sets of pathway codes and labels will override what is in config
+# and the functions will only search for those declared.  SP tool can create these
+# as necessary and pass the appropriate codes and labels as needed. if nothing is passed
+# the default to config values. 
+pathway_codes = list('d' = 1, 'p' = 2, 'dw' = 3, 'f' = 6, 'l' = 7)
+pathway_labels = list('d' = 'Drain Water', 'p' = 'Produce', 'dw' = 'Municipal and Piped Water', 'o' = 'Ocean Water',
+                        'f' = 'Flood Water', 'l' = 'Public Latrine')
+                        
+sc_freq <- compute_frequencies(sc, type='pie', analysis_type='school', pathway_labels = pathway_labels)
+sc_freq <- make_plots(sc_freq, 'ppl')
 
-# seems to be failing after the setup in bayesian_behavior_estimates()
-undebug(bayesian_behavior_estimates)
-# is it because of how the data are setup before being passed to the jags model?
-behavior <- bayesian_behavior_estimates(sc_freq) # lazy load the other defaults for now
+# calculate the concentration data (which does ecData too)
+conc_data <- compute_concentrations(col, lab, config=config, pathway_codes = pathway_codes)
+test <- make_plots(conc_data, 'hist')
+
+exposed <- compute_exposure(sc_freq, conc_data,parallel = T, config=config)
+ppl <- make_plots(exposed, 'ppl')
+
+
