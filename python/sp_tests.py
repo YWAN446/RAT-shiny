@@ -26,7 +26,7 @@ conc = analysis.make_plots(conc, 'hist')
 sc_freq_ppl = analysis.compute_frequencies(sc, type='ppl', analysis_type='school')
 # we can use the same concentration data already calculated
 ppl_plots = analysis.compute_exposure(sc_freq_ppl, conc)
-ppl_plots = analysis.make_plots(ppl_plots)
+ppl_plots = analysis.make_plots(ppl_plots, 'ppl')
 
 
 # the analysis.config object has default values for pathway labels and codes
