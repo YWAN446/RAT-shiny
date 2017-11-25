@@ -10,8 +10,8 @@ lab <- read.csv('rsrc/LAB_EXAMPLE.csv', stringsAsFactors = F)
 
 
 # Frequency calculations
-hh_freq <- compute_frequencies(hh,survey_type = 'household')
-sc_freq <- compute_frequencies(sc, type='pie', analysis_type='school')
+hh_freq <- compute_frequencies(hh, type='pie', analysis_type = 'household')
+sc_freq <- compute_frequencies(sc, type='pie', analysis_type='school', config=config)
 sc_freq <- make_plots(sc_freq, 'pie')
 
 # community is failing because there are a few columns such as c_c_y and c_p_a2
@@ -20,7 +20,7 @@ sc_freq <- make_plots(sc_freq, 'pie')
 
 
 # calculate the concentration data (which does ecData too)
-conc_data <- compute_concentrations(col, lab, config=config, pathway_codes = pathway_codes)
+conc_data <- compute_concentrations(col, lab, config=config, pathway_codes = config$pathway_codes)
 test <- make_plots(conc_data, 'hist')
 
 # lazy defaulting to standards here
@@ -38,12 +38,14 @@ pathway_codes = list('d' = 1, 'p' = 2, 'dw' = 3, 'f' = 6, 'l' = 7)
 pathway_labels = list('d' = 'Drain Water', 'p' = 'Produce', 'dw' = 'Municipal and Piped Water', 'o' = 'Ocean Water',
                         'f' = 'Flood Water', 'l' = 'Public Latrine')
                         
-sc_freq <- compute_frequencies(sc, type='pie', analysis_type='school', pathway_labels = pathway_labels)
-sc_freq <- make_plots(sc_freq, 'ppl')
+sc_freq <- compute_frequencies(sc, type='pie', analysis_type='school', config=config, pathway_labels = pathway_labels)
+sc_freq <- make_plots(sc_freq, 'pie')
 
 # calculate the concentration data (which does ecData too)
 conc_data <- compute_concentrations(col, lab, config=config, pathway_codes = pathway_codes)
 test <- make_plots(conc_data, 'hist')
+
+sc_freq <- compute_frequencies(sc, type='ppl', analysis_type='school', config=config, pathway_labels = pathway_labels)
 
 exposed <- compute_exposure(sc_freq, conc_data,parallel = T, config=config)
 ppl <- make_plots(exposed, 'ppl')
