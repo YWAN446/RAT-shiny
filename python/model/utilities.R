@@ -1,5 +1,13 @@
 # Utility functions
+save_json <- function(x, fn) {
+  # save a list object to json
+  write(toJSON(x), fn)
+}
 
+read_json <- function(x) {
+  # This one is just a wrapper around fromJSON
+  return(fromJSON(x))
+}
 
 factor_to_numeric <- function(x) {
   # convert factor or character data to numeric

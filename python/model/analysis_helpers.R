@@ -107,7 +107,7 @@ create_ecData <- function(collection_data, lab_data, mpn_tbl,
 
 # FREQUENCIES ----------------------------------------------------------------
 compute_frequencies <- function(..., type='pie', analysis_type=NULL, 
-                                config=config,  pathway_labels = config$pathway_labels) {
+                                config=NULL,  pathway_labels = config$pathway_labels) {
   # calculate the appropriate factors for plotting pie charts
   # and people plots.  This can handle all of the different survey types
   # household, community, and school.  The function returns a long list.
@@ -132,7 +132,9 @@ compute_frequencies <- function(..., type='pie', analysis_type=NULL,
   #
   # Or Ex.
   # > calculate_freq(hh, sch, comm)
-
+  
+  if (is.null(config)) stop('Missing config object!')
+  
   # this allows us to pass multiple data objects without having to explictly
   #say what they are. since the surveys always follow a pattern for the question
   # headers, we can figure out what data we have using that.

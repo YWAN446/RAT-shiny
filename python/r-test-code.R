@@ -10,9 +10,12 @@ lab <- read.csv('rsrc/LAB_EXAMPLE.csv', stringsAsFactors = F)
 
 
 # Frequency calculations
-hh_freq <- compute_frequencies(hh, type='pie', analysis_type = 'household')
+hh_freq <- compute_frequencies(hh, type='pie', analysis_type = 'household', config=config)
+save_json(hh_freq, 'hh_pie_example.json')
+
 sc_freq <- compute_frequencies(sc, type='pie', analysis_type='school', config=config)
 sc_freq <- make_plots(sc_freq, 'pie')
+save_json(sc_freq, 'sc_pie_example.json')
 
 # community is failing because there are a few columns such as c_c_y and c_p_a2
 # should these still be here or can we standardize those away?
@@ -22,12 +25,14 @@ sc_freq <- make_plots(sc_freq, 'pie')
 # calculate the concentration data (which does ecData too)
 conc_data <- compute_concentrations(col, lab, config=config, pathway_codes = config$pathway_codes)
 test <- make_plots(conc_data, 'hist')
+save_json(test, 'concentration_example.json')
 
 # lazy defaulting to standards here
 # is failing on bayesian calculations.  why?
 sc_freq <- compute_frequencies(sc, type='ppl', analysis_type='school', config=config)
 exposed <- compute_exposure(sc_freq, conc_data,parallel = T, config=config)
 ppl <- make_plots(exposed, 'ppl')
+save_json(ppl, 'pplplot_example.json')
 
 
 # Defining new sets of pathway codes and labels will override what is in config
