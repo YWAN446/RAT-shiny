@@ -1,0 +1,24 @@
+The SaniPath Exposure Assessment Tool, which was developed by the Center for Global Safe Water, Sanitation, and Hygiene at Emory University, was used to quantitatively evaluate the pathways of exposure to fecal contamination in urban environments. Environmental samples susceptible to fecal contamination and household behavioral surveys were collected by a local research team in target neighborhoods (Figure 1). ***{Insert sentences about neighborhoods: number, region, demographics, wealth, infrastructure, tenure status, socioeconomic status, wash coverage}.***
+
+***{Optional: enter table of neighborhood characteristics}***
+
+***{Insert sentences about where the samples were collected from (local market, homes, businesses, etc.)}***
+
+All samples were collected from public spaces and not within households. Environmental samples were tested in the laboratory at `r params$lab_name` within 7 hours of collection. All samples were analyzed for E. coli using `r ifelse(params$lab_MF, 'membrane filtration', 'IDEXX')` methods. Two to three serial dilutions were used for each sample type, optimized to capture E. coli within the countable range (`r ifelse(params$lab_MF, "0-200 Colony Forming Units (CFUs)", ">2419.6 MPN")`). A negative control was processed every day alongside sample analyses.
+
+```{r echo=FALSE}
+print('Map here')
+```
+
+
+To assess the frequency at which adults and children interact with different pathways, the SaniPath enumeration team conducted behavioral surveys in households in `r params$language`. All households in the neighborhoods were asked to participate in the voluntary survey. The study team surveyed the household member who manages the water supply in the home***{, which was usually: Insert individual’s characteristics (typically mother, woman, man, etc.)}**. Survey participants were asked about their frequency of contact with pathways. They were then asked to estimate the frequency at which their children came into contact with or ingested aspects of those pathways. Table 1 outlines sample sizes for surveys and environmental samples for each neighborhood. ***{Insert additional relevant information about sample collection (ex. Micro samples collected but no behavioral info, shared samples btw neighborhoods, etc.) –need a warning that if they deviated from the suggested protocol that the results may not be valid.}**
+
+**Table 1. Survey and sample types and sample size**
+```{r echo=FALSE}
+knitr::kable(data.frame('Neighborhood'=paste('Neighborhood', 1:3), 'Household' = sample(1:100, 3)))
+```
+
+
+The SaniPath Tool provides information on the frequency of behavior associated with exposure to various environmental pathways and the concentration of fecal contamination in each environmental pathway. The environmental samples are analyzed for presence of *E. coli* as an indicator of fecal contamination. The data are analyzed using the Bayesian Method and a Monte Carlo simulation is then used to generate risk profiles of exposure to fecal contamination.
+
+These risk profiles, or “people plots”, are displayed in the visuals throughout the following pages. The number of red people in the people plots visually represents the proportion of people who are exposed to the specific pathway. The magnitude of fecal contamination exposure (dose) is indicated by the shade of red, where darker red refers to greater exposure. The risk of exposure is considered to be different between two neighborhoods or pathways if there is a difference in dose greater than 10 times. Results are displayed in people plots for adults and in a table for children.

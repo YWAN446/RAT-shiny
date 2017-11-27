@@ -1,0 +1,24 @@
+Risk profiles for environmental exposure pathways were generated for all neighborhoods and all relevant pathways in each neighborhood for both adults and children. The SaniPath team has developed an algorithm to determine the dominant fecal contamination pathway(s) for each neighborhood and age group. The algorithm is based upon the population exposed to those pathways and the corresponding magnitude of exposure to fecal contamination.
+
+Figure 2 shows the people plots generated for all exposure pathways in [neighborhood name: x]. The highest dose of exposure for adults was seen in [highest dose pathway: neighborhood x] at [dose: neighborhood x], with [percent exposed: neighborhood x] of adults exposed to fecal contamination. Table 2 shows the dose and percent exposed for adults and children by pathway in [neighborhood name: x].
+
+*Figure 2: People plots for all exposure pathways in* **neighborhood x**
+```{r echo=FALSE}
+print('Ppl Plots Here')
+```
+
+*Table 2. Dose and percent exposed across exposure pathways in **[neighborhood name: x]**, `r params$city_name*
+```{r}
+print('Dose and % exposed table')
+```
+							
+Table 3 shows dominant pathways of exposure for all neighborhoods in the study for adults and children in `r params$city_name`. 
+
+*Table 3. Dominant exposure pathways for adults and children by neighborhood *
+```{r}
+print('Dominant pathways by neighborhood and population')
+```
+
+```{r}
+print('Discussion paragraph pulled from Excel file')
+```

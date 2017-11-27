@@ -1,0 +1,8 @@
+It should be noted again that all samples were collected from the public domain and not at the household level. This was done because government interventions typically focus on improving public facilities and may not be able to influence household-level contamination. Therefore, household sanitation and hygiene practices have not been taken into consideration when generating risk profiles. For example, it is possible that people wash their produce before eating it raw, which, if washed adequately, would reduce the exposure to fecal contamination from produce. However, the SaniPath Tool does not ask questions related to food hygiene, nor does it measure exposure dose after produce is washed.  To understand exposure on a household level, further research would be required. Based upon the results of this study, recommendations can be made regarding the most common dominant pathways that were observed (Table 3).
+
+*Table 4. Recommended interventions for `r params$city_name` *
+```{r}
+print('Intervetion table')
+```
+	
+	
