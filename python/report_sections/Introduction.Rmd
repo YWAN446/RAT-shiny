@@ -1,0 +1,15 @@
+Sanitation plays an important role in disrupting the transmission of bacteria, protozoa, viruses, and other pathogens and environmental hazards associated with feces.1 Exposure, defined as oral ingestion of any number of fecal indicator organisms (E. coli), can occur indirectly or directly from various environmental sources. Exposure varies person-to-person based on environmental contamination and behavior related to potential transmission routes, or pathways. Pathways of exposure refer to environmental and infrastructural characteristics, such as flooding, surface water, presence of open drains, piped water supply, or public latrines that facilitate transfer of fecal contamination. Determining dominant pathways can help inform sanitation investments towards the exposure pathways that pose the greatest risk. 
+
+***{Insert sentences about country and city context (ex. Income, density, tenure status, urban poor housing conditions, city/country challenges)}***
+
+***{Insert sentence about country and city improved sanitation access}***
+
+***{Optional: sentence about wealth quintiles and sanitation access}***
+
+Low coverage and use of sanitation facilities is linked to a greater exposure to fecal pathogens that can contaminate food, water, and surfaces. Unfortunately, this contamination can yield illness and disease such as diarrhea and malnutrition.2
+
+***{Optional: Sentences about wealth quintile and diarrhea and malnutrition facts (DHS)}***
+
+***{Insert sentence about city growth (population, urban growth rate, wealth quintile population, etc.)}***
+
+Studies have demonstrated an association between diarrheal disease, soil-transmitted helminth infections, stunting, and childhood mortality with inadequate sanitation access, quality, and use.**3, 4, 5** In high density urban areas, populations are at an increased risk of exposure to fecal contamination, especially children, due to environmental factors and exposure behaviors.**6** Considering the impact of diarrheal disease among residents in low-income urban areas, it is important to identify exposure pathways and trends across neighborhoods. By looking at environmental contamination and behaviors related to environmental pathways, risk of exposure to fecal contamination can be assessed to provide a public health perspective to sanitation planning. 

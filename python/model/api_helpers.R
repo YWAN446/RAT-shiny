@@ -1,5 +1,5 @@
 library(httr)
-library(jsonlite)
+library(RJSONIO)
 
 ## API Helpers -------------------------------------------------------------
 # These functions are designed to help the Shiny Server interact with 

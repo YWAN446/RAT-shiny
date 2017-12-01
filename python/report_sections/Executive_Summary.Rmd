@@ -1,0 +1,8 @@
+Health Disparities exist where those in the lowest wealth quintile have the least access to improved sanitation facilities and therefore carry greatest disease burden from poor sanitation. To better prioritize sanitation investments and guide intervention strategies to reduce the risk of enteric disease, it is important to assess the contribution that various environmental pathways have on exposure to fecal matter.
+To quantitatively evaluate fecal contamination exposure pathways in high-density, low-income neighborhoods in `r params$city_name`, the SaniPath Exposure Assessment Tool was deployed from `r params$start_date` to `r params$end_date`. The exposure pathways of fecal contamination presented in this report include: `r params$pathways`. 
+
+**{Insert summary sentence about results (ex. The results from this study show that both adults and children are exposed to fecal contamination through multiple pathways)}**
+
+Dominant pathways of exposure are determined by comparing the percent exposed and magnitude of exposure for both adults and children in the study neighborhoods. For adults, the dominant pathways in `r params$city_name` were commonly through *[3 most common dominant pathways-adults]*.  For children, the dominant pathways in [city name] were commonly through *[3 most common dominant pathways-children]*.
+
+Recommendations to reduce exposure to fecal contamination among those living in `r params$city_name` include: [recommendations specific to city – from recommendations excel sheet]. 
