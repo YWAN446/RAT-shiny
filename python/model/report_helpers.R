@@ -2,6 +2,80 @@
 library(rlist)
 library(plyr)
 # REPORT ============================================================
+
+compute_report <- function(city_name = 'Atlanta, GA',
+                           lab_name = 'Bill Nye, Inc',
+                           start_date = '2017-01-01',
+                           lab_MF = F,
+                           language = "English",
+                           pathways = c('Drain Water', 'Ocean Water', 'Private Latrines'),
+                           household_data = data.frame(),
+                           school_data = data.frame(),
+                           community_data = data.frame(),
+                           sample_data = data.frame(),
+                           ps.freq = list(), 
+                           neighborhood_mapping = list(),
+                           pathway_codes = list(),
+                           pathway_labels= list(),
+                           freq_thresh=50) {
+  # Compute all of the necessary parameters for the report 
+  # generation
+  # ___________________________________
+  # city_name => city where the tool was deployed
+  # lab_name => lab processing the samples
+  # start_date => the day the tool was deployed
+  # lab_MF => boolean of whether Membrane Filtration was used for lab
+  # pathways => a character vector of the pathways used
+  # language => language of the surveys (from configuration of tool)
+  # household_data => data collected at households
+  # school_data => data collected at schools
+  # community_data => data collected at community
+  # sample_data => data collected for sample collection
+  # ps.freq => results from exposure calcluations
+  # neighborhood_mapping => named list of Neighborhood text = coded value
+  # pathway_codes => named list of pathway codes = coded value
+  # pathway_labels => named list of pathway codes = pathway label name
+  # freq_thresh => the threshold for determining if something is dominant
+  # ___________________________________
+  # returns a list with named attributes related to the report
+  # document params
+  
+  params <- list()
+  
+  # somethings are just going to go straight in
+  # this is janky, but it will work
+  constants <- c('city_name', 
+                 'lab_name', 
+                 'start_date', 
+                 'lab_MF', 
+                 'language')
+  tmp <- lapply(constants, function(x) eval(parse(text=x)))
+  names(tmp) <- constants
+  params %<>% append(tmp)
+  
+  # Set up the pathways param
+  if (length(pathways) > 1) {
+    separator <- if (length(pathways) > 2) ', ' else ' ' 
+    pathways[length(pathways)] %<>% paste0('and ',.)
+    pathways %<>% paste0(collapse=separator)
+  }
+  params$pathways <- pathways
+  params$behavior_table <- behavior_table(household_data,
+                                          school_data, 
+                                          community_data,
+                                          neighborhood_mapping)
+  
+  params$environmental_table <- environmental_table(sample_data,
+                                                    neighborhood_mapping,
+                                                    pathway_codes,
+                                                    pathway_labels)
+  
+  params$dominant_exposure_pathways <- dominant_pathway_table(report_results(ps.freq, freq_thresh = freq_thresh))
+  
+  
+  
+}
+
 report_results <- function(ps.freq, freq_thresh = 50) {
   # summarize results by neighborhood an age group
   # freq_thresh is used to determine the high/low frequency
@@ -10,25 +84,77 @@ report_results <- function(ps.freq, freq_thresh = 50) {
   # with the dominant pathways identified and a summary table
   
   neighborhoods <- unique(names(list.names(ps.freq, neighborhood)))
-  age <- c('Adults', 'Children')
-  
-  result <- list()
+  age <- sapply(ps.freq, function(x) x$age) %>% unlist() %>% unique()
+
+  pathway_results <- data.frame()  
   for (i in neighborhoods) {
     # look at each neighborhood
     # then at each age
-    n_result <- list()
+    # I don't remember why we had to store the data in lists
+    # changing that to one dataframe now for ease of use. if 
+    # this were to all be refactored, it could be much more 
+    # efficient
     for (a in age) {
       subset <- ps.freq[list.which(ps.freq, neighborhood == i && age == a)]
-      subset_result <- list(report_pathwayResult(subset, freq_thresh))
-      names(subset_result) <- a
-      n_result <- append(n_result, subset_result)
+      subset_result <- report_pathwayResult(subset, freq_thresh)
+      pathway_results %<>% bind_rows(subset_result$pathway_table)
     }
-    n_result <- list(n_result)
-    names(n_result) <- i # name the neighborhood
-    result <- append(result, n_result)
   }
   
-  return(result)
+  return(pathway_results)
+  
+}
+
+dominant_pathway_table <- function(pathway_results) {
+  # Make the table with dominant pathways identified
+  return(pathway_results %>% group_by(neighborhood, age) %>% 
+    filter(dominant == 1) %>%
+    summarize(dominant = paste0(pathway, collapse=',\n')) %>%
+    spread(age, dominant) %>%
+    rename('Neighborhood' = 'neighborhood') %>%
+    as.data.frame())
+}
+
+behavior_table <- function(household_data, school_data, community_data, neighborhood_mapping) {
+  # Make a tabluation of the results by neighborhood
+  count_data <- function(df, form_name) {
+    x <- as.data.frame(table(df[,grep('_neighborhood$', names(df))]))
+    x$data <- form_name
+    return(x)
+  }
+  
+  results <- bind_rows(
+    count_data(household_data, 'Households Surveyed'),
+    count_data(community_data, 'Communities Surveyed'),
+    count_data(school_data, 'Schools Surveyed')
+  )
+  
+  n_map <- names(neighborhood_mapping)
+  names(n_map) <- neighborhood_mapping %>% unlist()
+  results$Var1 %<>% as.character() %>% revalue(n_map)
+  
+  results %<>% spread(data, Freq)
+  names(results)[1] <- 'Neighborhood'
+  results[is.na(results)] <- 0  
+  results %<>% bind_rows(cbind.data.frame("Neighborhood" = 'Total', as.list(colSums(results[,-1]))))
+
+  return(results)  
+}
+
+sample_table <- function(sample_data, neighborhood_mapping, pathway_codes, pathway_labels) {
+  # Make a table of the different samples collected
+  x <- as.data.frame(table('Neighborhood' = as.character(sample_data$col_neighborhood), 
+                           'Sample' = as.character(sample_data$col_sample_type)), stringsAsFactors = F)
+  n_map <- names(neighborhood_mapping)
+  names(n_map) <- neighborhood_mapping %>% unlist()
+  x$Neighborhood %<>% revalue(n_map, warn_missing = F)
+  
+  p_map <- sapply(names(pathway_codes), function(x) pathway_labels[[x]]) 
+  names(p_map) <- unlist(pathway_codes)
+  x$Sample %<>% revalue(p_map, warn_missing = F)
+  
+  x %<>% spread(Sample, Freq)
+  x %<>% bind_rows(cbind.data.frame("Neighborhood" = 'Total', as.list(colSums(x[,-1]))))
   
 }
 
@@ -44,6 +170,7 @@ report_pathwayResult <- function(ps.freq, freq_thresh = 50) {
   # calculate an exposure score
   # E = log10( (10 ^ dose) * n/100)
   calc_exposure_score <- function(list_obj, freq_thresh ) {
+    if (list_obj$dose == Inf) list_obj$dose = 0
     E = log10( (10 ^ list_obj$dose) * list_obj$n/100)
     f = (list_obj$n >= freq_thresh)
     return(data.frame(t(c('E' = E, 'freq' = f))))
@@ -94,16 +221,33 @@ report_pathwayResult <- function(ps.freq, freq_thresh = 50) {
   result_matrix[is.na(result_matrix)] <- ""
   
   # Identify the most dominant pathway
-  max_dominant <- pathway_results$pathway[pathway_results$E == max(pathway_results$E, na.rm=T)]
-  max_dominant <- max_dominant[!is.na(max_dominant)]  
+  pathway_results$max_dominant <- as.numeric(pathway_results$E == max(pathway_results$E, na.rm=T))
+  pathway_results$age <- sapply(ps.freq, function(x) x$age) %>% unlist() %>% unique()
+  pathway_results$neighborhood <- sapply(ps.freq, function(x) x$neighborhood) %>% unlist() %>% unique()
   
-  max_dom_info <- ps.freq[list.which(ps.freq, sample == max_dominant)]$path
+  # max_dominant <- max_dominant[!is.na(max_dominant)]  
+  
+  # max_dom_info <- ps.freq[[list.which(ps.freq, sample == max_dominant)]]
   
   
   
-  return(list('max_dominant' = max_dom_info, # the highest dominant pathway
+  return(list(#'max_dominant' = max_dom_info, # the highest dominant pathway
               'dominant' = pathway_results[pathway_results$dominant == 1 & !is.na(pathway_results$dominant), 'pathway'], 
               'matrix' = result_matrix, 
               'pathway_table' = pathway_results))
   
+}
+
+identify <- function(ps.freq, attribute='dose', FUN=max) {
+  # Run a function on the exposure data
+  # ______________________________________
+  # ps.freq => calculated results from calculate_exposure
+  # attribute => the list attribute to examine
+  # FUN => function to apply on the attribute selected
+  # ______________________________________
+  # returns an index value(s) where attribute %in% result of FUN
+  
+  attr_values <- sapply(ps.freq, function(x) x[attribute]) %>% unlist()
+  result <- which(attr_values %in% FUN(attr_values))
+  return(result)
 }

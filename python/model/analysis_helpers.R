@@ -2,11 +2,9 @@
 ## these have been derived from the original server.R
 ## file.
 library(rlist)
-library(plyr)
-library(dplyr)
+library(tidyverse)
 #library(reshape2)
 library(magrittr)
-library(purrr)
 library(doParallel)
 library(rjags)
 
