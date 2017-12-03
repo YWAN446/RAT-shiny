@@ -1,0 +1,84 @@
+## Examples for how to parameterize EC data functions
+## we will probably move this to a YAML file eventually.
+pathway_codes:
+  d: 1.0
+  p: 2.0
+  dw: 3.0
+  o: 4.0
+  s: 5.0
+  f: 6.0
+  l: 7.0
+  pa: 8.0
+  bw: 9.0
+  sf: 10.0
+pathway_labels:
+  d: Drain Water
+  p: Produce
+  dw: Municipal and Piped Water
+  o: Ocean Water
+  s: Surface Water
+  f: Flood Water
+  l: Public Latrine
+  pa: Particulate
+  bw: Bathing Water
+  sf: Street Food
+lab_analysis_method:
+  idexx: 1.0
+  membrane: 2.0
+idexx_reading:
+  not_valid: 1.0
+  valid: 2.0
+idexx_value:
+  negative: 0.5
+  lower_limit: 1.0
+  cut_point: 200.0
+  upper_limit: 2419.6
+  censored: 9999.0
+membrane_reading:
+  TNTC: 1.0
+  TDTC: 2.0
+  valid: 3.0
+membrane_value:
+  negative: 0.5
+  lower_limit: 0.0e+00
+  cut_point: 10.0
+  upper_limit: 200.0
+  TDTC: 998.0
+  TNTC: 999.0
+denoms:
+  default: 100.0
+  p: 500.0
+  l: 14.0
+  pa: 2.0
+  sf: 10.0
+jags_par_env:
+  niter: 10000.0
+  nburn: 1000.0
+  thin: 1.0
+jags_par_freq:
+  niter: 10000.0
+  nburn: 1000.0
+  thin: 1.0
+cut_point:
+  times:
+  - 0.0e+00
+  - 5.0e+00
+  - 1.0e+01
+  days:
+  - 0.0e+00
+  - 3.0e+00
+  - 6.0e+00
+init_freq:
+  times:
+  - .na.real
+  - 2.0
+  - 7.0
+  - 12.0
+  days:
+  - .na.real
+  - 2.0
+  - 5.0
+  - 7.0
+  r: 1.0
+  p: 0.2
+nsim: 1000.0
