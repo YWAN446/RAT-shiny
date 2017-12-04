@@ -47,7 +47,10 @@ from functools import partial
 
 # make sure we're translating things back and forth correctly
 class Analysis():
-	def __init__(self, r_dir='./', plot_dir = './plots/'):
+	def __init__(self,
+                 config = 'config.yaml',
+                 r_dir='./',
+                 plot_dir = './plots/'):
 		pandas2ri.activate()
 		# import the proper functions so we can do stuff
 		rcon("setwd('"+r_dir+"')")
@@ -130,15 +133,14 @@ class Analysis():
 	def _add_config(self, x):
 		return partial(x, config= self.config)
 
+    def _convert_params(self, param_name, param_dict):
+        if param_dict != None:
+            try:
+                self[param_name] vectors.ListVector(param_dict)
+            except:
+                raise ValueError("{} failed to convert. Is it a dict?")
 
-class Plotting():
-	# wrappers around plotting functions for pie charts, histograms and people plots
-	def __init__(self):
-		# this is technically in the same environment for R, which is normal.
-		# but should we make it fully separate?
-		rcon('source("model/plotting_helpers.R")')
-		# self.create_pie_charts = rcon('')
-		pass
+
 
 class RSetup():
 	'''
