@@ -2,7 +2,8 @@
 ## these have been derived from the original server.R
 ## file.
 library(rlist)
-library(tidyverse)
+library(plyr)
+library(dplyr)
 #library(reshape2)
 library(magrittr)
 library(doParallel)
