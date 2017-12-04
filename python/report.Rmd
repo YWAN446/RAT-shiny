@@ -6,15 +6,25 @@ output:
   word_document: default
   toc: yes
   pdf_document: default
-params:
-  city_name: Atlanta, GA
-  start_date: '2017-01-01'
-  end_date: !r Sys.Date()
-  lab_MF: no
-  lab_name: 'Some laboratory, LLC'
-  pathways: Drain Water, Ocean Water, and Private Latrines
-  language: "English"
-
+# If running this independently, you will need to un-comment
+# below and update all of these values. sorry. :(
+# params:
+#   city_name: Atlanta, GA
+#   start_date: '2017-01-01'
+#   end_date: !r Sys.Date()
+#   lab_MF: no
+#   lab_name: 'Some laboratory, LLC'
+#   pathways: Drain Water, Ocean Water, and Private Latrines
+#   language: "English"
+#   household_data : !r data.frame()
+#   school_data : !r data.frame()
+#   community_data : !r data.frame()
+#   sample_data : !r data.frame()
+#   ps.freq : !r list() 
+#   neighborhood_mapping : !r list()
+#   pathway_codes : !r list()
+#   pathway_labels : !r list()
+#   freq_thresh: 50
 ---
 ```{r, echo=FALSE}
 library(knitr)
