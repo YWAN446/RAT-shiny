@@ -4,23 +4,24 @@
 library(rlist)
 library(plyr)
 library(dplyr)
+library(purrr)
 #library(reshape2)
 library(magrittr)
 library(doParallel)
 library(rjags)
 
 
-# CONCENTRATIONS ---------------------------------------------  
+# CONCENTRATIONS ---------------------------------------------
 compute_concentrations <- function(collection_data, lab_data,
                             config = config,
                             pathway_codes = config$pathway_codes,
-                            pathway_labels = config$pathway_labels, 
+                            pathway_labels = config$pathway_labels,
                             neighborhood_mapping = list()) {
-  
+
   if (is.null(config)) stop('Missing config object!')
   if (length(pathway_codes) < 1 | length(pathway_labels) < 1) stop('Pathway data missing!')
   if (length(neighborhood_mapping) < 1) stop('Neighborhood data map missing!')
-  
+
   lab_analysis_method <- unique(lab_data$lab_analysis)
   if (lab_analysis_method == 1) {
     reading = config$idexx_reading
@@ -33,19 +34,19 @@ compute_concentrations <- function(collection_data, lab_data,
     MF = T
   }
   denoms = config$denoms
-  
+
   # Calculate the e coli combined dataframe
-  ec_data <- create_ecData(collection_data = collection_data, 
+  ec_data <- create_ecData(collection_data = collection_data,
                            lab_data = lab_data,
                            mpn_tbl = config$mpn_tbl,
                            reading = reading,
                            value = value,
                            denoms = denoms,
-                           MF = MF) 
+                           MF = MF)
 
   # now build our output of concentration values
   pathway_selected_vector <- suppressWarnings(as.integer(pathway_codes) %>% .[!is.na(.)])
-  
+
   found_pathways <- unique(ec_data$sample_type)
   conc<-list()
   for (i in unique(factor_to_numeric(ec_data$neighbor))) {
@@ -59,7 +60,7 @@ compute_concentrations <- function(collection_data, lab_data,
                  neighborhood = paste("Neighborhood", i),# The neighborhood information should change based on the configuration before deployment.
                  data = ec_data$ec_conc[which(ec_data$neighbor == i
                                               & ec_data$sample_type == pathway_selected_vector[j])])
-        
+
         x$plot_name <- paste0(x$neighborhood,", ", x$sample, '\n(N=',length(x$data),")")
         x$fn <- sprintf('%s_%s.png', i, x$s)
         conc <- append(conc, list(x))
@@ -110,9 +111,9 @@ create_ecData <- function(collection_data, lab_data, mpn_tbl,
 }
 
 # FREQUENCIES ----------------------------------------------------------------
-compute_frequencies <- function(..., type='pie', 
-                                analysis_type=NULL, 
-                                config=NULL,  
+compute_frequencies <- function(..., type='pie',
+                                analysis_type=NULL,
+                                config=NULL,
                                 pathway_labels = config$pathway_labels,
                                 pathway_codes = config$pathway_codes,
                                 neighborhood_mapping = list()
@@ -141,7 +142,7 @@ compute_frequencies <- function(..., type='pie',
   #
   # Or Ex.
   # > calculate_freq(hh, sch, comm)
-  
+
   if (is.null(config)) stop('Missing config object!')
   if (length(pathway_codes) < 1 | length(pathway_labels) < 1) stop('Pathway data missing!')
   if (length(neighborhood_mapping) < 1) stop('Neighborhood data map missing!')
@@ -199,7 +200,7 @@ compute_frequencies <- function(..., type='pie',
 
     # if we want data for a people plot, calculate 4 - the value per vector object in the list
     freq <- lapply(freq, function(x) {
-      x$data %<>% subtract(4, .) 
+      x$data %<>% subtract(4, .)
       x
     })
     return(freq)
@@ -222,7 +223,7 @@ find_pathways <- function(df, analysis_type, pathway_labels=config$pathway_label
     .[,c(1:3)] %>%
     .[!duplicated(.),] %>%
     .[!apply(. == 'metadata' | . == 'neighborhood', 1, any),] # neighborhood is making it through for some reason
-  
+
   pathways <- pathways[-grep("\\d{1,}$", pathways$V3),]
   # iterate through neighborhoods and find pathways for each
   freq <- lapply(neighborhoods, function(n) {
@@ -238,9 +239,9 @@ find_pathways <- function(df, analysis_type, pathway_labels=config$pathway_label
       list(x)
       }) %>% unname() %>% unlist(recursive=F)
   }) %>% unlist(recursive=F)
-  
+
   freq <- freq[sapply(freq, function(x) !is.null(x$data) & !is.null(x$sample))]
-  
+
   return(freq)
 }
 
@@ -312,13 +313,13 @@ create_freqTbl <- function(freq_vector, sample_type) {
 }
 
 # EXPOSURE -----------------------------------------------------
-compute_exposure <- function(freq, 
-                             conc, 
+compute_exposure <- function(freq,
+                             conc,
                              config = config,
                              pathway_codes = config$pathway_codes,
                              pathway_labels = config$pathway_labels,
                              neighborhood_mapping = list(),
-                             parallel=T, 
+                             parallel=T,
                              nc=detectCores()) {
   # function to caclulate the percent of population
   # exposed for all pathways given.  performs Bayesian
@@ -329,26 +330,26 @@ compute_exposure <- function(freq,
   if (is.null(config)) stop('Missing config object!')
   if (length(pathway_codes) < 1 | length(pathway_labels) < 1) stop('Pathway data missing!')
   if (length(neighborhood_mapping) < 1) stop('Neighborhood data map missing!')
-  
+
   jags_par_env = config$jags_par_env
   jags_par_freq = config$jags_par_freq
   cut_point = config$cut_point
   init_freq = config$init_freq
-  nsim = config$nsim 
+  nsim = config$nsim
   intake = config$intake
   pathway_codes = config$pathway_codes
-  
-  freq <- bayesian_behavior_estimates(freq, 
-                                      nburn = get("nburn",jags_par_freq), 
-                                      niter = get("niter",jags_par_freq), 
-                                      thin = get("thin",jags_par_freq), 
-                                      cut_point = cut_point, 
-                                      init_freq = init_freq, 
+
+  freq <- bayesian_behavior_estimates(freq,
+                                      nburn = get("nburn",jags_par_freq),
+                                      niter = get("niter",jags_par_freq),
+                                      thin = get("thin",jags_par_freq),
+                                      cut_point = cut_point,
+                                      init_freq = init_freq,
                                       parallel=parallel, nc=nc)
-  conc <- bayesian_environmental_estimates(conc, 
-                                           nburn = get("nburn",jags_par_env), 
-                                           niter = get("niter",jags_par_env), 
-                                           thin = get("thin",jags_par_env), 
+  conc <- bayesian_environmental_estimates(conc,
+                                           nburn = get("nburn",jags_par_env),
+                                           niter = get("niter",jags_par_env),
+                                           thin = get("thin",jags_par_env),
                                            parallel=parallel, nc=nc)
 
 
@@ -401,7 +402,7 @@ bayesian_environmental_estimates <- function(conc, nburn=1000, niter=10000, thin
   else {
     func <- lapply
   }
-  
+
   conc <- func(1:length(conc), function(k) {
     log_ec<-log10(as.numeric(conc[[k]]$data))
     env_data<-list(lnconc=log_ec,N=length(log_ec))
@@ -416,14 +417,14 @@ bayesian_environmental_estimates <- function(conc, nburn=1000, niter=10000, thin
     append(conc[[k]], list('mu' = mu, 'sigma' = sigma))
 
   })
-  
+
   return(conc)
 }
 
-bayesian_behavior_estimates <- function(freq, nburn=1000, niter=10000, thin=1, 
-                                        cut_point = list('times' = c(0, 5, 10), 'days' = c(0, 3, 6)), 
+bayesian_behavior_estimates <- function(freq, nburn=1000, niter=10000, thin=1,
+                                        cut_point = list('times' = c(0, 5, 10), 'days' = c(0, 3, 6)),
                                         init_freq = list('times' = c(NA, 2, 7, 12), "days" = c(NA, 2, 5, 7), 'r' = 1, 'p' = 0.2),
-                                        parallel=T, 
+                                        parallel=T,
                                         nc= detectCores()) {
   # Run bayesian model on the behavior data collected.  this will be run for each
   # neighborhood, age, and sample combination.  Warning: Could take quite a while.
@@ -431,10 +432,10 @@ bayesian_behavior_estimates <- function(freq, nburn=1000, niter=10000, thin=1,
 
   bemonitor <- c("p","r")
   calcul <- paste(nburn,niter,thin,sep="|")
-  
+
   if (parallel) func <- partial(mclapply, mc.cores=nc)
   else func <- lapply
-  
+
   freq <- func(1:length(freq), function(k) {
     print(k)
     # set up the data for analysis to be passed to jags
@@ -522,4 +523,3 @@ calculate_exposure <- function(behavior_data, concentration_data, smp, nsim = 10
   return(behavior_data)
 
 }
-
