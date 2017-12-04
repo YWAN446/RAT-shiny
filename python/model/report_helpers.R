@@ -3,21 +3,21 @@ library(rlist)
 library(plyr)
 # REPORT ============================================================
 
-compute_report <- function(city_name = 'Atlanta, GA',
-                           lab_name = 'Bill Nye, Inc',
-                           start_date = '2017-01-01',
-                           lab_MF = F,
-                           language = "English",
-                           pathways = c('Drain Water', 'Ocean Water', 'Private Latrines'),
-                           household_data = data.frame(),
-                           school_data = data.frame(),
-                           community_data = data.frame(),
-                           sample_data = data.frame(),
-                           ps.freq = list(), 
-                           neighborhood_mapping = list(),
-                           pathway_codes = list(),
-                           pathway_labels= list(),
-                           freq_thresh=50) {
+compute_report <- function(params = list(city_name = 'Atlanta, GA',
+                                         lab_name = 'Bill Nye, Inc',
+                                         start_date = '2017-01-01',
+                                         lab_MF = F,
+                                         language = "English",
+                                         pathways = c('Drain Water', 'Ocean Water', 'Private Latrines'),
+                                         household_data = data.frame(),
+                                         school_data = data.frame(),
+                                         community_data = data.frame(),
+                                         sample_data = data.frame(),
+                                         ps.freq = list(), 
+                                         neighborhood_mapping = list(),
+                                         pathway_codes = list(),
+                                         pathway_labels= list(),
+                                         freq_thresh=50)) {
   # Compute all of the necessary parameters for the report 
   # generation
   # ___________________________________
@@ -39,39 +39,28 @@ compute_report <- function(city_name = 'Atlanta, GA',
   # ___________________________________
   # returns a list with named attributes related to the report
   # document params
-  
-  params <- list()
-  
-  # somethings are just going to go straight in
-  # this is janky, but it will work
-  constants <- c('city_name', 
-                 'lab_name', 
-                 'start_date', 
-                 'lab_MF', 
-                 'language')
-  tmp <- lapply(constants, function(x) eval(parse(text=x)))
-  names(tmp) <- constants
-  params %<>% append(tmp)
-  
+
+  attach(params)  
   # Set up the pathways param
   if (length(pathways) > 1) {
     separator <- if (length(pathways) > 2) ', ' else ' ' 
     pathways[length(pathways)] %<>% paste0('and ',.)
     pathways %<>% paste0(collapse=separator)
   }
-  params$pathways <- pathways
+
   params$behavior_table <- behavior_table(household_data,
-                                          school_data, 
+                                          school_data,
                                           community_data,
                                           neighborhood_mapping)
-  
+
   params$environmental_table <- environmental_table(sample_data,
                                                     neighborhood_mapping,
                                                     pathway_codes,
                                                     pathway_labels)
-  
+
   params$dominant_exposure_pathways <- dominant_pathway_table(report_results(ps.freq, freq_thresh = freq_thresh))
-  
+
+  rmarkdown::render('report.Rmd', params= params)
   
   
 }

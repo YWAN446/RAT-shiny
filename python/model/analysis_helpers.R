@@ -14,7 +14,8 @@ library(rjags)
 compute_concentrations <- function(collection_data, lab_data,
                             config = config,
                             pathway_codes = config$pathway_codes,
-                            pathway_labels = config$pathway_labels) {
+                            pathway_labels = config$pathway_labels, 
+                            neighborhood_mapping = list()) {
   
   lab_analysis_method <- unique(lab_data$lab_analysis)
   if (lab_analysis_method == 1) {
@@ -105,8 +106,13 @@ create_ecData <- function(collection_data, lab_data, mpn_tbl,
 }
 
 # FREQUENCIES ----------------------------------------------------------------
-compute_frequencies <- function(..., type='pie', analysis_type=NULL, 
-                                config=NULL,  pathway_labels = config$pathway_labels) {
+compute_frequencies <- function(..., type='pie', 
+                                analysis_type=NULL, 
+                                config=NULL,  
+                                pathway_labels = config$pathway_labels,
+                                pathway_codes = config$pathway_codes,
+                                neighborhood_mapping = list()
+                                ) {
   # calculate the appropriate factors for plotting pie charts
   # and people plots.  This can handle all of the different survey types
   # household, community, and school.  The function returns a long list.
@@ -304,7 +310,11 @@ create_freqTbl <- function(freq_vector, sample_type) {
 compute_exposure <- function(freq, 
                              conc, 
                              config = config,
-                             parallel=T, nc=detectCores()) {
+                             pathway_codes = config$pathway_codes,
+                             pathway_labels = config$pathway_labels,
+                             neighborhood_mapping = list(),
+                             parallel=T, 
+                             nc=detectCores()) {
   # function to caclulate the percent of population
   # exposed for all pathways given.  performs Bayesian
   # analysis on behavior and environmental data first
