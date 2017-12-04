@@ -17,6 +17,10 @@ compute_concentrations <- function(collection_data, lab_data,
                             pathway_labels = config$pathway_labels, 
                             neighborhood_mapping = list()) {
   
+  if (is.null(config)) stop('Missing config object!')
+  if (length(pathway_codes) < 1 | length(pathway_labels) < 1) stop('Pathway data missing!')
+  if (length(neighborhood_mapping) < 1) stop('Neighborhood data map missing!')
+  
   lab_analysis_method <- unique(lab_data$lab_analysis)
   if (lab_analysis_method == 1) {
     reading = config$idexx_reading
@@ -139,7 +143,8 @@ compute_frequencies <- function(..., type='pie',
   # > calculate_freq(hh, sch, comm)
   
   if (is.null(config)) stop('Missing config object!')
-  
+  if (length(pathway_codes) < 1 | length(pathway_labels) < 1) stop('Pathway data missing!')
+  if (length(neighborhood_mapping) < 1) stop('Neighborhood data map missing!')
   # this allows us to pass multiple data objects without having to explictly
   #say what they are. since the surveys always follow a pattern for the question
   # headers, we can figure out what data we have using that.
@@ -321,6 +326,10 @@ compute_exposure <- function(freq,
   # then calculates the final statistics for plotting
   # nburn=1000, niter=10000, thin=1, cutpoint=c(0, 5, 10)
   # run the Bayesian analyses
+  if (is.null(config)) stop('Missing config object!')
+  if (length(pathway_codes) < 1 | length(pathway_labels) < 1) stop('Pathway data missing!')
+  if (length(neighborhood_mapping) < 1) stop('Neighborhood data map missing!')
+  
   jags_par_env = config$jags_par_env
   jags_par_freq = config$jags_par_freq
   cut_point = config$cut_point

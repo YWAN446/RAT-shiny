@@ -8,16 +8,17 @@ compute_report <- function(params = list(city_name = 'Atlanta, GA',
                                          start_date = '2017-01-01',
                                          lab_MF = F,
                                          language = "English",
-                                         pathways = c('Drain Water', 'Ocean Water', 'Private Latrines'),
                                          household_data = data.frame(),
                                          school_data = data.frame(),
                                          community_data = data.frame(),
                                          sample_data = data.frame(),
-                                         ps.freq = list(), 
+                                         lab_data = data.frame(),
+                                         ps_freq = list(), 
                                          neighborhood_mapping = list(),
                                          pathway_codes = list(),
                                          pathway_labels= list(),
-                                         freq_thresh=50)) {
+                                         freq_thresh=50),
+                           out_dir = './') {
   # Compute all of the necessary parameters for the report 
   # generation
   # ___________________________________
@@ -31,7 +32,7 @@ compute_report <- function(params = list(city_name = 'Atlanta, GA',
   # school_data => data collected at schools
   # community_data => data collected at community
   # sample_data => data collected for sample collection
-  # ps.freq => results from exposure calcluations
+  # ps_freq => results from exposure calcluations
   # neighborhood_mapping => named list of Neighborhood text = coded value
   # pathway_codes => named list of pathway codes = coded value
   # pathway_labels => named list of pathway codes = pathway label name
@@ -42,6 +43,7 @@ compute_report <- function(params = list(city_name = 'Atlanta, GA',
 
   attach(params)  
   # Set up the pathways param
+  pathways = pathway_labels %>% unlist()
   if (length(pathways) > 1) {
     separator <- if (length(pathways) > 2) ', ' else ' ' 
     pathways[length(pathways)] %<>% paste0('and ',.)
@@ -58,9 +60,9 @@ compute_report <- function(params = list(city_name = 'Atlanta, GA',
                                                     pathway_codes,
                                                     pathway_labels)
 
-  params$dominant_exposure_pathways <- dominant_pathway_table(report_results(ps.freq, freq_thresh = freq_thresh))
+  params$dominant_exposure_pathways <- dominant_pathway_table(report_results(ps_freq, freq_thresh = freq_thresh))
 
-  rmarkdown::render('report.Rmd', params= params)
+  rmarkdown::render('report.Rmd', output_dir = out_dir, params= params)
   
   
 }
