@@ -48,6 +48,9 @@ from functools import partial
 # make sure we're translating things back and forth correctly
 class Analysis():
 	def __init__(self,
+                 pathway_type_codes = {},
+                 pathway_type_labels = {},
+                 neighborhood_mapping = {},
                  config = 'config.yaml',
                  r_dir='./',
                  plot_dir = './plots/'):
@@ -58,13 +61,19 @@ class Analysis():
 		self.config = rcon('config')
 
 
+        self.pathway_type_codes = self._convert_params(pathway_type_codes)
+        self.pathway_type_labels = self._convert_params(pathway_type_labels)
+        self.neighborhood_mapping = self._convert_params(neighborhood_mapping)
+
 		# we're essentially creating class methods here.
 		# we need to calculate frequecies of answers to then use either for
 		# plotting data in the application or for further analysis
 		# pie chart uses raw answers, ppl plot takes all answers and centers
 		# them around 0.  I never learned why.  For some reason we need it
 		# that way. Using slightly more intuitive names for the functions here
-		self.compute_frequencies = self._add_config(rcon('compute_frequencies'))
+
+        # compute_frequencies -------------------------------------
+        self.compute_frequencies = self._add_arguments(rcon('compute_frequencies'))
 		# if not using this dynamically, convert pandas df to R df using
 		# pandas2ri.py2ri(df) before calling the function!
 		'''
@@ -89,23 +98,22 @@ class Analysis():
 		if all three are provdied and survey_type == 'combined' it will create a combined score.
 		'''
 
-		self.compute_concentrations = self._add_config(rcon('compute_concentrations'))
-		# if not using this dynamically, convert pandas df to R df using
-		# pandas2ri.py2ri(df) before calling the function!
-		# TODO: needs to have config options passed down.
+        # compute_concentrations -----------------------------------
+		self.compute_concentrations = self._add_arguments(rcon('compute_concentrations'))
 		'''
 		____________________________________________
 		collection_data => df of collection (sample) data
 		lab_data => df of lab samples processed
 		config => the config list with options. defaults to those defined in config.R
 		pathway_selected_vector => a str vector of pathway codes
-		sample_type_code => a mapping of pathway code to numeric value in sample
-		sample_type_label => a mapping of pathway code to pathway label
+		pathway_type_code => a mapping of pathway code to numeric value in sample
+		pathway_type_label => a mapping of pathway code to pathway label
 		____________________________________________
 		returns an R list of concentration values by neighborhood and pathway
 		'''
 
-		self.compute_exposure = self._add_config(rcon('compute_exposure'))
+        # compute_exposure -------------------------------------------
+		self.compute_exposure = self._add_arguments(rcon('compute_exposure'))
 		# if not using this dynamically, convert pandas df to R df using
 		# pandas2ri.py2ri(df) before calling the function!
 		'''
@@ -121,6 +129,7 @@ class Analysis():
 		returns a list of dicts used for people plot creation
 		'''
 
+        # make_plots ----------------------------
 		self.make_plots = partial(rcon('make_plots'), output_dir = plot_dir)
 		'''
 		____________________________________________
@@ -130,15 +139,22 @@ class Analysis():
 		returns an R list with updated information
 		'''
 
-	def _add_config(self, x):
-		return partial(x, config= self.config)
 
-    def _convert_params(self, param_name, param_dict):
+
+	def _add_arguments(self, x):
+        # creates a partial R function with some arguments
+        # already complete
+		return partial(x, config= self.config,
+                          pathway_type_codes = self.pathway_type_codes,
+                          pathway_type_labels = self.pathway_type_labels,
+                          neighborhood_mapping = self.neighborhood_mapping)
+
+    def _convert_params(self, param_dict):
         if param_dict != None:
             try:
-                self[param_name] vectors.ListVector(param_dict)
+                return = vectors.ListVector(param_dict)
             except:
-                raise ValueError("{} failed to convert. Is it a dict?")
+                raise ValueError("Failed to convert. Is it a dict?")
 
 
 
