@@ -1,15 +1,60 @@
-# List all required libraries on separate lines.
-# commented lines with hashes are ignored.  RSetup() class
-# will compare installed libraries with those listed here
-# and only install those that are missing.
-# Requirements for R analysis helpers
-rjags
+# R Requirements File
+# Generated 2017-12-05
+# Use install_requirements() to install
+# _____________________________________
+
+# config.R
+
+# example_config.R
+
+# main.R
+
+# model/analysis_helpers.R
 rlist
 plyr
-magrittr
+dplyr
 purrr
+#reshape2
+magrittr
+doParallel
+rjags
 
-# plotting libraries
+# model/api_helpers.R
+httr
+RJSONIO
+
+# model/ec_helpers.R
+
+# model/plotting_helpers.R
 ggplot2
 ggrepel
 RgoogleMaps
+
+# model/PS_Plot.R
+png
+
+# model/report_helpers.R
+rlist
+plyr
+
+# model/utilities.R
+
+# r-test-code.R
+
+# report.Rmd
+knitr
+pander
+
+# report_sections/Conclusion.Rmd
+
+# report_sections/Executive_Summary.Rmd
+
+# report_sections/Implications.Rmd
+
+# report_sections/Introduction.Rmd
+
+# report_sections/Methodology.Rmd
+
+# report_sections/Results_and_Discussion.Rmd
+
+# report_sections/Strengths_and_Limitations.Rmd
