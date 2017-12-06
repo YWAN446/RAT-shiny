@@ -1,0 +1,7 @@
+Warning: cannot use the system proxy for 'start' subcommand,
+ failed to connect to '/run/xpra/system':
+ [Errno 2] No such file or directory
+Entering daemon mode; any further errors will be reported to:
+  /run/user/1000/xpra/S3118.log
+Actual display used: :0
+Actual log file name is now: /run/user/1000/xpra/:0.log
