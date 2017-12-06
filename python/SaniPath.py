@@ -21,7 +21,7 @@ need to have that installed.  JAGS also only works on Linux to make
 things more complicated.
 
 Use the env.txt file to setup Conda appropriately with all of the necessary
-packages. 
+packages.
 '''
 from rpy2.robjects import pandas2ri, r as rcon, vectors
 import pandas as pd
@@ -267,11 +267,14 @@ class Analysis():
 		self.exposures = self._from_json(exposure_json)
 
 	# compute_report --------------------------------------------
-	def compute_report(out_dir = './'):
+	def compute_report(out_dir = './', output_format = 'word_document'):
 		'''
 		Knit the RMarkdown report.  This needs a lot of information, which we
 		can update. These should all be contained in the analysis object
 		at this point.
+		____________________________________________
+		out_dir => directory where the file will be saved
+		output_format => rendered filetype either "word_document" or "pdf_document"
 		____________________________________________
 		saves a file output in out_dir
 		'''
