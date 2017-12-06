@@ -17,6 +17,7 @@ compute_report <- function(params = list(city_name = 'Atlanta, GA',
                                          neighborhood_mapping = list(),
                                          pathway_codes = list(),
                                          pathway_labels= list(),
+                                         neighborhood_mapping = list(),
                                          freq_thresh=50),
                            out_dir = './') {
   # Compute all of the necessary parameters for the report 

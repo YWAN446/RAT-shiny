@@ -35,12 +35,18 @@ ppl_plots = analysis.make_plots(ppl_plots, 'ppl')
 # the data included in pathway_codes and pathway_labels
 
 # pass the configured pathways using a python dicctionary and convert to an R list
-pathway_labels = vectors.ListVector({'p' : 'Produce', 'dw' : 'Municipal and Drain Water', 'o' : 'Ocean Water',   'l' : 'Public Latrine'})
+pathway_labels = vectors.ListVector({'p' : 'Produce',
+                                     'dw' : 'Municipal and Drain Water',
+                                     'o' : 'Ocean Water',
+                                     'l' : 'Public Latrine'})
 sc_freq = analysis.compute_frequencies(sc, type='ppl', analysis_type='school', pathway_labels= pathway_labels)
 
 
 # the sample collection form codes each pathway selected as a numeric value, we can pass these also as a named lists
-pathway_codes = vectors.ListVector({'p' : 2, 'dw' : 3, 'o' : 4, 'l' : 7})
+pathway_codes = vectors.ListVector({'p' : 2,
+                                    'dw' : 3,
+                                    'o' : 4,
+                                    'l' : 7})
 conc = analysis.compute_concentrations(col, lab, pathway_labels=pathway_labels, pathway_codes=pathway_codes)
 
 # then pass those to compute_exposure

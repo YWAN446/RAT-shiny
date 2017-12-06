@@ -9,10 +9,7 @@ Analysis:
 -> run bayesian calculations on frequency data for
    people plot displays.  Return formatted data
    ready for charting
-Plotting:
--> create pie charts with the data
--> create histograms
--> create people plots
+
 RSetup:
 -> init R environment if first time, ensure proper
    packages installed listed in r-requirements.txt
@@ -23,22 +20,8 @@ to run the Bayesian calculations for people plots.  The env will
 need to have that installed.  JAGS also only works on Linux to make
 things more complicated.
 
-Ubuntu dependencies:
-libcurl4-openssl-dev
-
-Using conda to make sure necessary programs are installed:
-# we need jags 4.x
-conda install -c conda-forge jags
-
-# latest version of r. this will install most of the
-# libraries we need, but use the RSetup() class to make sure
-# everything is installed.
-conda install r-essentials
-
-# the connection between r and python
-conda install krb5
-conda install libssh2
-conda install -c r rpy2
+Use the env.txt file to setup Conda appropriately with all of the necessary
+packages. 
 '''
 from rpy2.robjects import pandas2ri, r as rcon, vectors
 import pandas as pd
@@ -303,6 +286,8 @@ class Analysis():
 				  'community_data' : self.community_data,
 				  'sample_data' : self.sample_data,
 				  'lab_data' : self.lab_data,
+				  #'freq' : self.frequencies, # TODO: Add to R
+				  #'conc' : self.concentrations, # TODO: Add to R
 				  'ps_freq' : self.exposures,
 				  'neighborhood_mapping' : self.neighborhood_mapping,
 				  'pathway_codes' : self.pathway_codes,
