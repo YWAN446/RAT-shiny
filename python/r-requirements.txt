@@ -7,7 +7,7 @@ rjags
 rlist
 plyr
 magrittr
-purr
+purrr
 
 # plotting libraries
 ggplot2
