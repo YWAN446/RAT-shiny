@@ -19,7 +19,8 @@ compute_report <- function(params = list(city_name = 'Atlanta, GA',
                                          pathway_labels= list(),
                                          neighborhood_mapping = list(),
                                          freq_thresh=50),
-                           out_dir = './') {
+                           out_dir = './',
+                           output_format = 'word_document') {
   # Compute all of the necessary parameters for the report 
   # generation
   # ___________________________________
@@ -41,6 +42,9 @@ compute_report <- function(params = list(city_name = 'Atlanta, GA',
   # ___________________________________
   # returns a list with named attributes related to the report
   # document params
+  
+  options <- c('word_document', 'pdf_document')
+  if (!(output_format %in% options)) stop(sprintf("output_format invalid. options: %s", paste(options, collapse=', ')))
 
   attach(params)  
   # Set up the pathways param
