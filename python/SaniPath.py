@@ -299,7 +299,8 @@ class Analysis():
 				  }
 		try:
 			_compute_report(params = vectors.ListVector(params),
-							out_dir = out_dir)
+							out_dir = out_dir,
+							output_format = output_format)
 		except:
 			raise ValueError('This error message could be more helpful')
 
