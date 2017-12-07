@@ -267,7 +267,7 @@ class Analysis():
 		self.exposures = self._from_json(exposure_json)
 
 	# compute_report --------------------------------------------
-	def compute_report(out_dir = './', output_format = 'word_document'):
+	def compute_report(self, out_dir = './', output_format = 'word_document'):
 		'''
 		Knit the RMarkdown report.  This needs a lot of information, which we
 		can update. These should all be contained in the analysis object
@@ -279,6 +279,7 @@ class Analysis():
 		saves a file output in out_dir
 		'''
 		_compute_report = rcon('compute_report')
+		# from IPython.core.debugger import Tracer; Tracer()()
 		params = {'city_name' : self.city_name,
 				  'lab_name' : self.lab_name,
 				  'start_date' : self.start_date,
@@ -301,8 +302,8 @@ class Analysis():
 			_compute_report(params = vectors.ListVector(params),
 							out_dir = out_dir,
 							output_format = output_format)
-		except:
-			raise ValueError('This error message could be more helpful')
+		except Exception as e:
+			raise ValueError(e)
 
 	def _setup(self):
 		# we're essentially creating class methods here.
@@ -416,41 +417,21 @@ class RSetup():
 	'''
 	def __init__(self, r_requirements_file):
 		pandas2ri.activate()
-		rcon('options(download.file.method="wget")')
-		# get a numpy 1d array of the installed packages
-		installed_packages = self._check_pkgs()
-		# get the libraries we need
-		requirements = self._read(r_requirements_file)
-		pkgs_to_install = self._filter_pkgs(installed_packages, requirements)
-		# pull the installer function
-		if  all([x != '' for x in pkgs_to_install]):
-			# we have some things to install, pull the install function
-			installR = rcon('install.packages')
-			# some window dressing so we know it's working
-			print("Packages to install:" + ", ".join(pkgs_to_install))
-			# now install things from the cloud mirror
-			installR(pkgs_to_install, repos='https://cloud.r-project.org/', dependencies=True)
-			try:
-				pkgs = self._filter_pkgs(self._check_pkgs(), requirements)
-				assert(len(pkgs) == 0)
-			except:
-				raise ValueError('Not all packages successfully installed.')
+		rcon("""install_requirements <- function(requirements_file, only_missing=T) {
+				  # Install requirements listed in an file of libraries
+				  # one per line
+				  reqs <- readLines(requirements_file)
+				  reqs <- reqs[!grepl('#', reqs) & reqs != '']
 
-		else:
-			print('Everything is installed!')
+				  if (only_missing) {
+				    reqs = reqs[!(reqs %in% installed.packages())]
+				  }
+				  if (length(reqs) > 0) {
+				    print(sprintf('Installing: %s', paste(reqs, collapse=', ')))
+				    install.packages(reqs, repos='https://cloud.r-project.org/', dependencies=T)
+				  }
+				  else warning('No packages to install!')
 
-	def _check_pkgs(self):
-		return rcon('rownames(installed.packages())')
-
-	def _filter_pkgs(self, installed, requirements):
-		# just return packages that don't already show up in the r
-		# library of packages so we can install them.
-		return np.asarray([r for r in requirements if r not in installed])
-
-	def _read(self, r_requirements_file):
-		# TODO need to check how line breaks are stripped here
-		f = open(r_requirements_file)
-		reqs = f.readlines()
-		f.close()
-		# remove commented lines and line breaks
-		return [r.replace('\n','').replace('\r','') for r in filter(lambda x: '#' not in x, reqs)]
+				}""")
+		install_requirements = rcon('install_requirements')
+		install_requirements(r_requirements_file)

@@ -1,6 +1,7 @@
 # Report Helpers
 library(rlist)
 library(plyr)
+library(tidyr)
 # REPORT ============================================================
 
 compute_report <- function(params = list(city_name = 'Atlanta, GA',
@@ -14,7 +15,6 @@ compute_report <- function(params = list(city_name = 'Atlanta, GA',
                                          sample_data = data.frame(),
                                          lab_data = data.frame(),
                                          ps_freq = list(), 
-                                         neighborhood_mapping = list(),
                                          pathway_codes = list(),
                                          pathway_labels= list(),
                                          neighborhood_mapping = list(),
@@ -54,20 +54,20 @@ compute_report <- function(params = list(city_name = 'Atlanta, GA',
     pathways[length(pathways)] %<>% paste0('and ',.)
     pathways %<>% paste0(collapse=separator)
   }
-
+  print(pathways)
   params$behavior_table <- behavior_table(household_data,
                                           school_data,
                                           community_data,
                                           neighborhood_mapping)
-
-  params$environmental_table <- environmental_table(sample_data,
+  print(params$behavior_table)
+  params$sample_table <- sample_table(sample_data,
                                                     neighborhood_mapping,
                                                     pathway_codes,
                                                     pathway_labels)
-
+  print(params$sample_table)
   params$dominant_exposure_pathways <- dominant_pathway_table(report_results(ps_freq, freq_thresh = freq_thresh))
-
-  rmarkdown::render('report.Rmd', output_dir = out_dir, params= params)
+  print('hi')
+  rmarkdown::render('report.Rmd', output_dir = out_dir, params= params, output_format=output_format)
   
   
 }

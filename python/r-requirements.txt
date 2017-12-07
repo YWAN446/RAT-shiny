@@ -1,11 +1,9 @@
 # R Requirements File
-# Generated 2017-12-05
+# Generated 2017-12-06
 # Use install_requirements() to install
 # _____________________________________
 
 # config.R
-
-# example_config.R
 
 # main.R
 
@@ -36,6 +34,9 @@ png
 # model/report_helpers.R
 rlist
 plyr
+tidyr
+Rcpp
+stringi
 
 # model/utilities.R
 

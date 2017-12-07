@@ -58,12 +58,15 @@ install_requirements <- function(requirements_file, only_missing=T) {
   # Install requirements listed in an file of libraries
   # one per line
   reqs <- readLines(requirements_file)
-  reqs <- reqs[!grepl("#", reqs) & reqs != ""]
+  reqs <- reqs[!grepl('#', reqs) & reqs != '']
   
   if (only_missing) {
     reqs = reqs[!(reqs %in% installed.packages())]
   }
-  
-  install.packages(reqs)
+  if (length(reqs) > 0) {
+    print(sprintf('Installing: %s', paste(reqs, collapse=', ')))
+    install.packages(reqs, repos='https://cloud.r-project.org/', dependencies=T)
+  }
+  else warning('No packages to install!')
   
 }
